@@ -13,4 +13,5 @@ require('./bootstrap');
  */
 
 //require('./components/Example');
-require('./components/Index');
+//require('./components/Restaurant');
+require('./Index');

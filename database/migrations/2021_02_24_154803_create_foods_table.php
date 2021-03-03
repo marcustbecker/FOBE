@@ -15,9 +15,11 @@ class CreateFoodsTable extends Migration
     {
         Schema::create('foods', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('restaurant')->references('id')->on('restaurants');
+            $table->string('type');
             $table->string('name');
             $table->float('price');
-            $table->float('restaurant');
+            $table->foreignId('photo_id')->references('id')->on('food_picture');
         });
     }
 

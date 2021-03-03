@@ -13,10 +13,19 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/welcome', function () {
-    return view('welcome');
+Route::get('/', function () {
+    return view('home');
 });
 
 Route::get('/react', function () {
-    return view('reactTest');
+    return view('home');
+});
+
+Route::get('/userdata', function () {
+    $user = DB::table('users')->get();
+    return $user;
+});
+
+Route::get('/restaurant', function () {
+    return view('home');
 });
