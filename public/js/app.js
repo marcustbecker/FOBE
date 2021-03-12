@@ -1848,7 +1848,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 /* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
-/* harmony import */ var _components_Restaurant__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./components/Restaurant */ "./resources/js/components/Restaurant.js");
+/* harmony import */ var _components_App__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./components/App */ "./resources/js/components/App.js");
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 
@@ -1893,7 +1893,7 @@ var Index = /*#__PURE__*/function (_Component) {
     value: function render() {
       return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", {
         className: "container",
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(_components_Restaurant__WEBPACK_IMPORTED_MODULE_3__.default, {})
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(_components_App__WEBPACK_IMPORTED_MODULE_3__.default, {})
       });
     }
   }]);
@@ -1903,8 +1903,8 @@ var Index = /*#__PURE__*/function (_Component) {
 
 
 
-if (document.getElementById('fobe')) {
-  react_dom__WEBPACK_IMPORTED_MODULE_2__.render( /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(Index, {}), document.getElementById('fobe'));
+if (document.getElementById('root')) {
+  react_dom__WEBPACK_IMPORTED_MODULE_2__.render( /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(_components_App__WEBPACK_IMPORTED_MODULE_3__.default, {}), document.getElementById('root'));
 }
 
 /***/ }),
@@ -1978,25 +1978,26 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
 /***/ }),
 
-/***/ "./resources/js/components/Restaurant.js":
-/*!***********************************************!*\
-  !*** ./resources/js/components/Restaurant.js ***!
-  \***********************************************/
+/***/ "./resources/js/components/App.js":
+/*!****************************************!*\
+  !*** ./resources/js/components/App.js ***!
+  \****************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => /* binding */ Restaurant
+/* harmony export */   "default": () => /* binding */ App
 /* harmony export */ });
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
-/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! axios */ "./node_modules/axios/index.js");
-/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(axios__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
-/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 
+
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -2021,59 +2022,200 @@ function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.g
 
 
 
+var App = /*#__PURE__*/function (_Component) {
+  _inherits(App, _Component);
 
-var Restaurant = /*#__PURE__*/function (_Component) {
-  _inherits(Restaurant, _Component);
+  var _super = _createSuper(App);
 
-  var _super = _createSuper(Restaurant);
-
-  function Restaurant() {
+  function App(props) {
     var _this;
 
-    _classCallCheck(this, Restaurant);
+    _classCallCheck(this, App);
 
-    _this = _super.call(this);
+    _this = _super.call(this, props);
     _this.state = {
-      restaurants: []
-    };
-    return _this;
-  }
+      foodName: '',
+      categoryID: '',
+      foodPrice: '',
+      foodDescription: ''
+    }; // bind
 
-  _createClass(Restaurant, [{
-    key: "UNSAFE_componentWillMount",
-    value: function UNSAFE_componentWillMount() {
+    _this.handleChange = _this.handleChange.bind(_assertThisInitialized(_this));
+    _this.handleSubmit = _this.handleSubmit.bind(_assertThisInitialized(_this));
+    /*
+    this.onChangeFoodName = this.onChangeFoodName.bind(this);
+    this.onChangeFoodCategory = this.onChangeFoodCategory.bind(this);
+    this.onChangeFoodPrice = this.onChangeFoodPrice.bind(this);
+    this.onChangeFoodDescription = this.onChangeFoodDescription.bind(this);
+    */
+
+    return _this;
+  } // handle change
+
+
+  _createClass(App, [{
+    key: "handleChange",
+    value: function handleChange(e) {
+      this.setState(_defineProperty({}, e.target.name, e.target.value));
+      console.log(e.target.name);
+    }
+    /*
+    onChangeFoodName(e) {
+        this.setState({foodName: e.target.value});
+        console.log('onChange', this.state.foodName)
+    }
+        
+    onChangeFoodCategory(e) {
+        this.setState({foodCategory: e.target.value});
+        console.log('onChange', this.state.foodCategory)
+    }
+     onChangeFoodPrice(e) {
+        this.setState({foodPrice: e.target.value});
+        console.log('onChange', this.state.foodPrice)
+    }
+     onChangeFoodDescription(e) {
+        this.setState({foodDescription: e.target.value});
+        console.log('onChange', this.state.foodDescription)
+    }
+    */
+
+  }, {
+    key: "handleSubmit",
+    value: function handleSubmit(e) {
       var _this2 = this;
 
-      axios__WEBPACK_IMPORTED_MODULE_1___default().get('/api/restaurant').then(function (response) {
+      var _this$state = this.state,
+          foodName = _this$state.foodName,
+          categoryID = _this$state.categoryID,
+          foodPrice = _this$state.foodPrice,
+          foodDescription = _this$state.foodDescription;
+      e.preventDefault();
+      console.log('name : ', foodName);
+      console.log('cat: ', categoryID);
+      console.log('price : ', foodPrice);
+      console.log('desc : ', foodDescription);
+      axios.post('/foods', {
+        foodName: foodName,
+        categoryID: categoryID,
+        foodPrice: foodPrice,
+        foodDescription: foodDescription,
+        img_src: 'img'
+      }).then(function (res) {
+        console.log('from handle submit', res);
+
         _this2.setState({
-          restaurants: response.data
+          foodName: '',
+          categoryID: '',
+          foodPrice: '',
+          foodDescription: ''
         });
-      })["catch"](function (errors) {
-        console.log(errors);
       });
     }
+    /*
+    onSubmit(e) {
+        e.preventDefault();
+        /*
+        const food = {
+            foodName: this.state.foodName,
+            foodCategory: this.state.foodCategory,
+            foodPrice: this.state.foodPrice,
+            foodDescription: this.state.foodDescription
+        };
+        */
+
+    /*
+    console.log(this.state)
+    
+      axios
+         .post('/foods', {
+             foodName: this.state.foodName,
+             foodCategory: this.state.foodCategory,
+             foodPrice: this.state.foodPrice,
+             foodDescription: this.state.foodDescription
+         })
+         .then(res => console.log('from handle submit', res));
+         
+     // console.log(`Food successfully created!`);
+     // console.log(`Name: ${this.state.foodName}`);
+     // console.log(`Price: ${this.state.foodPrice}`);
+     // console.log(`Description: ${this.state.foodDescription}`);
+     this.setState({foodName: [response.data, ...this.state.foodName]});
+     this.setState({foodName: '', foodCategory: '', foodPrice: '', foodDescription: ''})
+    }
+    */
+
   }, {
     key: "render",
     value: function render() {
       return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", {
         className: "container",
-        children: this.state.restaurants.map(function (restaurant) {
-          return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("li", {
-            children: restaurant.body
-          });
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", {
+          className: "row justify-content-center",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", {
+            className: "col-md-8",
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", {
+              className: "card",
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", {
+                className: "card-header",
+                children: "Create Food"
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", {
+                className: "card-body",
+                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("form", {
+                  onSubmit: this.handleSubmit,
+                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", {
+                    className: "form-group",
+                    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("input", {
+                      name: "foodName",
+                      className: "form-control",
+                      type: "text",
+                      placeholder: "Food Name",
+                      value: this.state.foodName,
+                      onChange: this.handleChange,
+                      required: true
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("input", {
+                      name: "categoryID",
+                      className: "form-control",
+                      type: "number",
+                      placeholder: "Food Category",
+                      value: this.state.categoryID,
+                      onChange: this.handleChange,
+                      required: true
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("input", {
+                      name: "foodPrice",
+                      className: "form-control",
+                      type: "number",
+                      placeholder: "Food Price",
+                      value: this.state.foodPrice,
+                      onChange: this.handleChange,
+                      required: true
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("textarea", {
+                      name: "foodDescription",
+                      className: "form-control",
+                      rows: "5",
+                      maxLength: "255",
+                      placeholder: "Food Description",
+                      value: this.state.foodDescription,
+                      onChange: this.handleChange,
+                      required: true
+                    })]
+                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("button", {
+                    type: "submit",
+                    className: "btn btn-primary",
+                    children: "Create Food"
+                  })]
+                })
+              })]
+            })
+          })
         })
       });
     }
   }]);
 
-  return Restaurant;
-}(react__WEBPACK_IMPORTED_MODULE_2__.Component);
+  return App;
+}(react__WEBPACK_IMPORTED_MODULE_1__.Component);
 
 
-
-if (document.getElementById('fobe')) {
-  react_dom__WEBPACK_IMPORTED_MODULE_3__.render( /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(Restaurant, {}), document.getElementById('fobe'));
-}
 
 /***/ }),
 
@@ -66880,18 +67022,6 @@ if (false) {} else {
 /******/ 	// It's empty as some runtime module handles the default behavior
 /******/ 	__webpack_require__.x = x => {}
 /************************************************************************/
-/******/ 	/* webpack/runtime/compat get default export */
-/******/ 	(() => {
-/******/ 		// getDefaultExport function for compatibility with non-harmony modules
-/******/ 		__webpack_require__.n = (module) => {
-/******/ 			var getter = module && module.__esModule ?
-/******/ 				() => module['default'] :
-/******/ 				() => module;
-/******/ 			__webpack_require__.d(getter, { a: getter });
-/******/ 			return getter;
-/******/ 		};
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	(() => {
 /******/ 		// define getter functions for harmony exports

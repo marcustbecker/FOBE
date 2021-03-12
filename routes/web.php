@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\FoodController;
+use App\Models\Food;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,11 +15,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('home');
-});
+Auth::routes();
 
-Route::get('/react', function () {
+Route::get('/', function () {
     return view('home');
 });
 
@@ -28,4 +28,19 @@ Route::get('/userdata', function () {
 
 Route::get('/restaurant', function () {
     return view('home');
+});
+
+
+Route::get('/edit/:id', function () {
+    return view('home');
+});
+
+Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+//Route::resource('foods', 'FoodController');
+Route::get('/index', [FoodController::class, 'index']);
+//Route::get('/index/id', [FoodController::class, 'index']);
+Route::post('/foods', [FoodController::class, 'store']);
+
+Route::get('/token', function () {
+    return csrf_token();
 });

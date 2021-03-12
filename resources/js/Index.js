@@ -1,18 +1,18 @@
 import React, {Component} from 'react';
 import ReactDOM from 'react-dom';
-import Restaurant from './components/Restaurant';
+import App from './components/App'
 
 export default class Index extends Component{
     render(){
         return(
             <div className="container">
-                <Restaurant/>
+                <App/>
             </div>
         );
     }
 }
 
 
-if (document.getElementById('fobe')) {
-    ReactDOM.render(<Index />, document.getElementById('fobe'));
+if (document.getElementById('root')) {
+    ReactDOM.render(<App />, document.getElementById('root'));
 }

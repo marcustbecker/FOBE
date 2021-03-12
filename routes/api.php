@@ -19,3 +19,6 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 });
 
 Route::resource('restaurant', 'App\Http\Controllers\Api\RestaurantController');
+
+Route::get('users', 'UserController@index')->name('users');
+Route::resource('foods', 'FoodController');
