@@ -18,6 +18,7 @@ class CreateRestaurantsTable extends Migration
             $table->string('restaurant_name');
             $table->float('latitude');
             $table->float('longitude');
+            $table->string('address');
         });
     }
 
