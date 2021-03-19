@@ -43,4 +43,4 @@ Route::post('/foods', [FoodController::class, 'store']);
 
 Route::get('/token', function () {
     return csrf_token();
-});
+}); 
