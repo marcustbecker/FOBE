@@ -17,22 +17,18 @@ use App\Models\Food;
 
 Auth::routes();
 
-Route::get('/', function () {
-    return view('home');
+//Route::view('/{path?}', 'index');
+
+Route::get('/createFood', function () {
+    return view('foodAdd');
+});
+Route::get('/showFood', function () {
+    return view('foodList');
 });
 
 Route::get('/userdata', function () {
     $user = DB::table('users')->get();
     return $user;
-});
-
-Route::get('/restaurant', function () {
-    return view('home');
-});
-
-
-Route::get('/edit/:id', function () {
-    return view('home');
 });
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');

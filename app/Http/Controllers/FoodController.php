@@ -12,10 +12,16 @@ class FoodController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request, Food $food)
     {
-        $foods = Food::all();
-        return response()->json($foods);
+        $allFoods = Food::all();
+        //return response()->json($foods);
+        //$allFoods = $food->whereIn('id', $request->user())->with('user');
+        $foods = $allFoods->sortBy('foodName');
+        // return json response
+        return response()->json([
+            'foods' => $foods,
+        ]);
     }
 
     /**
@@ -65,9 +71,13 @@ class FoodController extends Controller
      * @param  \App\Models\Food  $food
      * @return \Illuminate\Http\Response
      */
-    public function show(Food $food)
+    public function show(Food $id)
     {
-        return $food;
+        $food = Food::with(['food' => function ($query) {
+            //$query->where('is_completed', false);
+        }])->find($id);
+
+        return $food->toJson();
     }
 
     /**
