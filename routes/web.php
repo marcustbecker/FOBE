@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\FoodController;
+use App\Http\Controllers\UserController;
 use App\Models\Food;
 
 /*
@@ -44,3 +45,4 @@ Route::post('/foods', [FoodController::class, 'store']);
 Route::get('/token', function () {
     return csrf_token();
 });
+Route::get("users",[UserController::class,'index']);
