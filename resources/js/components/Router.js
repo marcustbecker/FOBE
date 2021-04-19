@@ -7,13 +7,15 @@ import Register from "./Register/Register";
 import Home from "./Home/Home";
 import Dashboard from "./Dashboard/Dashboard";
 import NavbarMenu from "./Navbar/NavbarMenu";
+import FoodAdd from "./Food/FoodAdd";
 
 function App() {
   return (
+
     //Routing return navbar and switch case component
     <Router>
       <div className="App">
-      <NavbarMenu />
+        <NavbarMenu />
       </div>
       <Switch>
         <Route path="/login">
@@ -21,6 +23,9 @@ function App() {
         </Route>
         <Route path="/dashboard">
           <Dashboard />
+        </Route>
+        <Route path="/foodAdd">
+          <FoodAdd />
         </Route>
         <Route path="/register">
           <Register />
@@ -36,5 +41,5 @@ function App() {
 export default App;
 
 if (document.getElementById('app')) {
-    ReactDOM.render(<App />, document.getElementById('app'));
+  ReactDOM.render(<App />, document.getElementById('app'));
 }

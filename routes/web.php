@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\FoodController;
 use App\Models\User;
 
 /*
@@ -14,25 +16,6 @@ use App\Models\User;
 | contains the "web" middleware group. Now create something great!
 |
 */
-//Route::get('/', function () {
-//    return view('reactTest');
-//});
-
-Route::view('/{path?}', 'app');
-
-//Route::view('/{path?}', 'index');
-
-Route::get('/createFood', function () {
-    return view('foodAdd');
-});
-Route::get('/showFood', function () {
-    return view('foodList');
-});
-
-Route::get('/userdata', function () {
-    $user = DB::table('users')->get();
-    return $user;
-});
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 //Route::resource('foods', 'FoodController');
@@ -40,8 +23,8 @@ Route::get('/index', [FoodController::class, 'index']);
 //Route::get('/index/id', [FoodController::class, 'index']);
 Route::post('/foods', [FoodController::class, 'store']);
 
-Route::get('/token', function () {
-    return csrf_token();
-});
 Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
+Route::get('/getCategory', [CategoryController::class, 'displayCategories']);
+
+Route::view('/{path?}', 'app');
