@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import ReactDOM from "react-dom";
+import "../../../css/app.css";
 
 export default class FoodAdd extends Component {
     constructor(props) {

@@ -3,3 +3,133 @@ body {
     background-repeat: no-repeat;
     background-attachment: fixed;
 }
+/*CSS FOR NAVBAR COMPONENT*/
+.navbar-custom {
+    background-color: #191919;
+}
+.navbar-nav {
+    float: left;
+}
+.navbar-brand {
+    color: white;
+    font-size: 22px;
+    transition: all 500ms;
+}
+
+.navbar-brand:hover {
+    color: #2ecc71;
+    transition: all 500ms;
+}
+.li {
+    float: left;
+    display: inline;
+}
+.navbar__link--active {
+    color: #2ecc71;
+}
+
+.nav > li > a {
+    font-size: 10px;
+    transition: all 500ms;
+}
+.nav > li > a:hover {
+    text-decoration: none;
+    color: #2ecc71;
+    transition: all 500ms;
+}
+/*CSS FOR REGISTER AND SIGNIN COMPONENT*/
+.box {
+    width: 500px;
+    padding: 40px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    background: #191919;
+    text-align: center;
+    transition: 0.25s;
+    margin-top: 100px;
+}
+
+.box input[type="text"],
+.box input[type="password"] {
+    border: 0;
+    background: none;
+    display: block;
+    margin: 20px auto;
+    text-align: center;
+    border: 2px solid #3498db;
+    padding: 10px 10px;
+    width: 250px;
+    outline: none;
+    color: white;
+    border-radius: 24px;
+    transition: 0.25s;
+}
+
+.box h1 {
+    color: white;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.box input[type="text"]:focus,
+.box input[type="password"]:focus {
+    width: 300px;
+    border-color: #2ecc71;
+}
+
+.box input[type="submit"] {
+    border: 0;
+    background: none;
+    display: block;
+    margin: 20px auto;
+    text-align: center;
+    border: 2px solid #2ecc71;
+    padding: 14px 40px;
+    outline: none;
+    color: white;
+    border-radius: 24px;
+    transition: 0.25s;
+    cursor: pointer;
+}
+
+.box input[type="submit"]:hover {
+    background: #2ecc71;
+}
+
+.forgot {
+    text-decoration: underline;
+}
+
+.register {
+    margin-left: 20px;
+    text-decoration: underline;
+}
+.validation-error {
+    font-size: 15px;
+    color: red;
+}
+
+/*CSS*/
+.header {
+    text-align: center;
+    background-color: white;
+    padding: 10px;
+    margin-top: 5%;
+}
+.flex-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    background-color: white;
+    padding: 10px;
+}
+.flex-container > .card {
+    background-color: rgb(240, 240, 240);
+    text-align: center;
+    width: 250px;
+    padding: 30px 30px;
+    margin: 10px;
+    font-size: 30px;
+}

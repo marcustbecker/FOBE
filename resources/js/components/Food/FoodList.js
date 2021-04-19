@@ -3,6 +3,8 @@
 import axios from "axios";
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
+import "../../../css/app.css";
+
 export default class FoodList extends Component {
     constructor() {
         super();
@@ -12,7 +14,8 @@ export default class FoodList extends Component {
     }
 
     componentDidMount() {
-        axios.get("/api/foods").then((response) => {
+        axios.get("/food").then((response) => {
+            console.log(response);
             this.setState({
                 foods: response.data,
             });
@@ -44,7 +47,7 @@ export default class FoodList extends Component {
                                 </ul>
                                 <Link
                                     className="btn btn-primary btn-sm mb-3"
-                                    to="/create"
+                                    to="/foodAdd"
                                 >
                                     Create new food
                                 </Link>
