@@ -28,6 +28,9 @@ function App() {
                 <Route path="/foodAdd">
                     <FoodAdd />
                 </Route>
+                <Route path="/foodEdit">
+                    <FoodAdd />
+                </Route>
                 <Route path="/foodList">
                     <FoodList />
                 </Route>

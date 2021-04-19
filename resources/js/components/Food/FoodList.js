@@ -15,15 +15,15 @@ export default class FoodList extends Component {
 
     componentDidMount() {
         axios.get("/food").then((response) => {
-            console.log(response);
             this.setState({
-                foods: response.data,
+                foods: response.data.foods,
             });
         });
     }
 
     render() {
-        const { foods } = this.state;
+        const foods = this.state.foods;
+        console.log(foods);
         return (
             <div className="container py-4">
                 <div className="row justify-content-center">
@@ -31,20 +31,53 @@ export default class FoodList extends Component {
                         <div className="card">
                             <div className="card-header">All foods</div>
                             <div className="card-body">
-                                <ul className="list-group list-group-flush">
-                                    {foods.map((food) => (
-                                        <Link
-                                            className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                                            to={`/${food.id}`}
-                                            key={food.id}
-                                        >
-                                            {food.name}
-                                            <span className="badge badge-primary badge-pill">
-                                                {food.tasks_count}
-                                            </span>
-                                        </Link>
-                                    ))}
-                                </ul>
+                                <table className="table">
+                                    <tbody>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Description</th>
+                                            <th>Price</th>
+                                            <th>Edit</th>
+                                            <th>Delete</th>
+                                        </tr>
+                                        {Object.keys(foods).map((food, i) => (
+                                            //<Link
+                                            //    className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                                            //    to={`/${foods[food].id}`}
+                                            //   key={foods[food].id}
+                                            //>
+                                            <tr key={foods[food].id}>
+                                                <td>{foods[food].foodName}</td>
+                                                <td>
+                                                    {
+                                                        foods[food]
+                                                            .foodDescription
+                                                    }
+                                                </td>
+                                                <td>
+                                                    ${foods[food].foodPrice}
+                                                </td>
+                                                <td>
+                                                    <Link
+                                                        className="btn btn-primary btn-sm mb-3"
+                                                        to="/foodEdit"
+                                                    >
+                                                        Edit
+                                                    </Link>
+                                                </td>
+                                                <td>
+                                                    <Link
+                                                        className="btn btn-primary btn-sm mb-3"
+                                                        to="/foodDelete"
+                                                    >
+                                                        Delete
+                                                    </Link>
+                                                </td>
+                                            </tr>
+                                            //</Link>
+                                        ))}
+                                    </tbody>
+                                </table>
                                 <Link
                                     className="btn btn-primary btn-sm mb-3"
                                     to="/foodAdd"

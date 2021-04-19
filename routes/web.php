@@ -19,10 +19,14 @@ use App\Models\User;
 //    return view('reactTest');
 //});
 
-Route::view('/{path?}', 'app');
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
 Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
+
+Route::get('/food', [FoodController::class, 'index']);
 Route::post('/food', [FoodController::class, 'store']);
+Route::put('/food', [FoodController::class, 'update']);
+
+Route::view('/{path?}', 'app');
