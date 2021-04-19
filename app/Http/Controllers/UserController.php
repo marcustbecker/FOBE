@@ -19,6 +19,9 @@ class UserController extends Controller
             
             echo '<dl style="margin-bottom: 1em;">';
             $name =  $movie['restaurant_name'];
+            if(strpos($name, '\'') == true){
+              $name = str_replace('\'', '',$name);
+            }
             foreach ( $movie['geo'] as $key => $value ) {
               if($key == 'lat'){
                 $lat = $value;
@@ -32,7 +35,7 @@ class UserController extends Controller
               }
             }
 
-            $data=array('name'=>$name,"lat"=>$lat,"lon"=>$lon,"addr"=>$address);
+            $data=array('name'=>$name,"lat"=>doubleval($lat),"lon"=>doubleval($lon),"addr"=>$address);
             DB::table('locations')->insert($data);
             echo "Record inserted successfully.<br/>";
             echo '</dl>';
