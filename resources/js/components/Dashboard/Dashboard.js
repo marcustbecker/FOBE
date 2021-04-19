@@ -8,9 +8,7 @@ export class Dashboard extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            category: {},
-            gotData: false,
-            isLoading: false
+            category: {}
         };
     }
 
@@ -49,11 +47,14 @@ export class Dashboard extends React.Component {
                     <div className="container-category">
                         <div className="container-category-grid">
                             {Object.keys(categories).map((category, i) => (
-                                <a key={i} className="container-categories-item">
+                                <Link key={i} className="container-categories-item"
+                                    onClick={this.handleSubmit}
+                                    to="/"
+                                >
                                     <div className=".container-categories-text">
                                         {categories[category].categoryName}
                                     </div>
-                                </a>
+                                </Link>
                             ))}
                         </div>
                     </div>
