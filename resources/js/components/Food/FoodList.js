@@ -28,12 +28,6 @@ export default class FoodList extends Component {
                         <div className="card">
                             <div className="card-header">All foods</div>
                             <div className="card-body">
-                                <Link
-                                    className="btn btn-primary btn-sm mb-3"
-                                    to="/create"
-                                >
-                                    Create new food
-                                </Link>
                                 <ul className="list-group list-group-flush">
                                     {foods.map((food) => (
                                         <Link
@@ -48,6 +42,12 @@ export default class FoodList extends Component {
                                         </Link>
                                     ))}
                                 </ul>
+                                <Link
+                                    className="btn btn-primary btn-sm mb-3"
+                                    to="/create"
+                                >
+                                    Create new food
+                                </Link>
                             </div>
                         </div>
                     </div>

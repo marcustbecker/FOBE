@@ -30,7 +30,7 @@ export default class FoodAdd extends Component {
         console.log("price : ", foodPrice);
         console.log("desc : ", foodDescription);
         axios
-            .post("/foods", {
+            .post("/food", {
                 foodName: foodName,
                 categoryID: categoryID,
                 foodPrice: foodPrice,
