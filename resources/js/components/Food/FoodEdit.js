@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import ReactDOM from "react-dom";
 import "../../../css/app.css";
 
-export default class FoodAdd extends Component {
+export default class FoodEdit extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -31,7 +31,7 @@ export default class FoodAdd extends Component {
         console.log("price : ", foodPrice);
         console.log("desc : ", foodDescription);
         axios
-            .post("/food", {
+            .put("/food", {
                 foodName: foodName,
                 categoryID: categoryID,
                 foodPrice: foodPrice,
@@ -102,7 +102,7 @@ export default class FoodAdd extends Component {
                                         type="submit"
                                         className="btn btn-primary"
                                     >
-                                        Create Food
+                                        Update Food
                                     </button>
                                 </form>
                                 <hr />

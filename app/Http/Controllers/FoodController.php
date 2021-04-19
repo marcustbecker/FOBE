@@ -98,18 +98,14 @@ class FoodController extends Controller
      * @param  \App\Models\Food  $food
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Food $food)
+    public function update(Request $request, $id)
     {
-        $request->validate([
-            'foodName' => 'required',
-            'foodDescription' => 'required',
-            'foodPrice' => 'required'
-        ]);
+        $food = Food::find($id);
         $food->foodName = $request->foodName();
+        $food->categoryID = $request->categoryID();
         $food->foodDescription = $request->foodDescription();
         $food->foodPrice = $request->foodPrice();
         $food->save();
-
         return response()->json([
             'message' => 'food updated!',
             'food' => $food

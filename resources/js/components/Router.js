@@ -9,6 +9,7 @@ import Dashboard from "./Dashboard/Dashboard";
 import NavbarMenu from "./Navbar/NavbarMenu";
 import FoodAdd from "./Food/FoodAdd";
 import FoodList from "./Food/FoodList";
+import AdminHome from "./Admin/AdminHome";
 
 function App() {
     return (
@@ -21,7 +22,13 @@ function App() {
                 <Route path="/login">
                     <SignIn />
                 </Route>
+                <Route path="/adminHome">
+                    <AdminHome />
+                </Route>
                 <Route path="/foodAdd">
+                    <FoodAdd />
+                </Route>
+                <Route path="/foodEdit">
                     <FoodAdd />
                 </Route>
                 <Route path="/foodList">
