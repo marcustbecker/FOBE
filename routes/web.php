@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FoodController;
 use App\Models\User;
 
@@ -15,31 +16,16 @@ use App\Models\User;
 | contains the "web" middleware group. Now create something great!
 |
 */
-//Route::get('/', function () {
-//    return view('reactTest');
-//});
-//Route::get('/token', function () {
-//    return csrf_token();
-//}); 
-
-
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
 Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
 
 Route::get('/food', [FoodController::class, 'index']);
 Route::post('/food', [FoodController::class, 'store']);
-<<<<<<< Updated upstream
 Route::put('/food', [FoodController::class, 'update']);
 
-Route::view('/{path?}', 'app');
-=======
-//Route::get('/token', function () {
-//    return csrf_token();
-//}); 
+Route::post('/register', [UserController::class, 'register']);
+Route::post('/login', [UserController::class, 'login']);
+Route::get('/getCategory', [CategoryController::class, 'displayCategories']);
 
-Route::get('/map', function () {
-    return view('/map');
-});
->>>>>>> Stashed changes
+Route::view('/{path?}', 'app');
