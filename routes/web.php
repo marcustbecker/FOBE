@@ -30,6 +30,16 @@ Route::post('/login', [UserController::class, 'login']);
 
 Route::get('/food', [FoodController::class, 'index']);
 Route::post('/food', [FoodController::class, 'store']);
+<<<<<<< Updated upstream
 Route::put('/food', [FoodController::class, 'update']);
 
 Route::view('/{path?}', 'app');
+=======
+//Route::get('/token', function () {
+//    return csrf_token();
+//}); 
+
+Route::get('/map', function () {
+    return view('/map');
+});
+>>>>>>> Stashed changes
