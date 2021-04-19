@@ -44,3 +44,11 @@ Route::post('/foods', [FoodController::class, 'store']);
 Route::get('/token', function () {
     return csrf_token();
 }); 
+
+// Route::get('/maps', function () {
+//     return view('/maps');
+// });
+
+Route::get('/map', function () {
+    return view('/map');
+});

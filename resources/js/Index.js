@@ -6,7 +6,7 @@ export default class Index extends Component{
     render(){
         return(
             <div className="container">
-                <App/>
+                <MapContainer/>
             </div>
         );
     }
@@ -14,5 +14,5 @@ export default class Index extends Component{
 
 
 if (document.getElementById('root')) {
-    ReactDOM.render(<App />, document.getElementById('root'));
+    ReactDOM.render(<MapContainer />, document.getElementById('root'));
 }
