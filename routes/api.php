@@ -22,7 +22,3 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 
 Route::post('/register', 'UserController@register');
 Route::resource('restaurant', 'App\Http\Controllers\Api\RestaurantController');
-
-Route::get('users', 'UserController@index')->name('users');
-Route::resource('foods', 'FoodController');
-Route::get('api_route', [UserController::class,'details']);
