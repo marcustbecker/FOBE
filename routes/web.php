@@ -26,3 +26,14 @@ Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name
 Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
 Route::post('/food', [FoodController::class, 'store']);
+Route::get('/token', function () {
+    return csrf_token();
+}); 
+
+// Route::get('/maps', function () {
+//     return view('/maps');
+// });
+
+Route::get('/map', function () {
+    return view('/map');
+});
