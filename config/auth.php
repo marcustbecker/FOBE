@@ -13,6 +13,8 @@ return [
     |
     */
 
+    'table' => 'users',
+    
     'defaults' => [
         'guard' => 'web',
         'passwords' => 'users',
@@ -42,7 +44,7 @@ return [
         ],
 
         'api' => [
-            'driver' => 'token',
+            'driver' => 'passport',
             'provider' => 'users',
             'hash' => false,
         ],

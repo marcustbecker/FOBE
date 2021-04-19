@@ -10,9 +10,10 @@
         "production": "mix --production"
     },
     "devDependencies": {
+        "@babel/plugin-proposal-class-properties": "^7.13.0",
         "@babel/preset-react": "^7.0.0",
         "axios": "^0.21.1",
-        "bootstrap": "^4.6.0",
+        "bootstrap": "^4.0.0",
         "jquery": "^3.2",
         "laravel-mix": "^6.0.6",
         "lodash": "^4.17.19",
@@ -20,12 +21,16 @@
         "postcss": "^8.1.14",
         "react": "^16.2.0",
         "react-dom": "^16.2.0",
-        "resolve-url-loader": "^3.1.2",
+        "resolve-url-loader": "^3.1.0",
         "sass": "^1.15.2",
         "sass-loader": "^8.0.0"
     },
     "dependencies": {
-        "react-bootstrap": "^1.5.1",
-        "react-router-dom": "^5.2.0"
+        "async": "^2.6.3",
+        "max-validator": "^1.1.2",
+        "react-bootstrap": "^1.5.2",
+        "react-router": "^5.2.0",
+        "react-router-dom": "^5.2.0",
+        "sweetalert2": "^10.15.6"
     }
 }
