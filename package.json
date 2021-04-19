@@ -29,6 +29,7 @@
         "async": "^2.6.3",
         "max-validator": "^1.1.2",
         "react-bootstrap": "^1.5.2",
+        "react-router": "^5.2.0",
         "react-router-dom": "^5.2.0",
         "sweetalert2": "^10.15.6"
     }
