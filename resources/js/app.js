@@ -1,4 +1,3 @@
-
 /**
  * First we will load all of this project's JavaScript dependencies which
  * includes React and other helpers. It's a great starting point while
@@ -14,5 +13,9 @@ require('./bootstrap');
  */
 
 //require('./components/Example');
-//require('./components/Restaurant');
-require('./Index');
+//require('./components/Index');
+//require('./components/SignIn/SignIn');
+//require('./components/Register/Register');
+//require('./components/Dashboard/Dashboard');
+require('./components/Router');
+
