@@ -42,21 +42,12 @@ class FoodController extends Controller
      */
     public function store(Request $request)
     {
-        //print("hello");
-        //exit();
-        //validate
         $request->validate([
             'foodName' => 'required',
             'categoryID' => 'required',
             'foodPrice' => 'required',
             'foodDescription' => 'required'
         ]);
-        //print("req=");
-        //print_r($request->all());
-        //print("reqFood");
-        //print($request['foodName']);
-        //exit();
-        //create new food
         $food = Food::create($request->all());
         //return food with message
         return response()->json([

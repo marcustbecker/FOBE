@@ -11,6 +11,9 @@ export class NavbarMenu extends React.Component {
                         <NavLink className="navbar-brand" to="/dashboard">
                             FOBE
                         </NavLink>
+                        <NavLink className="navbar-brand" to="/adminHome">
+                            Admin Home
+                        </NavLink>
                     </div>
                     <ul className="nav navbar-nav navbar-right">
                         <li>
