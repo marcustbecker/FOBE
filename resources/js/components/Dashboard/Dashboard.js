@@ -1,7 +1,6 @@
 import axios from "axios";
 import React, { Component } from "react";
-import { Redirect } from "react-router-dom";
-import { NavLink, Redirect } from "react-router-dom";
+import { Redirect, Link } from "react-router-dom";
 import "../../../css/app.css";
 
 export class Dashboard extends React.Component {
