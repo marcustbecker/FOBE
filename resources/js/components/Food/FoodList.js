@@ -51,8 +51,8 @@ export default class FoodList extends Component {
                         <div className="card">
                             <div className="card-header">All foods</div>
                             <div className="card-body">
-                                <table className="table">
-                                    <tbody>
+                                <table className="table table-striped table-bordered table-hover">
+                                    <thead>
                                         <tr>
                                             <th>Name</th>
                                             <th>Description</th>
@@ -60,6 +60,8 @@ export default class FoodList extends Component {
                                             <th>Edit</th>
                                             <th>Delete</th>
                                         </tr>
+                                    </thead>
+                                    <tbody>
                                         {Object.keys(foods).map((food, i) => (
                                             //<Link
                                             //    className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"

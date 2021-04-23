@@ -33,4 +33,28 @@ class CategoryController extends Controller
 
         return response()->json(["message" => "Receiving Categories Data", "categoryData" => $sortedCategory]);
     }
+    public function getOneCategory($id)
+    {
+        $category = Category::find($id);
+        return response()->json([
+            'category' => $category,
+        ]);
+    }
+
+    public function edit($id)
+    {
+        $category = Category::find($id);
+        return response()->json($category);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $category = Category::find($id);
+        $category->categoryName = $request->categoryName;
+        $category->save();
+        return response()->json([
+            'message' => 'Category Updated Successfully!',
+            'category' => $category
+        ]);
+    }
 }

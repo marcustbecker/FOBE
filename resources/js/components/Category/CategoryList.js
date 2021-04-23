@@ -29,7 +29,13 @@ export default class CategoryList extends Component {
                         <div className="card">
                             <div className="card-header">All Categories</div>
                             <div className="card-body">
-                                <table className="table">
+                                <Link
+                                    className="btn btn-primary btn-sm mb-3"
+                                    to="/categoryAdd"
+                                >
+                                    Create New Category
+                                </Link>
+                                <table className="table table-striped table-bordered table-hover">
                                     <tbody>
                                         <tr>
                                             <th>Name</th>
@@ -38,13 +44,6 @@ export default class CategoryList extends Component {
                                         </tr>
                                         {Object.keys(categories).map(
                                             (category, i) => (
-                                                /*
-                                                <Link
-                                                    className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                                                    to={`/${foods[food].id}`}
-                                                   key={foods[food].id}
-                                                >
-                                                */
                                                 <tr
                                                     key={
                                                         categories[category].id
@@ -60,7 +59,7 @@ export default class CategoryList extends Component {
                                                     <td>
                                                         <Link
                                                             className="btn btn-primary btn-sm mb-3"
-                                                            to="/categoryEdit"
+                                                            to={`/categoryList/${categories[category].id}/categoryEdit`}
                                                         >
                                                             Edit
                                                         </Link>
@@ -79,12 +78,6 @@ export default class CategoryList extends Component {
                                         )}
                                     </tbody>
                                 </table>
-                                <Link
-                                    className="btn btn-primary btn-sm mb-3"
-                                    to="/categoryAdd"
-                                >
-                                    Create New Category
-                                </Link>
                             </div>
                         </div>
                     </div>
