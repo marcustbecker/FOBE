@@ -2267,8 +2267,6 @@ var Dashboard = /*#__PURE__*/function (_React$Component) {
   }, {
     key: "render",
     value: function render() {
-      var _this3 = this;
-
       console.log("Inside render");
       console.log(this.state);
       var token = localStorage.getItem("token");
@@ -2298,8 +2296,7 @@ var Dashboard = /*#__PURE__*/function (_React$Component) {
               children: Object.keys(categories).map(function (category, i) {
                 return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_5__.Link, {
                   className: "container-categories-item",
-                  onClick: _this3.handleSubmit,
-                  to: "/",
+                  to: "/food/".concat(categories[category].id),
                   children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
                     className: ".container-categories-text",
                     children: categories[category].categoryName
@@ -2712,12 +2709,12 @@ var ShowFood = /*#__PURE__*/function (_Component) {
 
   var _super = _createSuper(ShowFood);
 
-  function ShowFood() {
+  function ShowFood(props) {
     var _this;
 
     _classCallCheck(this, ShowFood);
 
-    _this = _super.call(this);
+    _this = _super.call(this, props);
     _this.state = {
       foods: []
     };
@@ -2729,10 +2726,12 @@ var ShowFood = /*#__PURE__*/function (_Component) {
     value: function componentDidMount() {
       var _this2 = this;
 
-      axios__WEBPACK_IMPORTED_MODULE_0___default().get('/food/' + id).then(function (response) {
+      axios__WEBPACK_IMPORTED_MODULE_0___default().get('/userFood/' + this.props.match.params.id).then(function (response) {
         _this2.setState({
-          foods: response.data.foods
+          foods: response.data.food
         });
+
+        console.log(response);
       });
     }
   }, {
