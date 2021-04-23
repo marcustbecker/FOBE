@@ -38,8 +38,9 @@ export default class CategoryEdit extends Component {
         const cat = { categoryName: this.state.categoryName };
         let uri = "/category/" + this.props.match.params.id;
         axios.patch(uri, cat).then((response) => {
-            console.log(response);
-            //this.props.history.push("/categoryList");
+            console.log("Updated to :");
+            console.log(cat);
+            // this.props.history.push("/categoryList");
         });
     }
 
@@ -51,10 +52,7 @@ export default class CategoryEdit extends Component {
                         <div className="card">
                             <div className="card-header">Update Category</div>
                             <div className="card-body">
-                                <form
-                                    onSubmit={this.handleSubmit}
-                                    method="post"
-                                >
+                                <form onSubmit={this.handleSubmit}>
                                     <div className="form-group">
                                         <label>Category Name</label>
                                         <input

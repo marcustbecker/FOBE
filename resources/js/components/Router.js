@@ -11,8 +11,11 @@ import FoodList from "./Food/FoodList";
 import FoodAdd from "./Food/FoodAdd";
 import FoodEdit from "./Food/FoodEdit";
 import CategoryList from "./Category/CategoryList";
-import CategoryEdit from "./Category/CategoryEdit";
 import CategoryAdd from "./Category/CategoryAdd";
+import CategoryEdit from "./Category/CategoryEdit";
+import RestaurantList from "./Restaurant/RestaurantList";
+import RestaurantAdd from "./Restaurant/RestaurantAdd";
+import RestaurantEdit from "./Restaurant/RestaurantEdit";
 
 function App() {
     return (
@@ -35,6 +38,10 @@ function App() {
                 <Route path="/categoryList" component={CategoryList} />
                 <Route path="/categoryEdit/:id" component={CategoryEdit} />
                 <Route path="/categoryAdd" component={CategoryAdd} />
+
+                <Route path="/restaurantList" component={RestaurantList} />
+                <Route path="/restaurantEdit/:id" component={RestaurantEdit} />
+                <Route path="/restaurantAdd" component={RestaurantAdd} />
 
                 <Route path="/" component={AdminHome} exact />
             </Switch>

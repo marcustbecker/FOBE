@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FoodController;
+use App\Http\Controllers\RestaurantController;
 use App\Models\User;
 
 /*
@@ -31,10 +32,10 @@ Route::get('/category/{id}', [CategoryController::class, 'edit']);
 Route::post('/category', [CategoryController::class, 'store']);
 Route::patch('/category/{id}', [CategoryController::class, 'update']);
 
-//Route::resource('category', 'CategoryController');
-
-// Route::get('/restaurant', [RestaurantController::class, 'index']);
-// Route::post('/restaurant', [RestaurantController::class, 'store']);
+Route::get('/restaurant', [RestaurantController::class, 'index']);
+Route::get('/restaurant/{id}', [RestaurantController::class, 'edit']);
+Route::post('/restaurant', [RestaurantController::class, 'store']);
+Route::patch('/restaurant/{id}', [RestaurantController::class, 'update']);
 
 Route::get('/userFood', [FoodController::class, 'showFoodCategory']);
 Route::get('/userFood/{id}', [FoodController::class, 'showFoodByCategory']);
