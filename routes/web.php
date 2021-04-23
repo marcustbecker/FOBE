@@ -21,8 +21,21 @@ Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
 
 Route::get('/food', [FoodController::class, 'index']);
+Route::get('/food/{id}', [FoodController::class, 'edit']);
 Route::post('/food', [FoodController::class, 'store']);
-Route::put('/food', [FoodController::class, 'update']);
+Route::patch('/food/{id}', [FoodController::class, 'update']);
+Route::delete('/food/{id}', [FoodController::class, 'destroy']);
+
+Route::get('/category', [CategoryController::class, 'index']);
+Route::get('/category/{id}', [CategoryController::class, 'edit']);
+Route::post('/category', [CategoryController::class, 'store']);
+Route::patch('/category/{id}', [CategoryController::class, 'update']);
+
+//Route::resource('category', 'CategoryController');
+
+// Route::get('/restaurant', [RestaurantController::class, 'index']);
+// Route::post('/restaurant', [RestaurantController::class, 'store']);
+
 Route::get('/userFood', [FoodController::class, 'showFoodCategory']);
 Route::get('/userFood/{id}', [FoodController::class, 'showFoodByCategory']);
 
