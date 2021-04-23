@@ -23,9 +23,9 @@ Route::post('/login', [UserController::class, 'login']);
 Route::get('/food', [FoodController::class, 'index']);
 Route::post('/food', [FoodController::class, 'store']);
 Route::put('/food', [FoodController::class, 'update']);
+Route::get('/userFood', [FoodController::class, 'showFoodCategory']);
+Route::get('/userFood/{id}', [FoodController::class, 'showFoodByCategory']);
 
-Route::post('/register', [UserController::class, 'register']);
-Route::post('/login', [UserController::class, 'login']);
 Route::get('/getCategory', [CategoryController::class, 'displayCategories']);
 
 Route::view('/{path?}', 'app');

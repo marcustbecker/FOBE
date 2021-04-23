@@ -29,7 +29,8 @@ class UserController extends Controller
             'lname' => $request->lname,
             'username' => $request->username,
             'email' => $request->email,
-            'password' => Hash::make($request->password)
+            'password' => Hash::make($request->password),
+            'isAdmin' => 0
         );
         
 
