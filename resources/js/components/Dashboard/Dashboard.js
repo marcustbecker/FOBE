@@ -24,7 +24,9 @@ export class Dashboard extends React.Component {
         });
     }
 
-    handleSubmit(e) {}
+    handleSubmit(e) {
+
+    }
 
     render() {
         console.log("Inside render");
@@ -50,8 +52,7 @@ export class Dashboard extends React.Component {
                                 <Link
                                     key={i}
                                     className="container-categories-item"
-                                    onClick={this.handleSubmit}
-                                    to="/"
+                                    to={`/food/${categories[category].id}`}
                                 >
                                     <div className=".container-categories-text">
                                         {categories[category].categoryName}
