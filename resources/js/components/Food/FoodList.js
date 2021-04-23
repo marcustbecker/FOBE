@@ -9,13 +9,35 @@ export default class FoodList extends Component {
         this.state = {
             foods: [],
         };
+        this.handleUpdate = this.handleUpdate.bind(this);
+        this.handleDelete = this.handleDelete.bind(this);
     }
 
-    componentDidMount() {
+    getFoods() {
         axios.get("/food").then((response) => {
             this.setState({
                 foods: response.data.foods,
             });
+        });
+    }
+    componentDidMount() {
+        this.getFoods();
+    }
+    handleDelete(id) {
+        const foods = this.state.foods;
+        console.log("foods:");
+        console.log(foods);
+        const foodArray = Object.keys(foods);
+        const isNotId = (food) => food.id !== id;
+        const updatedFoods = foodArray.filter(isNotId);
+        this.setState({ foods: updatedFoods });
+        // make delete request to the backend
+        axios.delete(`/food/${id}`);
+        // remove from local state
+    }
+    handleUpdate(id) {
+        axios.put(`/food/${id}`).then((response) => {
+            this.getFoods();
         });
     }
 
@@ -58,12 +80,22 @@ export default class FoodList extends Component {
                                                 <td>
                                                     <Link
                                                         className="btn btn-primary btn-sm mb-3"
-                                                        to="/foodEdit"
+                                                        to={`/${foods[food].id}/edit`}
                                                     >
                                                         Edit
                                                     </Link>
                                                 </td>
                                                 <td>
+                                                    <button
+                                                        onClick={() =>
+                                                            this.handleDelete(
+                                                                foods[food].id
+                                                            )
+                                                        }
+                                                        className="btn btn-sm btn-warning"
+                                                    >
+                                                        Delete
+                                                    </button>
                                                     <Link
                                                         className="btn btn-primary btn-sm mb-3"
                                                         to="/foodDelete"

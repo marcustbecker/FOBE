@@ -51,7 +51,7 @@ class FoodController extends Controller
         $food = Food::create($request->all());
         //return food with message
         return response()->json([
-            'message' => 'food created',
+            'message' => 'Food Created Successfully!',
             'food' => $food
         ]);
     }
@@ -64,11 +64,7 @@ class FoodController extends Controller
      */
     public function show(Food $id)
     {
-        $food = Food::with(['food' => function ($query) {
-            //$query->where('is_completed', false);
-        }])->find($id);
-
-        return $food->toJson();
+        //
     }
 
     /**
@@ -77,9 +73,10 @@ class FoodController extends Controller
      * @param  \App\Models\Food  $food
      * @return \Illuminate\Http\Response
      */
-    public function edit(Food $food)
+    public function edit($id)
     {
-        //
+        $food = Food::find($id);
+        return response()->json($food);
     }
 
     /**
@@ -92,13 +89,13 @@ class FoodController extends Controller
     public function update(Request $request, $id)
     {
         $food = Food::find($id);
-        $food->foodName = $request->foodName();
-        $food->categoryID = $request->categoryID();
-        $food->foodDescription = $request->foodDescription();
-        $food->foodPrice = $request->foodPrice();
+        $food->foodName = $request->foodName;
+        $food->categoryID = $request->categoryID;
+        $food->foodDescription = $request->foodDescription;
+        $food->foodPrice = $request->foodPrice;
         $food->save();
         return response()->json([
-            'message' => 'food updated!',
+            'message' => 'Food Updated Successfully!',
             'food' => $food
         ]);
     }
@@ -109,11 +106,13 @@ class FoodController extends Controller
      * @param  \App\Models\Food  $food
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Food $food)
+    public function destroy($id)
     {
-        $food->delete();
-        return response()->json([
-            'message' => 'food deleted'
-        ]);
+        $food = Food::find($id);
+        if ($food->delete()) {
+            return response()->json([
+                'message' => 'Food Deleted Successfully'
+            ]);
+        }
     }
 }
