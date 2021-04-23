@@ -2557,8 +2557,19 @@ var CategoryList = /*#__PURE__*/function (_Component) {
       });
     }
   }, {
+    key: "deleteCat",
+    value: function deleteCat(category) {
+      console.log(category.id);
+      axios__WEBPACK_IMPORTED_MODULE_0___default().delete("/category/".concat(category.id)).then(function (response) {
+        console.log(response);
+        window.location.reload();
+      });
+    }
+  }, {
     key: "render",
     value: function render() {
+      var _this3 = this;
+
       var categories = this.state.categories;
       console.log(categories);
       return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
@@ -2600,14 +2611,13 @@ var CategoryList = /*#__PURE__*/function (_Component) {
                             children: "Edit"
                           })
                         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
-                          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
+                          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
                             className: "btn btn-primary btn-sm mb-3",
-                            to: "/categoryDelete",
+                            onClick: _this3.deleteCat.bind(_this3, categories[category]),
                             children: "Delete"
                           })
                         })]
-                      }, categories[category].id) //</Link>
-                      ;
+                      }, categories[category].id);
                     })]
                   })
                 })]
@@ -4114,8 +4124,19 @@ var RestaurantList = /*#__PURE__*/function (_Component) {
       });
     }
   }, {
+    key: "deleteRes",
+    value: function deleteRes(restaurant) {
+      console.log(restaurant.id);
+      axios__WEBPACK_IMPORTED_MODULE_0___default().delete("/restaurant/".concat(restaurant.id)).then(function (response) {
+        console.log(response);
+        window.location.reload();
+      });
+    }
+  }, {
     key: "render",
     value: function render() {
+      var _this3 = this;
+
       var restaurants = this.state.restaurants;
       console.log(restaurants);
       return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
@@ -4172,9 +4193,9 @@ var RestaurantList = /*#__PURE__*/function (_Component) {
                               children: "Edit"
                             })
                           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
-                            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
+                            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
                               className: "btn btn-primary btn-sm mb-3",
-                              to: "/restaurantDelete",
+                              onClick: _this3.deleteRes.bind(_this3, restaurants[restaurant]),
                               children: "Delete"
                             })
                           })]

@@ -31,11 +31,13 @@ Route::get('/category', [CategoryController::class, 'index']);
 Route::get('/category/{id}', [CategoryController::class, 'edit']);
 Route::post('/category', [CategoryController::class, 'store']);
 Route::patch('/category/{id}', [CategoryController::class, 'update']);
+Route::delete('/category/{id}', [CategoryController::class, 'destroy']);
 
 Route::get('/restaurant', [RestaurantController::class, 'index']);
 Route::get('/restaurant/{id}', [RestaurantController::class, 'edit']);
 Route::post('/restaurant', [RestaurantController::class, 'store']);
 Route::patch('/restaurant/{id}', [RestaurantController::class, 'update']);
+Route::delete('/restaurant/{id}', [RestaurantController::class, 'destroy']);
 
 Route::get('/userFood', [FoodController::class, 'showFoodCategory']);
 Route::get('/userFood/{id}', [FoodController::class, 'showFoodByCategory']);

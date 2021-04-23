@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Restaurant;
+use Laravel\Ui\Presets\React;
 
 class RestaurantController extends Controller
 {
@@ -58,5 +59,15 @@ class RestaurantController extends Controller
             'message' => 'Restaurant Updated Successfully!',
             'restaurant' => $restaurant
         ]);
+    }
+
+    public function destroy($id)
+    {
+        $restaurant = Restaurant::find($id);
+        if ($restaurant->delete()) {
+            return response()->json([
+                'message' => 'Restaurant Deleted Successfully'
+            ]);
+        }
     }
 }

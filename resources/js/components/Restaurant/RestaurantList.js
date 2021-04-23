@@ -19,6 +19,14 @@ export default class RestaurantList extends Component {
         });
     }
 
+    deleteRes(restaurant) {
+        console.log(restaurant.id);
+        axios.delete(`/restaurant/${restaurant.id}`).then((response) => {
+            console.log(response);
+            window.location.reload();
+        });
+    }
+
     render() {
         const restaurants = this.state.restaurants;
         console.log(restaurants);
@@ -89,12 +97,17 @@ export default class RestaurantList extends Component {
                                                         </Link>
                                                     </td>
                                                     <td>
-                                                        <Link
+                                                        <button
                                                             className="btn btn-primary btn-sm mb-3"
-                                                            to="/restaurantDelete"
+                                                            onClick={this.deleteRes.bind(
+                                                                this,
+                                                                restaurants[
+                                                                    restaurant
+                                                                ]
+                                                            )}
                                                         >
                                                             Delete
-                                                        </Link>
+                                                        </button>
                                                     </td>
                                                 </tr>
                                                 //</Link>

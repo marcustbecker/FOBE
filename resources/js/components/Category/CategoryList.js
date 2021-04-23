@@ -19,6 +19,14 @@ export default class CategoryList extends Component {
         });
     }
 
+    deleteCat(category) {
+        console.log(category.id);
+        axios.delete(`/category/${category.id}`).then((response) => {
+            console.log(response);
+            window.location.reload();
+        });
+    }
+
     render() {
         const categories = this.state.categories;
         console.log(categories);
@@ -65,15 +73,19 @@ export default class CategoryList extends Component {
                                                         </Link>
                                                     </td>
                                                     <td>
-                                                        <Link
+                                                        <button
                                                             className="btn btn-primary btn-sm mb-3"
-                                                            to="/categoryDelete"
+                                                            onClick={this.deleteCat.bind(
+                                                                this,
+                                                                categories[
+                                                                    category
+                                                                ]
+                                                            )}
                                                         >
                                                             Delete
-                                                        </Link>
+                                                        </button>
                                                     </td>
                                                 </tr>
-                                                //</Link>
                                             )
                                         )}
                                     </tbody>
