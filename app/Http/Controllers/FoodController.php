@@ -12,7 +12,7 @@ class FoodController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(Request $request, Food $food)
+    public function index()
     {
         $allFoods = Food::all();
         //return response()->json($foods);
@@ -114,5 +114,14 @@ class FoodController extends Controller
                 'message' => 'Food Deleted Successfully'
             ]);
         }
+    }
+
+    public function showFoodByCategory($id) {
+        $food = Food::where('categoryID', $id)->get();
+        // return json response
+        return response()->json([
+            'id' => $id,
+            'food' => $food,
+        ]);
     }
 }
