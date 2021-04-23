@@ -4,12 +4,14 @@ import "./../../css/app.css";
 import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
 import SignIn from "./SignIn/SignIn";
 import Register from "./Register/Register";
-import Home from "./Home/Home";
 import Dashboard from "./Dashboard/Dashboard";
 import NavbarMenu from "./Navbar/NavbarMenu";
 import FoodAdd from "./Food/FoodAdd";
 import FoodList from "./Food/FoodList";
 import AdminHome from "./Admin/AdminHome";
+import MapReader from "./Map/MapReader";
+
+
 
 function App() {
     return (
@@ -37,12 +39,20 @@ function App() {
                 <Route path="/dashboard">
                     <Dashboard />
                 </Route>
+                
+                <Route path="/map" component= {MapReader}/>
+                
+               
+                    
+                
+
                 <Route path="/register">
                     <Register />
                 </Route>
-                <Route path="/" exact>
-                    <Home />
-                </Route>
+                
+               
+                
+
             </Switch>
         </Router>
     );
