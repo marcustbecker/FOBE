@@ -36,34 +36,27 @@ export class ShowFood extends Component {
                             <div className="card">
                                 <div className="card-header">All foods</div>
                                 <div className="card-body">
-                                    <table className="table">
+                                    <table className="table" data-filter-control="true" data-show-search-clear-button="true">
                                         <tbody>
                                             <tr>
-                                                <th>Name</th>
-                                                <th>Description</th>
-                                                <th>Price</th>
+                                                <th data-field="item name" data-filter-control="input">Name</th>
+                                                <th data-field="description">Description</th>
+                                                <th data-field="price">Price</th>
+                                                <th></th>
                                             </tr>
                                             {Object.keys(foods).map(
                                                 (food, i) => (
                                                     <tr key={foods[food].id}>
+                                                        <td>{foods[food].foodName}</td>
+                                                        <td>{foods[food].foodDescription}</td>
+                                                        <td>${foods[food].foodPrice}</td>
                                                         <td>
-                                                            {
-                                                                foods[food]
-                                                                    .foodName
-                                                            }
-                                                        </td>
-                                                        <td>
-                                                            {
-                                                                foods[food]
-                                                                    .foodDescription
-                                                            }
-                                                        </td>
-                                                        <td>
-                                                            $
-                                                            {
-                                                                foods[food]
-                                                                    .foodPrice
-                                                            }
+                                                            <Link
+                                                                key={i}
+                                                                className="container-categories-item"
+                                                                to={`/map/${foods[food].res_id}`}
+                                                            >
+                                                            </Link>
                                                         </td>
                                                     </tr>
                                                 )

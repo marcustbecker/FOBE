@@ -24,7 +24,7 @@ export class Dashboard extends React.Component {
         });
     }
 
-    handleSubmit(e) {}
+    handleSubmit(e) { }
 
     render() {
         console.log("Inside render");
@@ -33,6 +33,7 @@ export class Dashboard extends React.Component {
         if (!token) {
             return <Redirect to="/login" />;
         }
+
 
         if (!this.state.gotData) {
             console.log("Loading");

@@ -18,6 +18,7 @@ import RestaurantAdd from "./Restaurant/RestaurantAdd";
 import RestaurantEdit from "./Restaurant/RestaurantEdit";
 import ShowFood from "./FoodUser/ShowFood";
 import MapReader from "./Map/MapReader";
+import MapReaderId from "./Map/MapReaderId";
 
 
 function App() {
@@ -49,6 +50,7 @@ function App() {
         <Route path="/restaurantEdit/:id" component={RestaurantEdit} />
 
         <Route path="/map" component={MapReader} />
+        <Route path="/map/:id" component={MapReaderId} />
 
         <Route path="/showFood/:id" component={ShowFood} />
       </Switch>
