@@ -4,19 +4,22 @@ import { Link } from "react-router-dom";
 import "../../../css/app.css";
 
 export class ShowFood extends Component {
-    constructor() {
-        super();
+    constructor(props) {
+        super(props);
         this.state = {
             foods: [],
         };
     }
 
     componentDidMount() {
-        axios.get("/food/" + id).then((response) => {
-            this.setState({
-                foods: response.data.foods,
+        axios
+            .get("/userFood/" + this.props.match.params.id)
+            .then((response) => {
+                this.setState({
+                    foods: response.data.food,
+                });
+                console.log(response);
             });
-        });
     }
 
     render() {
