@@ -7,8 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Category extends Model
 {
-    protected $table = 'food_category';
+    // protected $table = 'food_category';
+    // use HasFactory;
+    // protected $fillable = ['id', 'categoryName'];
+    
+    protected $table = 'locations';
     use HasFactory;
-    protected $fillable = ['id', 'categoryName'];
+    protected $fillable = ['id', 'name', 'lat', 'lon', 'addr'];
 
 }

@@ -5,6 +5,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FoodController;
 use App\Http\Controllers\RestaurantController;
+use App\Http\Controllers\MapLocationController;
 use App\Models\User;
 
 /*
@@ -43,5 +44,6 @@ Route::get('/userFood', [FoodController::class, 'showFoodCategory']);
 Route::get('/userFood/{id}', [FoodController::class, 'showFoodByCategory']);
 
 Route::get('/getCategory', [CategoryController::class, 'displayCategories']);
+Route::get('/mapH', [MapLocationController::class, 'location_details']);
 
 Route::view('/{path?}', 'app');
