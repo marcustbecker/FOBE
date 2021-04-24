@@ -25,6 +25,7 @@ Route::get('/food/{id}', [FoodController::class, 'edit']);
 Route::post('/food', [FoodController::class, 'store']);
 Route::patch('/food/{id}', [FoodController::class, 'update']);
 Route::delete('/food/{id}', [FoodController::class, 'destroy']);
+Route::get('/userFood/{id}', [FoodController::class, 'showFoodByCategory']);
 
 Route::get('/category', [CategoryController::class, 'index']);
 Route::get('/category/{id}', [CategoryController::class, 'edit']);
