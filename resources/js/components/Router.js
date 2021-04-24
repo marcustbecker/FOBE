@@ -49,7 +49,6 @@ function App() {
         <Route path="/restaurantAdd" component={RestaurantAdd} />
         <Route path="/restaurantEdit/:id" component={RestaurantEdit} />
 
-        <Route path="/map" component={MapReader} />
         <Route path="/map/:id" component={MapReaderId} />
 
         <Route path="/showFood/:id" component={ShowFood} />

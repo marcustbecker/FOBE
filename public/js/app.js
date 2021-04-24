@@ -9065,7 +9065,7 @@ var ShowFood = /*#__PURE__*/function (_Component) {
                             children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
                               className: "container-categories-item",
                               to: "/map/".concat(foods[food].res_id)
-                            }, i)
+                            }, foods[food].res_id)
                           })]
                         }, foods[food].id);
                       })]
@@ -9272,11 +9272,8 @@ var MapReader = /*#__PURE__*/function (_Component) {
 
       var data = '';
       axios__WEBPACK_IMPORTED_MODULE_1___default().get("/mapH/" + this.props.match.params.id).then(function (res) {
-        console.log(res.data);
-        console.log(res.data.data);
-
         _this2.setState({
-          data: res.data
+          data: res.data.data
         });
       });
     }
@@ -10336,9 +10333,6 @@ function App() {
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_20__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_22__.Route, {
           path: "/restaurantEdit/:id",
           component: _Restaurant_RestaurantEdit__WEBPACK_IMPORTED_MODULE_16__.default
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_20__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_22__.Route, {
-          path: "/map",
-          component: _Map_MapReader__WEBPACK_IMPORTED_MODULE_18__.default
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_20__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_22__.Route, {
           path: "/map/:id",
           component: _Map_MapReaderId__WEBPACK_IMPORTED_MODULE_19__.default

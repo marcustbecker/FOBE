@@ -19,10 +19,8 @@ export class MapReader extends Component {
     componentDidMount() {
         var data = '';
         axios.get(`/mapH/` + this.props.match.params.id).then((res) => {
-            console.log(res.data);
-            console.log(res.data.data);
             this.setState({
-                data: res.data
+                data: res.data.data
             });
         });
     }

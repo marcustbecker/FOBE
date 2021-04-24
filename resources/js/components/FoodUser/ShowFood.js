@@ -52,7 +52,7 @@ export class ShowFood extends Component {
                                                         <td>${foods[food].foodPrice}</td>
                                                         <td>
                                                             <Link
-                                                                key={i}
+                                                                key={foods[food].res_id}
                                                                 className="container-categories-item"
                                                                 to={`/map/${foods[food].res_id}`}
                                                             >
