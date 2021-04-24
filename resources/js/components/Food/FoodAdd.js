@@ -10,10 +10,25 @@ export default class FoodAdd extends Component {
             categoryID: "",
             foodPrice: "",
             foodDescription: "",
+            res_id: "",
+            categories: [],
+            restaurants: [],
         };
-        // bind
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
+    }
+
+    componentDidMount() {
+        axios.get("/category").then((response) => {
+            this.setState({
+                categories: response.data.categories,
+            });
+        });
+        axios.get("/restaurant").then((response) => {
+            this.setState({
+                restaurants: response.data.restaurants,
+            });
+        });
     }
     // handle change
     handleChange(e) {
@@ -24,18 +39,26 @@ export default class FoodAdd extends Component {
     }
 
     handleSubmit(e) {
-        const { foodName, categoryID, foodPrice, foodDescription } = this.state;
+        const {
+            foodName,
+            categoryID,
+            foodPrice,
+            foodDescription,
+            res_id,
+        } = this.state;
         e.preventDefault();
         console.log("name : ", foodName);
         console.log("cat: ", categoryID);
         console.log("price : ", foodPrice);
         console.log("desc : ", foodDescription);
+        console.log("resID : ", res_id);
         axios
             .post("/food", {
                 foodName: foodName,
                 categoryID: categoryID,
                 foodPrice: foodPrice,
                 foodDescription: foodDescription,
+                res_id: res_id,
                 img_src: "img",
             })
             .then((res) => {
@@ -46,11 +69,14 @@ export default class FoodAdd extends Component {
                     categoryID: "",
                     foodPrice: "",
                     foodDescription: "",
+                    res_id: "",
                 });
             });
     }
 
     render() {
+        const categories = this.state.categories;
+        const restaurants = this.state.restaurants;
         return (
             <div className="container">
                 <div className="row justify-content-center">
@@ -69,15 +95,64 @@ export default class FoodAdd extends Component {
                                             onChange={this.handleChange}
                                             required
                                         />
-                                        <input
+                                        <select
                                             name="categoryID"
                                             className="form-control"
-                                            type="number"
-                                            placeholder="Food Category"
                                             value={this.state.categoryID}
                                             onChange={this.handleChange}
                                             required
-                                        />
+                                        >
+                                            {Object.keys(categories).map(
+                                                (category, i) => (
+                                                    <option
+                                                        key={
+                                                            categories[category]
+                                                                .id
+                                                        }
+                                                        value={
+                                                            categories[category]
+                                                                .id
+                                                        }
+                                                    >
+                                                        {
+                                                            categories[category]
+                                                                .categoryName
+                                                        }
+                                                    </option>
+                                                )
+                                            )}
+                                        </select>
+                                        <select
+                                            name="res_id"
+                                            className="form-control"
+                                            value={this.state.res_id}
+                                            onChange={this.handleChange}
+                                            required
+                                        >
+                                            {Object.keys(restaurants).map(
+                                                (restaurant, i) => (
+                                                    <option
+                                                        key={
+                                                            restaurants[
+                                                                restaurant
+                                                            ].id
+                                                        }
+                                                        value={
+                                                            restaurants[
+                                                                restaurant
+                                                            ].id
+                                                        }
+                                                    >
+                                                        {
+                                                            restaurants[
+                                                                restaurant
+                                                            ].name
+                                                        }
+                                                    </option>
+                                                )
+                                            )}
+                                        </select>
+
                                         <input
                                             name="foodPrice"
                                             className="form-control"

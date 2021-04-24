@@ -24,7 +24,7 @@ export class Dashboard extends React.Component {
         });
     }
 
-    handleSubmit(e) { }
+    handleSubmit(e) {}
 
     render() {
         console.log("Inside render");
@@ -33,7 +33,6 @@ export class Dashboard extends React.Component {
         if (!token) {
             return <Redirect to="/login" />;
         }
-
 
         if (!this.state.gotData) {
             console.log("Loading");
@@ -53,8 +52,10 @@ export class Dashboard extends React.Component {
                                     className="container-categories-item"
                                     to={`/showFood/${categories[category].id}`}
                                 >
-                                    <div className=".container-categories-text">
-                                        {categories[category].categoryName}
+                                    <div className="container-categories-text">
+                                        <h2>
+                                            {categories[category].categoryName}
+                                        </h2>
                                     </div>
                                 </Link>
                             ))}

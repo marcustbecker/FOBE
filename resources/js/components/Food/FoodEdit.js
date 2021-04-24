@@ -11,6 +11,9 @@ export default class FoodEdit extends Component {
             categoryID: "",
             foodPrice: "",
             foodDescription: "",
+            res_id: "",
+            categories: [],
+            restaurants: [],
         };
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
@@ -29,6 +32,17 @@ export default class FoodEdit extends Component {
                 categoryID: response.data.categoryID,
                 foodPrice: response.data.foodPrice,
                 foodDescription: response.data.foodDescription,
+                res_id: response.data.res_id,
+            });
+        });
+        axios.get("/category").then((response) => {
+            this.setState({
+                categories: response.data.categories,
+            });
+        });
+        axios.get("/restaurant").then((response) => {
+            this.setState({
+                restaurants: response.data.restaurants,
             });
         });
     }
@@ -40,13 +54,20 @@ export default class FoodEdit extends Component {
     }
 
     handleSubmit(e) {
-        const { foodName, categoryID, foodPrice, foodDescription } = this.state;
+        const {
+            foodName,
+            categoryID,
+            foodPrice,
+            foodDescription,
+            res_id,
+        } = this.state;
         e.preventDefault();
         const foo = {
             foodName: foodName,
             categoryID: categoryID,
             foodPrice: foodPrice,
             foodDescription: foodDescription,
+            res_id: res_id,
         };
         let uri = "/food/" + this.props.match.params.id;
         axios.patch(uri, foo).then((response) => {
@@ -56,6 +77,8 @@ export default class FoodEdit extends Component {
     }
 
     render() {
+        const categories = this.state.categories;
+        const restaurants = this.state.restaurants;
         return (
             <div className="container">
                 <div className="row justify-content-center">
@@ -75,14 +98,64 @@ export default class FoodEdit extends Component {
                                             onChange={this.handleChange}
                                         />
                                         <label>Category</label>
-                                        <input
+                                        <select
                                             name="categoryID"
                                             className="form-control"
-                                            type="number"
-                                            placeholder="Food Category"
                                             value={this.state.categoryID}
                                             onChange={this.handleChange}
-                                        />
+                                            required
+                                        >
+                                            {Object.keys(categories).map(
+                                                (category, i) => (
+                                                    <option
+                                                        key={
+                                                            categories[category]
+                                                                .id
+                                                        }
+                                                        value={
+                                                            categories[category]
+                                                                .id
+                                                        }
+                                                    >
+                                                        {
+                                                            categories[category]
+                                                                .categoryName
+                                                        }
+                                                    </option>
+                                                )
+                                            )}
+                                        </select>
+                                        <label>Restaurant</label>
+                                        <select
+                                            name="res_id"
+                                            className="form-control"
+                                            value={this.state.res_id}
+                                            onChange={this.handleChange}
+                                            required
+                                        >
+                                            {Object.keys(restaurants).map(
+                                                (restaurant, i) => (
+                                                    <option
+                                                        key={
+                                                            restaurants[
+                                                                restaurant
+                                                            ].id
+                                                        }
+                                                        value={
+                                                            restaurants[
+                                                                restaurant
+                                                            ].id
+                                                        }
+                                                    >
+                                                        {
+                                                            restaurants[
+                                                                restaurant
+                                                            ].name
+                                                        }
+                                                    </option>
+                                                )
+                                            )}
+                                        </select>
                                         <label>Price</label>
                                         <input
                                             name="foodPrice"

@@ -41,7 +41,8 @@ class FoodController extends Controller
             'foodName' => 'required',
             'categoryID' => 'required',
             'foodPrice' => 'required',
-            'foodDescription' => 'required'
+            'foodDescription' => 'required',
+            'res_id' => 'required'
         ]);
         $food = Food::create($request->all());
         //return food with message
@@ -88,6 +89,7 @@ class FoodController extends Controller
         $food->categoryID = $request->categoryID;
         $food->foodDescription = $request->foodDescription;
         $food->foodPrice = $request->foodPrice;
+        $food->res_id = $request->res_id;
         $food->save();
         return response()->json([
             'message' => 'Food Updated Successfully!',

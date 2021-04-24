@@ -45,7 +45,7 @@ Route::get('/userFood/{id}', [FoodController::class, 'showFoodByCategory']);
 
 Route::get('/getCategory', [CategoryController::class, 'displayCategories']);
 
-Route::get('/mapH', [MapLocationController::class, 'location_details']);
-Route::get('/mapH/{id}', [MapLocationController::class, 'location_detailsById']);
+Route::get('/map', [MapLocationController::class, 'location_details']);
+Route::get('/map/{id}', [MapLocationController::class, 'location_detailsById']);
 
 Route::view('/{path?}', 'app');

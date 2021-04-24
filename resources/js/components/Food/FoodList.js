@@ -49,7 +49,7 @@ export default class FoodList extends Component {
                                     <tbody>
                                         <tr>
                                             <th>Name</th>
-                                            <th>deci</th>
+                                            <th>Description</th>
                                             <th>Price</th>
                                             <th>Edit</th>
                                             <th>Delete</th>
