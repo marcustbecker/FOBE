@@ -37,6 +37,12 @@ export default class RestaurantList extends Component {
                         <div className="card">
                             <div className="card-header">All Restaurants</div>
                             <div className="card-body">
+                                <Link
+                                    className="btn btn-primary btn-sm mb-3"
+                                    to="/restaurantAdd"
+                                >
+                                    Create New Restaurant
+                                </Link>
                                 <table className="table">
                                     <tbody>
                                         <tr>
@@ -49,11 +55,6 @@ export default class RestaurantList extends Component {
                                         </tr>
                                         {Object.keys(restaurants).map(
                                             (restaurant, i) => (
-                                                //<Link
-                                                //    className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                                                //    to={`/${foods[food].id}`}
-                                                //   key={foods[food].id}
-                                                //>
                                                 <tr
                                                     key={
                                                         restaurants[restaurant]
@@ -115,12 +116,6 @@ export default class RestaurantList extends Component {
                                         )}
                                     </tbody>
                                 </table>
-                                <Link
-                                    className="btn btn-primary btn-sm mb-3"
-                                    to="/restaurantAdd"
-                                >
-                                    Create New Restaurant
-                                </Link>
                             </div>
                         </div>
                     </div>

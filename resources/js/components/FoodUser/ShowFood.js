@@ -12,7 +12,7 @@ export class ShowFood extends Component {
     }
 
     componentDidMount() {
-        axios.get('/food/' + id).then((response) => {
+        axios.get("/food/" + id).then((response) => {
             this.setState({
                 foods: response.data.foods,
             });
@@ -24,9 +24,7 @@ export class ShowFood extends Component {
         console.log("Inside ShowFood!");
         console.log(foods);
         if (!this.state.foods) {
-            return (
-                <h1>Loading</h1>
-            )
+            return <h1>Loading</h1>;
         } else {
             return (
                 <div className="container py-4">
@@ -42,26 +40,31 @@ export class ShowFood extends Component {
                                                 <th>Description</th>
                                                 <th>Price</th>
                                             </tr>
-                                            {Object.keys(foods).map((food, i) => (
-                                                //<Link
-                                                //    className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                                                //    to={`/${foods[food].id}`}
-                                                //   key={foods[food].id}
-                                                //>
-                                                <tr key={foods[food].id}>
-                                                    <td>{foods[food].foodName}</td>
-                                                    <td>
-                                                        {
-                                                            foods[food]
-                                                                .foodDescription
-                                                        }
-                                                    </td>
-                                                    <td>
-                                                        ${foods[food].foodPrice}
-                                                    </td>
-                                                </tr>
-                                                //</Link>
-                                            ))}
+                                            {Object.keys(foods).map(
+                                                (food, i) => (
+                                                    <tr key={foods[food].id}>
+                                                        <td>
+                                                            {
+                                                                foods[food]
+                                                                    .foodName
+                                                            }
+                                                        </td>
+                                                        <td>
+                                                            {
+                                                                foods[food]
+                                                                    .foodDescription
+                                                            }
+                                                        </td>
+                                                        <td>
+                                                            $
+                                                            {
+                                                                foods[food]
+                                                                    .foodPrice
+                                                            }
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>

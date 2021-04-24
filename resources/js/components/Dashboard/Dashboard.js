@@ -50,8 +50,7 @@ export class Dashboard extends React.Component {
                                 <Link
                                     key={i}
                                     className="container-categories-item"
-                                    onClick={this.handleSubmit}
-                                    to="/"
+                                    to={`/showFood/${categories[category].id}`}
                                 >
                                     <div className=".container-categories-text">
                                         {categories[category].categoryName}

@@ -16,6 +16,7 @@ import CategoryEdit from "./Category/CategoryEdit";
 import RestaurantList from "./Restaurant/RestaurantList";
 import RestaurantAdd from "./Restaurant/RestaurantAdd";
 import RestaurantEdit from "./Restaurant/RestaurantEdit";
+import ShowFood from "./FoodUser/ShowFood";
 
 function App() {
     return (
@@ -25,6 +26,8 @@ function App() {
                 <NavbarMenu />
             </div>
             <Switch>
+                <Route path="/" component={AdminHome} exact />
+
                 <Route path="/login" component={SignIn} />
                 <Route path="/register" component={Register} />
 
@@ -36,14 +39,14 @@ function App() {
                 <Route path="/foodEdit/:id" component={FoodEdit} />
 
                 <Route path="/categoryList" component={CategoryList} />
-                <Route path="/categoryEdit/:id" component={CategoryEdit} />
                 <Route path="/categoryAdd" component={CategoryAdd} />
+                <Route path="/categoryEdit/:id" component={CategoryEdit} />
 
                 <Route path="/restaurantList" component={RestaurantList} />
-                <Route path="/restaurantEdit/:id" component={RestaurantEdit} />
                 <Route path="/restaurantAdd" component={RestaurantAdd} />
+                <Route path="/restaurantEdit/:id" component={RestaurantEdit} />
 
-                <Route path="/" component={AdminHome} exact />
+                <Route path="/showFood/:id" component={ShowFood} />
             </Switch>
         </Router>
     );

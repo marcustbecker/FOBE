@@ -1,5 +1,6 @@
 import React, { Component } from "react";
-import ReactDOM from "react-dom";
+import { Link } from "react-router-dom";
+import axios from "axios";
 import "../../../css/app.css";
 
 export default class FoodEdit extends Component {
@@ -11,43 +12,47 @@ export default class FoodEdit extends Component {
             foodPrice: "",
             foodDescription: "",
         };
-        // bind
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
     }
-    // handle change
+
+    componentDidMount() {
+        console.log("params.id:");
+        console.log(this.props.match.params.id);
+        let id = this.props.match.params.id;
+
+        axios.get(`/food/${id}`).then((response) => {
+            console.log("food response data:");
+            console.log(response.data);
+            this.setState({
+                foodName: response.data.foodName,
+                categoryID: response.data.categoryID,
+                foodPrice: response.data.foodPrice,
+                foodDescription: response.data.foodDescription,
+            });
+        });
+    }
+
     handleChange(e) {
         this.setState({
             [e.target.name]: e.target.value,
         });
-        console.log(e.target.name);
     }
 
     handleSubmit(e) {
         const { foodName, categoryID, foodPrice, foodDescription } = this.state;
         e.preventDefault();
-        console.log("name : ", foodName);
-        console.log("cat: ", categoryID);
-        console.log("price : ", foodPrice);
-        console.log("desc : ", foodDescription);
-        axios
-            .put("/food", {
-                foodName: foodName,
-                categoryID: categoryID,
-                foodPrice: foodPrice,
-                foodDescription: foodDescription,
-                img_src: "img",
-            })
-            .then((res) => {
-                console.log("from handle submit", res);
-
-                this.setState({
-                    foodName: "",
-                    categoryID: "",
-                    foodPrice: "",
-                    foodDescription: "",
-                });
-            });
+        const foo = {
+            foodName: foodName,
+            categoryID: categoryID,
+            foodPrice: foodPrice,
+            foodDescription: foodDescription,
+        };
+        let uri = "/food/" + this.props.match.params.id;
+        axios.patch(uri, foo).then((response) => {
+            console.log("Updated to :");
+            console.log(response);
+        });
     }
 
     render() {
@@ -56,10 +61,11 @@ export default class FoodEdit extends Component {
                 <div className="row justify-content-center">
                     <div className="col-md-8">
                         <div className="card">
-                            <div className="card-header">Create Food</div>
+                            <div className="card-header">Update Food</div>
                             <div className="card-body">
                                 <form onSubmit={this.handleSubmit}>
                                     <div className="form-group">
+                                        <label>Food Name</label>
                                         <input
                                             name="foodName"
                                             className="form-control"
@@ -67,8 +73,8 @@ export default class FoodEdit extends Component {
                                             placeholder="Food Name"
                                             value={this.state.foodName}
                                             onChange={this.handleChange}
-                                            required
                                         />
+                                        <label>Category</label>
                                         <input
                                             name="categoryID"
                                             className="form-control"
@@ -76,8 +82,8 @@ export default class FoodEdit extends Component {
                                             placeholder="Food Category"
                                             value={this.state.categoryID}
                                             onChange={this.handleChange}
-                                            required
                                         />
+                                        <label>Price</label>
                                         <input
                                             name="foodPrice"
                                             className="form-control"
@@ -85,8 +91,8 @@ export default class FoodEdit extends Component {
                                             placeholder="Food Price"
                                             value={this.state.foodPrice}
                                             onChange={this.handleChange}
-                                            required
                                         />
+                                        <label>Description</label>
                                         <textarea
                                             name="foodDescription"
                                             className="form-control"
@@ -95,7 +101,6 @@ export default class FoodEdit extends Component {
                                             placeholder="Food Description"
                                             value={this.state.foodDescription}
                                             onChange={this.handleChange}
-                                            required
                                         />
                                     </div>
                                     <button
@@ -104,6 +109,12 @@ export default class FoodEdit extends Component {
                                     >
                                         Update Food
                                     </button>
+                                    <Link
+                                        to="/foodList"
+                                        className="btn btn-primary"
+                                    >
+                                        Back
+                                    </Link>
                                 </form>
                                 <hr />
                             </div>

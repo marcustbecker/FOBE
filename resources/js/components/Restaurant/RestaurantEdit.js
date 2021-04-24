@@ -1,8 +1,7 @@
-import axios from "axios";
 import React, { Component } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link } from "react-router-dom";
+import axios from "axios";
 import "../../../css/app.css";
-//const { id } = useParams();
 
 export default class RestaurantEdit extends Component {
     constructor(props) {
@@ -35,12 +34,6 @@ export default class RestaurantEdit extends Component {
     }
 
     handleChange(e) {
-        // this.setState({
-        //     name: e.target.value,
-        //     address: e.target.value,
-        //     lat: e.target.value,
-        //     long: e.target.value,
-        // });
         this.setState({
             [e.target.name]: e.target.value,
         });
@@ -58,8 +51,7 @@ export default class RestaurantEdit extends Component {
         let uri = "/restaurant/" + this.props.match.params.id;
         axios.patch(uri, rest).then((response) => {
             console.log("Updated to :");
-            console.log(rest);
-            // this.props.history.push("/categoryList");
+            console.log(response);
         });
     }
 
