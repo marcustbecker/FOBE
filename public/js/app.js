@@ -8311,6 +8311,7 @@ function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.g
 
 
 
+
 var Dashboard = /*#__PURE__*/function (_React$Component) {
   _inherits(Dashboard, _React$Component);
 
@@ -8338,11 +8339,6 @@ var Dashboard = /*#__PURE__*/function (_React$Component) {
           category: response.data.categoryData,
           gotData: true
         });
-
-        console.log("inside willMount");
-        console.log();
-        console.log(response);
-        console.log(_this2.state);
       });
     }
   }, {
@@ -8351,8 +8347,6 @@ var Dashboard = /*#__PURE__*/function (_React$Component) {
   }, {
     key: "render",
     value: function render() {
-      console.log("Inside render");
-      console.log(this.state);
       var token = localStorage.getItem("token");
 
       if (!token) {
@@ -8362,8 +8356,8 @@ var Dashboard = /*#__PURE__*/function (_React$Component) {
       }
 
       if (!this.state.gotData) {
-        console.log("Loading");
-        return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
+        return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("h1", {
+          className: "loading",
           children: "LOADING"
         });
       } else {
@@ -8373,9 +8367,18 @@ var Dashboard = /*#__PURE__*/function (_React$Component) {
         console.log("Outputting data");
         return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
           className: "container",
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
             className: "container-category",
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_5__.Link, {
+              className: "container-rest-item",
+              to: "/mapper",
+              children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+                className: "container-categories-text",
+                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("h2", {
+                  children: "Show All Restaurants"
+                })
+              })
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
               className: "container-category-grid",
               children: Object.keys(categories).map(function (category, i) {
                 return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_5__.Link, {
@@ -8389,7 +8392,7 @@ var Dashboard = /*#__PURE__*/function (_React$Component) {
                   })
                 }, i);
               })
-            })
+            })]
           })
         });
       }
@@ -9081,7 +9084,8 @@ var ShowFood = /*#__PURE__*/function (_Component) {
 
     _this = _super.call(this, props);
     _this.state = {
-      foods: []
+      foods: [],
+      categories: []
     };
     return _this;
   }
@@ -9098,74 +9102,73 @@ var ShowFood = /*#__PURE__*/function (_Component) {
 
         console.log(response);
       });
+      axios__WEBPACK_IMPORTED_MODULE_0___default().get("/category/" + this.props.match.params.id).then(function (response) {
+        _this2.setState({
+          categories: response.data[0]
+        });
+
+        console.log(response);
+      });
     }
   }, {
     key: "render",
     value: function render() {
       var foods = this.state.foods;
-      console.log("Inside ShowFood!");
-      console.log(foods);
-
-      if (!this.state.foods) {
-        return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("h1", {
-          children: "Loading"
-        });
-      } else {
-        return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
-          className: "container py-4",
+      var categories = this.state.categories;
+      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+        className: "container py-4",
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+          className: "row justify-content-center",
           children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
-            className: "row justify-content-center",
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
-              className: "col-md-8",
-              children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
-                className: "card",
-                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
-                  className: "card-header",
-                  children: "All foods"
-                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
-                  className: "card-body",
-                  children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("table", {
-                    className: "table",
-                    "data-filter-control": "true",
-                    "data-show-search-clear-button": "true",
-                    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("tbody", {
-                      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("tr", {
-                        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {
-                          "data-field": "item name",
-                          "data-filter-control": "input",
-                          children: "Name"
-                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {
-                          "data-field": "description",
-                          children: "Description"
-                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {
-                          "data-field": "price",
-                          children: "Price"
-                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {})]
-                      }), Object.keys(foods).map(function (food, i) {
-                        return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("tr", {
-                          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
-                            children: foods[food].foodName
-                          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
-                            children: foods[food].foodDescription
-                          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("td", {
-                            children: ["$", foods[food].foodPrice]
-                          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
-                            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
-                              className: "btn btn-primary",
-                              to: "/mapView/".concat(foods[food].res_id),
-                              children: "Choose"
-                            }, foods[food].res_id)
-                          })]
-                        }, foods[food].id);
-                      })]
-                    })
+            className: "col-md-8",
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+              className: "card",
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+                className: "card-header",
+                children: [categories.categoryName, " foods"]
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+                className: "card-body",
+                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("table", {
+                  className: "table",
+                  "data-filter-control": "true",
+                  "data-show-search-clear-button": "true",
+                  children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("tbody", {
+                    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("tr", {
+                      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {
+                        "data-field": "item name",
+                        "data-filter-control": "input",
+                        children: "Name"
+                      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {
+                        "data-field": "description",
+                        children: "Description"
+                      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {
+                        "data-field": "price",
+                        children: "Price"
+                      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {})]
+                    }), Object.keys(foods).map(function (food, i) {
+                      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("tr", {
+                        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
+                          children: foods[food].foodName
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
+                          children: foods[food].foodDescription
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("td", {
+                          children: ["$", foods[food].foodPrice]
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
+                          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
+                            className: "btn btn-primary",
+                            to: "/mapView/".concat(foods[food].res_id),
+                            children: "Choose"
+                          }, foods[food].res_id)
+                        })]
+                      }, foods[food].id);
+                    })]
                   })
-                })]
-              })
+                })
+              })]
             })
           })
-        });
-      }
+        })
+      });
     }
   }]);
 
@@ -9188,11 +9191,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
-/* harmony import */ var google_maps_react__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! google-maps-react */ "./node_modules/google-maps-react/dist/index.js");
-/* harmony import */ var google_maps_react__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(google_maps_react__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var google_maps_react__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! google-maps-react */ "./node_modules/google-maps-react/dist/index.js");
+/* harmony import */ var google_maps_react__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(google_maps_react__WEBPACK_IMPORTED_MODULE_4__);
 /* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! axios */ "./node_modules/axios/index.js");
 /* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(axios__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+/* harmony import */ var _Restaurant_RestaurantList__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../Restaurant/RestaurantList */ "./resources/js/components/Restaurant/RestaurantList.js");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -9219,9 +9223,11 @@ function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.g
 
 
 
+
+
 var mapStyles = {
-  width: '40%',
-  height: '50%'
+  width: "40%",
+  height: "50%"
 };
 var MapReader = /*#__PURE__*/function (_Component) {
   _inherits(MapReader, _Component);
@@ -9245,8 +9251,10 @@ var MapReader = /*#__PURE__*/function (_Component) {
     value: function componentDidMount() {
       var _this2 = this;
 
-      var data = '';
-      axios__WEBPACK_IMPORTED_MODULE_1___default().get('/mapH').then(function (res) {
+      axios__WEBPACK_IMPORTED_MODULE_1___default().get("/map").then(function (res) {
+        console.log("res:");
+        console.log(res);
+
         _this2.setState({
           data: res.data.data
         });
@@ -9256,31 +9264,74 @@ var MapReader = /*#__PURE__*/function (_Component) {
     key: "render",
     value: function render() {
       var data = this.state.data;
-      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(google_maps_react__WEBPACK_IMPORTED_MODULE_3__.Map, {
-        google: this.props.google,
-        zoom: 11,
-        style: mapStyles,
-        initialCenter: {
-          lat: 41.7550,
-          lng: -88.3480
-        },
-        children: Object.keys(data).map(function (MapLocation, i) {
-          return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(google_maps_react__WEBPACK_IMPORTED_MODULE_3__.Marker, {
-            title: data[MapLocation].name,
-            position: {
-              lat: data[MapLocation].lat,
-              lng: data[MapLocation].lng
-            }
-          });
-        })
+      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+          className: "map-list-container",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+            className: "row justify-content-center",
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+              className: "col-md-8",
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("h1", {
+                className: "header",
+                children: "Restaurants"
+              }), Object.keys(data).map(function (MapLocation, i) {
+                return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+                  className: "card",
+                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+                    className: "card-header",
+                    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("h3", {
+                      children: data[MapLocation].name
+                    })
+                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+                    className: "card-body",
+                    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("h5", {
+                      children: "Address:"
+                    }), data[MapLocation].address]
+                  })]
+                });
+              })]
+            })
+          })
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(google_maps_react__WEBPACK_IMPORTED_MODULE_4__.Map, {
+            google: this.props.google,
+            zoom: 11,
+            style: {
+              width: "70%",
+              margin: "0 0 0 auto",
+              height: "100%"
+            },
+            initialCenter: {
+              lat: 41.755,
+              lng: -88.348
+            },
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(google_maps_react__WEBPACK_IMPORTED_MODULE_4__.Marker, {
+              title: "Aurora Univerity",
+              label: "Aurora University",
+              position: {
+                lat: 41.753,
+                lng: -88.3504
+              }
+            }, this.props.index), Object.keys(data).map(function (MapLocation, i) {
+              return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(google_maps_react__WEBPACK_IMPORTED_MODULE_4__.Marker, {
+                label: data[MapLocation].name,
+                title: data[MapLocation].name,
+                position: {
+                  lat: data[MapLocation].lat,
+                  lng: data[MapLocation].lng
+                }
+              });
+            })]
+          })
+        })]
       });
     }
   }]);
 
   return MapReader;
 }(react__WEBPACK_IMPORTED_MODULE_0__.Component);
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ((0,google_maps_react__WEBPACK_IMPORTED_MODULE_3__.GoogleApiWrapper)({
-  apiKey: 'AIzaSyDJ36wKsOaueSQCGUEPc4-KVGEMf9STSAs'
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ((0,google_maps_react__WEBPACK_IMPORTED_MODULE_4__.GoogleApiWrapper)({
+  apiKey: "AIzaSyDJ36wKsOaueSQCGUEPc4-KVGEMf9STSAs"
 })(MapReader));
 
 /***/ }),
@@ -9294,7 +9345,7 @@ var MapReader = /*#__PURE__*/function (_Component) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "MapReader": () => (/* binding */ MapReader),
+/* harmony export */   "MapReaderId": () => (/* binding */ MapReaderId),
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
@@ -9330,7 +9381,6 @@ function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Re
 
 function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
 
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 
 
@@ -9339,44 +9389,24 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 
 
 
+var MapReaderId = /*#__PURE__*/function (_Component) {
+  _inherits(MapReaderId, _Component);
 
-var mapStyles = {
-  width: "70%",
-  margin: "0 0 0 auto",
-  height: "100%"
-};
-var MapReader = /*#__PURE__*/function (_Component) {
-  _inherits(MapReader, _Component);
+  var _super = _createSuper(MapReaderId);
 
-  var _super = _createSuper(MapReader);
-
-  function MapReader(props) {
+  function MapReaderId(props) {
     var _this;
 
-    _classCallCheck(this, MapReader);
+    _classCallCheck(this, MapReaderId);
 
     _this = _super.call(this, props);
-
-    _defineProperty(_assertThisInitialized(_this), "handleToggleOpen", function () {
-      _this.setState({
-        isOpen: true
-      });
-    });
-
-    _defineProperty(_assertThisInitialized(_this), "handleToggleClose", function () {
-      _this.setState({
-        isOpen: false
-      });
-    });
-
     _this.state = {
-      data: [],
-      isOpen: false
+      data: []
     };
     return _this;
   }
 
-  _createClass(MapReader, [{
+  _createClass(MapReaderId, [{
     key: "componentDidMount",
     value: function componentDidMount() {
       var _this2 = this;
@@ -9396,7 +9426,6 @@ var MapReader = /*#__PURE__*/function (_Component) {
       var data = this.state.data;
       console.log("data:");
       console.log(data);
-      var content = "<h6>RESTAURANT</h6>";
       return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)("div", {
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("div", {
           className: "map-list-container",
@@ -9424,11 +9453,14 @@ var MapReader = /*#__PURE__*/function (_Component) {
             })
           })
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("div", {
-          className: "",
           children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(google_maps_react__WEBPACK_IMPORTED_MODULE_6__.Map, {
             google: this.props.google,
             zoom: 11,
-            style: mapStyles,
+            style: {
+              width: "70%",
+              margin: "0 0 0 auto",
+              height: "100%"
+            },
             initialCenter: {
               lat: 41.755,
               lng: -88.348
@@ -9454,11 +9486,11 @@ var MapReader = /*#__PURE__*/function (_Component) {
     }
   }]);
 
-  return MapReader;
+  return MapReaderId;
 }(react__WEBPACK_IMPORTED_MODULE_0__.Component);
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ((0,google_maps_react__WEBPACK_IMPORTED_MODULE_6__.GoogleApiWrapper)({
   apiKey: "AIzaSyDJ36wKsOaueSQCGUEPc4-KVGEMf9STSAs"
-})(MapReader));
+})(MapReaderId));
 
 /***/ }),
 
@@ -9836,13 +9868,27 @@ var Register = /*#__PURE__*/function (_React$Component) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (/* binding */ RestaurantAdd)
+/* harmony export */   "RestaurantAdd": () => (/* binding */ RestaurantAdd),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
-/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
-/* harmony import */ var _css_app_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../css/app.css */ "./resources/css/app.css");
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+/* harmony import */ var google_maps_react__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! google-maps-react */ "./node_modules/google-maps-react/dist/index.js");
+/* harmony import */ var google_maps_react__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(google_maps_react__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _css_app_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../css/app.css */ "./resources/css/app.css");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
@@ -9871,7 +9917,6 @@ function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.g
 
 
 
-
 var RestaurantAdd = /*#__PURE__*/function (_Component) {
   _inherits(RestaurantAdd, _Component);
 
@@ -9887,11 +9932,15 @@ var RestaurantAdd = /*#__PURE__*/function (_Component) {
       name: "",
       address: "",
       lat: "",
-      lng: ""
+      lng: "",
+      markers: [{
+        position: {}
+      }]
     }; // bind
 
     _this.handleChange = _this.handleChange.bind(_assertThisInitialized(_this));
     _this.handleSubmit = _this.handleSubmit.bind(_assertThisInitialized(_this));
+    _this.onClick = _this.onClick.bind(_assertThisInitialized(_this));
     return _this;
   } // handle change
 
@@ -9934,26 +9983,54 @@ var RestaurantAdd = /*#__PURE__*/function (_Component) {
       });
     }
   }, {
+    key: "onClick",
+    value: function onClick(t, map, coord) {
+      var latLng = coord.latLng;
+      var lat = latLng.lat();
+      var lng = latLng.lng();
+      this.setState(function (previousState) {
+        return {
+          markers: [].concat(_toConsumableArray(previousState.markers), [{
+            position: {
+              lat: lat,
+              lng: lng
+            }
+          }])
+        };
+      });
+      console.log("marker:");
+      console.log(this.state.markers);
+      console.log("lat:");
+      console.log(this.state.markers[1].position.lat);
+      console.log("long:");
+      console.log(this.state.markers[1].position.lng);
+    }
+  }, {
     key: "render",
     value: function render() {
-      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+      var _this3 = this;
+
+      var coords = this.state.markers;
+      console.log("coords:");
+      console.log(coords);
+      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
         className: "container",
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
           className: "row justify-content-center",
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
             className: "col-md-8",
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
               className: "card",
-              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
                 className: "card-header",
                 children: "Create Restaurant"
-              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
                 className: "card-body",
-                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("form", {
+                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("form", {
                   onSubmit: this.handleSubmit,
-                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+                  children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
                     className: "form-group",
-                    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("input", {
+                    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
                       name: "name",
                       className: "form-control",
                       type: "text",
@@ -9961,7 +10038,7 @@ var RestaurantAdd = /*#__PURE__*/function (_Component) {
                       value: this.state.name,
                       onChange: this.handleChange,
                       required: true
-                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("input", {
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
                       name: "address",
                       className: "form-control",
                       type: "text",
@@ -9969,29 +10046,69 @@ var RestaurantAdd = /*#__PURE__*/function (_Component) {
                       value: this.state.address,
                       onChange: this.handleChange,
                       required: true
-                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("input", {
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
                       name: "lat",
                       className: "form-control",
-                      type: "number",
                       placeholder: "Latitude",
                       value: this.state.lat,
                       onChange: this.handleChange,
                       required: true
-                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("input", {
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
                       name: "lng",
                       className: "form-control",
-                      type: "number",
                       placeholder: "Longitude",
                       value: this.state.lng,
                       onChange: this.handleChange,
                       required: true
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+                      children: "Click the map the get your coordinates:"
+                    }), Object.keys(coords).map(function (coord, i) {
+                      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+                        children: ["Marker:", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("span", {
+                          children: [" ", i]
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("br", {}), "Latitude:", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("span", {
+                          children: _this3.state.markers[coord].position.lat
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("br", {}), "Longitude:", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("span", {
+                          children: _this3.state.markers[coord].position.lng
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("hr", {})]
+                      }, coords[coord].id);
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("button", {
+                      type: "submit",
+                      className: "btn btn-primary rest-create",
+                      children: "Create Restaurant"
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+                      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(google_maps_react__WEBPACK_IMPORTED_MODULE_3__.Map, {
+                        google: this.props.google,
+                        zoom: 11,
+                        onClick: this.onClick,
+                        style: {
+                          width: "90%",
+                          height: "400px",
+                          margin: "-400px 10px 10px 10px"
+                        },
+                        initialCenter: {
+                          lat: 41.755,
+                          lng: -88.348
+                        },
+                        children: [this.state.markers.map(function (marker, index) {
+                          return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(google_maps_react__WEBPACK_IMPORTED_MODULE_3__.Marker, {
+                            title: index,
+                            label: index,
+                            name: index,
+                            position: marker.position
+                          }, index);
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(google_maps_react__WEBPACK_IMPORTED_MODULE_3__.Marker, {
+                          title: "Aurora Univerity",
+                          label: "Aurora University",
+                          position: {
+                            lat: 41.753,
+                            lng: -88.3504
+                          }
+                        }, this.props.index)]
+                      })
                     })]
-                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
-                    type: "submit",
-                    className: "btn btn-primary",
-                    children: "Create Restaurant"
-                  })]
-                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("hr", {})]
+                  })
+                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("hr", {})]
               })]
             })
           })
@@ -10002,8 +10119,9 @@ var RestaurantAdd = /*#__PURE__*/function (_Component) {
 
   return RestaurantAdd;
 }(react__WEBPACK_IMPORTED_MODULE_0__.Component);
-
-
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ((0,google_maps_react__WEBPACK_IMPORTED_MODULE_3__.GoogleApiWrapper)({
+  apiKey: "AIzaSyDJ36wKsOaueSQCGUEPc4-KVGEMf9STSAs"
+})(RestaurantAdd));
 
 /***/ }),
 
@@ -10482,6 +10600,9 @@ function App() {
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_20__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_22__.Route, {
           path: "/restaurantEdit/:id",
           component: _Restaurant_RestaurantEdit__WEBPACK_IMPORTED_MODULE_16__.default
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_20__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_22__.Route, {
+          path: "/mapper",
+          component: _Map_MapReader__WEBPACK_IMPORTED_MODULE_18__.default
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_20__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_22__.Route, {
           path: "/mapView/:id",
           component: _Map_MapReaderId__WEBPACK_IMPORTED_MODULE_19__.default
@@ -15156,7 +15277,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "body {\n    background-image: url(\"/img/AUBackground.jpeg\");\n    background-repeat: no-repeat;\n    background-attachment: fixed;\n}\n/*\nCSS FOR NAVBAR COMPONENT\n*/\nnav {\n    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);\n}\n\n.navbar-custom {\n    background-color: #191919;\n}\n.navbar-nav {\n    float: left;\n}\n.navbar-brand {\n    color: white;\n    font-size: 22px;\n    transition: all 500ms;\n}\n\n.navbar-brand:hover {\n    color: #3498db;\n    transition: all 500ms;\n}\n.li {\n    float: left;\n    display: inline;\n}\n.navbar__link--active {\n    color: #3498db;\n}\n\n.nav > li > a {\n    font-size: 10px;\n    transition: all 500ms;\n}\n.nav > li > a:hover {\n    text-decoration: none;\n    color: #3498db;\n    transition: all 500ms;\n}\n/*\nCSS FOR REGISTER AND SIGNIN COMPONENT\n*/\n.box {\n    width: 500px;\n    padding: 40px;\n    position: absolute;\n    top: 50%;\n    left: 50%;\n    background: #191919;\n    text-align: center;\n    transition: 0.25s;\n    margin-top: 100px;\n}\n\n.box input[type=\"text\"],\n.box input[type=\"password\"] {\n    border: 0;\n    background: none;\n    display: block;\n    margin: 20px auto;\n    text-align: center;\n    border: 2px solid #3498db;\n    padding: 10px 10px;\n    width: 250px;\n    outline: none;\n    color: white;\n    border-radius: 24px;\n    transition: 0.25s;\n}\n\n.box h1 {\n    color: white;\n    text-transform: uppercase;\n    font-weight: 500;\n}\n\n.box input[type=\"text\"]:focus,\n.box input[type=\"password\"]:focus {\n    width: 300px;\n    border-color: #3498db;\n}\n\n.box input[type=\"submit\"] {\n    border: 0;\n    background: none;\n    display: block;\n    margin: 20px auto;\n    text-align: center;\n    border: 2px solid #3498db;\n    padding: 14px 40px;\n    outline: none;\n    color: white;\n    border-radius: 24px;\n    transition: 0.25s;\n    cursor: pointer;\n}\n\n.box input[type=\"submit\"]:hover {\n    background: #3498db;\n}\n\n.forgot {\n    text-decoration: underline;\n}\n\n.register {\n    margin-left: 20px;\n    text-decoration: underline;\n}\n.validation-error {\n    font-size: 15px;\n    color: red;\n}\n/*\nCSS FOR DASHBOARD\n*/\n.container {\n    background-color: rgba(0, 0, 0, 0.6);\n}\n.container-category {\n    flex: 1;\n}\n\n.container-category-grid {\n    display: flex;\n    flex-wrap: wrap;\n    justify-content: center;\n}\n.container-categories-item {\n    background-color: black;\n    border-style: solid;\n    border-width: 5px;\n    border-radius: 2px;\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    padding: 3rem;\n    flex: 1 1 25%;\n    margin: 2rem 1rem 2rem;\n    max-width: 30%;\n    height: 15rem;\n    font-size: larger;\n}\n.container-categories-item:hover {\n    background-color: #3498db;\n}\n.container-categories-text {\n    padding-top: 1rem;\n    text-align: center;\n    font-size: 18px;\n}\n\n/*\nCSS\n*/\n.header {\n    text-align: center;\n    background-color: white;\n    padding: 10px;\n    margin-top: 5%;\n}\n.flex-container {\n    display: flex;\n    flex-direction: row;\n    flex-wrap: wrap;\n    justify-content: center;\n    padding: 10px;\n}\n.flex-container > .card {\n    background-color: rgb(240, 240, 240);\n    text-align: center;\n    width: 250px;\n    padding: 30px 30px;\n    margin: 10px;\n    font-size: 30px;\n}\n/*\nTABLE IN ADMIN PAGES\n*/\n.table {\n    border-collapse: collapse;\n    width: 100%;\n}\n.table th,\ntd {\n    text-align: left;\n    padding: 8px;\n}\n.table tr:hover {\n    background-color: #f5f5f5;\n}\n/*\nMAP\n*/\n.map-list-container {\n    float: left;\n    height: 100vh;\n    width: 28%;\n    margin: 10px;\n    padding: 30px 0;\n    background-color: rgba(0, 0, 0, 0.6);\n}\n.map {\n    float: right;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "body {\n    background-image: url(\"/img/AUBackground.jpeg\");\n    background-repeat: no-repeat;\n    background-attachment: fixed;\n}\n/*\nCSS FOR NAVBAR COMPONENT\n*/\nnav {\n    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);\n}\n\n.navbar-custom {\n    background-color: #191919;\n}\n.navbar-nav {\n    float: left;\n}\n.navbar-brand {\n    color: white;\n    font-size: 22px;\n    transition: all 500ms;\n}\n\n.navbar-brand:hover {\n    color: #3498db;\n    transition: all 500ms;\n}\n.li {\n    float: left;\n    display: inline;\n}\n.navbar__link--active {\n    color: #3498db;\n}\n\n.nav > li > a {\n    font-size: 10px;\n    transition: all 500ms;\n}\n.nav > li > a:hover {\n    text-decoration: none;\n    color: #3498db;\n    transition: all 500ms;\n}\n/*\nCSS FOR REGISTER AND SIGNIN COMPONENT\n*/\n.box {\n    width: 500px;\n    padding: 40px;\n    position: absolute;\n    top: 50%;\n    left: 50%;\n    background: #191919;\n    text-align: center;\n    transition: 0.25s;\n    margin-top: 100px;\n}\n\n.box input[type=\"text\"],\n.box input[type=\"password\"] {\n    border: 0;\n    background: none;\n    display: block;\n    margin: 20px auto;\n    text-align: center;\n    border: 2px solid #3498db;\n    padding: 10px 10px;\n    width: 250px;\n    outline: none;\n    color: white;\n    border-radius: 24px;\n    transition: 0.25s;\n}\n\n.box h1 {\n    color: white;\n    text-transform: uppercase;\n    font-weight: 500;\n}\n\n.box input[type=\"text\"]:focus,\n.box input[type=\"password\"]:focus {\n    width: 300px;\n    border-color: #3498db;\n}\n\n.box input[type=\"submit\"] {\n    border: 0;\n    background: none;\n    display: block;\n    margin: 20px auto;\n    text-align: center;\n    border: 2px solid #3498db;\n    padding: 14px 40px;\n    outline: none;\n    color: white;\n    border-radius: 24px;\n    transition: 0.25s;\n    cursor: pointer;\n}\n\n.box input[type=\"submit\"]:hover {\n    background: #3498db;\n}\n\n.forgot {\n    text-decoration: underline;\n}\n\n.register {\n    margin-left: 20px;\n    text-decoration: underline;\n}\n.validation-error {\n    font-size: 15px;\n    color: red;\n}\n/*\nCSS FOR DASHBOARD\n*/\n.container {\n    background-color: rgba(0, 0, 0, 0.6);\n}\n.container-category {\n    flex: 1;\n}\n\n.container-category-grid {\n    display: flex;\n    flex-wrap: wrap;\n    justify-content: center;\n}\n.container-categories-item {\n    background-color: black;\n    border-style: solid;\n    border-width: 5px;\n    border-radius: 2px;\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    padding: 3rem;\n    flex: 1 1 25%;\n    margin: 2rem 1rem 2rem;\n    max-width: 30%;\n    height: 15rem;\n    font-size: larger;\n}\n.container-categories-item:hover {\n    background-color: #3498db;\n}\n.container-categories-text {\n    padding-top: 1rem;\n    text-align: center;\n    font-size: 18px;\n}\n.container-rest-item {\n    background-color: black;\n    border-style: solid;\n    border-width: 5px;\n    border-radius: 2px;\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    padding: 1rem 2rem;\n    flex: 1 1 25%;\n    max-width: 30%;\n    font-size: larger;\n    margin: auto;\n}\n/*\nCSS\n*/\n.loading {\n    text-align: center;\n    padding: 10px;\n    margin-top: 5%;\n}\n.header {\n    text-align: center;\n    background-color: white;\n    padding: 10px;\n    margin-top: 5%;\n}\n.flex-container {\n    display: flex;\n    flex-direction: row;\n    flex-wrap: wrap;\n    justify-content: center;\n    padding: 10px;\n}\n.flex-container > .card {\n    background-color: rgb(240, 240, 240);\n    text-align: center;\n    width: 250px;\n    padding: 30px 30px;\n    margin: 10px;\n    font-size: 30px;\n}\n/*\nTABLE IN ADMIN PAGES\n*/\n.table {\n    border-collapse: collapse;\n    width: 100%;\n}\n.table th,\ntd {\n    text-align: left;\n    padding: 8px;\n}\n.table tr:hover {\n    background-color: #f5f5f5;\n}\n/*\nMAP\n*/\n.map-list-container {\n    float: left;\n    height: 100vh;\n    width: 28%;\n    margin: 10px;\n    padding: 30px 0;\n    background-color: rgba(0, 0, 0, 0.6);\n}\n.map {\n    float: right;\n}\n.rest-create {\n    margin: 10px 0 410px;\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 

@@ -1,8 +1,8 @@
 import React, { Component } from "react";
-import ReactDOM from "react-dom";
+import { Map, GoogleApiWrapper, Marker, InfoWindow } from "google-maps-react";
 import "../../../css/app.css";
 
-export default class RestaurantAdd extends Component {
+export class RestaurantAdd extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -10,10 +10,16 @@ export default class RestaurantAdd extends Component {
             address: "",
             lat: "",
             lng: "",
+            markers: [
+                {
+                    position: {},
+                },
+            ],
         };
         // bind
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
+        this.onClick = this.onClick.bind(this);
     }
     // handle change
     handleChange(e) {
@@ -48,8 +54,33 @@ export default class RestaurantAdd extends Component {
                 });
             });
     }
+    onClick(t, map, coord) {
+        const { latLng } = coord;
+        const lat = latLng.lat();
+        const lng = latLng.lng();
+
+        this.setState((previousState) => {
+            return {
+                markers: [
+                    ...previousState.markers,
+                    {
+                        position: { lat, lng },
+                    },
+                ],
+            };
+        });
+        console.log("marker:");
+        console.log(this.state.markers);
+        console.log("lat:");
+        console.log(this.state.markers[1].position.lat);
+        console.log("long:");
+        console.log(this.state.markers[1].position.lng);
+    }
 
     render() {
+        const coords = this.state.markers;
+        console.log("coords:");
+        console.log(coords);
         return (
             <div className="container">
                 <div className="row justify-content-center">
@@ -80,7 +111,6 @@ export default class RestaurantAdd extends Component {
                                         <input
                                             name="lat"
                                             className="form-control"
-                                            type="number"
                                             placeholder="Latitude"
                                             value={this.state.lat}
                                             onChange={this.handleChange}
@@ -89,19 +119,88 @@ export default class RestaurantAdd extends Component {
                                         <input
                                             name="lng"
                                             className="form-control"
-                                            type="number"
                                             placeholder="Longitude"
                                             value={this.state.lng}
                                             onChange={this.handleChange}
                                             required
                                         />
+                                        <div>
+                                            Click the map the get your
+                                            coordinates:
+                                        </div>
+                                        {Object.keys(coords).map((coord, i) => (
+                                            <div key={coords[coord].id}>
+                                                Marker:
+                                                <span> {i}</span>
+                                                <br />
+                                                Latitude:
+                                                <span>
+                                                    {
+                                                        this.state.markers[
+                                                            coord
+                                                        ].position.lat
+                                                    }
+                                                </span>
+                                                <br />
+                                                Longitude:
+                                                <span>
+                                                    {
+                                                        this.state.markers[
+                                                            coord
+                                                        ].position.lng
+                                                    }
+                                                </span>
+                                                <hr />
+                                            </div>
+                                        ))}
+
+                                        <button
+                                            type="submit"
+                                            className="btn btn-primary rest-create"
+                                        >
+                                            Create Restaurant
+                                        </button>
+                                        <div>
+                                            <Map
+                                                google={this.props.google}
+                                                zoom={11}
+                                                onClick={this.onClick}
+                                                style={{
+                                                    width: "90%",
+                                                    height: "400px",
+                                                    margin:
+                                                        "-400px 10px 10px 10px",
+                                                }}
+                                                initialCenter={{
+                                                    lat: 41.755,
+                                                    lng: -88.348,
+                                                }}
+                                            >
+                                                {this.state.markers.map(
+                                                    (marker, index) => (
+                                                        <Marker
+                                                            key={index}
+                                                            title={index}
+                                                            label={index}
+                                                            name={index}
+                                                            position={
+                                                                marker.position
+                                                            }
+                                                        />
+                                                    )
+                                                )}
+                                                <Marker
+                                                    key={this.props.index}
+                                                    title="Aurora Univerity"
+                                                    label="Aurora University"
+                                                    position={{
+                                                        lat: 41.753,
+                                                        lng: -88.3504,
+                                                    }}
+                                                />
+                                            </Map>
+                                        </div>
                                     </div>
-                                    <button
-                                        type="submit"
-                                        className="btn btn-primary"
-                                    >
-                                        Create Restaurant
-                                    </button>
                                 </form>
                                 <hr />
                             </div>
@@ -112,3 +211,7 @@ export default class RestaurantAdd extends Component {
         );
     }
 }
+
+export default GoogleApiWrapper({
+    apiKey: "AIzaSyDJ36wKsOaueSQCGUEPc4-KVGEMf9STSAs",
+})(RestaurantAdd);

@@ -4,17 +4,12 @@ import axios from "axios";
 import { auto } from "async";
 import "../../../css/app.css";
 import { matchesProperty } from "lodash";
-const mapStyles = {
-    width: "70%",
-    margin: "0 0 0 auto",
-    height: "100%",
-};
-export class MapReader extends Component {
+
+export class MapReaderId extends Component {
     constructor(props) {
         super(props);
         this.state = {
             data: [],
-            isOpen: false,
         };
     }
 
@@ -28,24 +23,10 @@ export class MapReader extends Component {
         });
     }
 
-    handleToggleOpen = () => {
-        this.setState({
-            isOpen: true,
-        });
-    };
-
-    handleToggleClose = () => {
-        this.setState({
-            isOpen: false,
-        });
-    };
-
     render() {
         const data = this.state.data;
         console.log("data:");
         console.log(data);
-        const content = "<h6>RESTAURANT</h6>";
-
         return (
             <div>
                 <div className="map-list-container">
@@ -64,11 +45,15 @@ export class MapReader extends Component {
                         </div>
                     </div>
                 </div>
-                <div className="">
+                <div>
                     <Map
                         google={this.props.google}
                         zoom={11}
-                        style={mapStyles}
+                        style={{
+                            width: "70%",
+                            margin: "0 0 0 auto",
+                            height: "100%",
+                        }}
                         initialCenter={{
                             lat: 41.755,
                             lng: -88.348,
@@ -100,4 +85,4 @@ export class MapReader extends Component {
 
 export default GoogleApiWrapper({
     apiKey: "AIzaSyDJ36wKsOaueSQCGUEPc4-KVGEMf9STSAs",
-})(MapReader);
+})(MapReaderId);

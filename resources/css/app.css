@@ -156,10 +156,29 @@ CSS FOR DASHBOARD
     text-align: center;
     font-size: 18px;
 }
-
+.container-rest-item {
+    background-color: black;
+    border-style: solid;
+    border-width: 5px;
+    border-radius: 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 2rem;
+    flex: 1 1 25%;
+    max-width: 30%;
+    font-size: larger;
+    margin: auto;
+}
 /*
 CSS
 */
+.loading {
+    text-align: center;
+    padding: 10px;
+    margin-top: 5%;
+}
 .header {
     text-align: center;
     background-color: white;
@@ -209,4 +228,7 @@ MAP
 }
 .map {
     float: right;
+}
+.rest-create {
+    margin: 10px 0 410px;
 }
