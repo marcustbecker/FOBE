@@ -5,9 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Category extends Model
+class MapLocation extends Model
 {
-    protected $table = 'food_category';
+    protected $table = 'restaurant';
     use HasFactory;
-    protected $fillable = ['id', 'categoryName'];
+    protected $fillable = ['id', 'name', 'address', 'lat', 'lng'];
 }

@@ -7,12 +7,7 @@ use Illuminate\Http\Request;
 
 class FoodController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index(Request $request, Food $food)
+    public function index()
     {
         $allFoods = Food::all();
         //return response()->json($foods);
@@ -42,25 +37,17 @@ class FoodController extends Controller
      */
     public function store(Request $request)
     {
-        //print("hello");
-        //exit();
-        //validate
         $request->validate([
             'foodName' => 'required',
             'categoryID' => 'required',
             'foodPrice' => 'required',
-            'foodDescription' => 'required'
+            'foodDescription' => 'required',
+            'res_id' => 'required'
         ]);
-        //print("req=");
-        //print_r($request->all());
-        //print("reqFood");
-        //print($request['foodName']);
-        //exit();
-        //create new food
         $food = Food::create($request->all());
         //return food with message
         return response()->json([
-            'message' => 'food created',
+            'message' => 'Food Created Successfully!',
             'food' => $food
         ]);
     }
@@ -73,11 +60,7 @@ class FoodController extends Controller
      */
     public function show(Food $id)
     {
-        $food = Food::with(['food' => function ($query) {
-            //$query->where('is_completed', false);
-        }])->find($id);
-
-        return $food->toJson();
+        //
     }
 
     /**
@@ -86,9 +69,10 @@ class FoodController extends Controller
      * @param  \App\Models\Food  $food
      * @return \Illuminate\Http\Response
      */
-    public function edit(Food $food)
+    public function edit($id)
     {
-        //
+        $food = Food::find($id);
+        return response()->json($food);
     }
 
     /**
@@ -101,13 +85,14 @@ class FoodController extends Controller
     public function update(Request $request, $id)
     {
         $food = Food::find($id);
-        $food->foodName = $request->foodName();
-        $food->categoryID = $request->categoryID();
-        $food->foodDescription = $request->foodDescription();
-        $food->foodPrice = $request->foodPrice();
+        $food->foodName = $request->foodName;
+        $food->categoryID = $request->categoryID;
+        $food->foodDescription = $request->foodDescription;
+        $food->foodPrice = $request->foodPrice;
+        $food->res_id = $request->res_id;
         $food->save();
         return response()->json([
-            'message' => 'food updated!',
+            'message' => 'Food Updated Successfully!',
             'food' => $food
         ]);
     }
@@ -118,11 +103,23 @@ class FoodController extends Controller
      * @param  \App\Models\Food  $food
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Food $food)
+    public function destroy($id)
     {
-        $food->delete();
+        $food = Food::find($id);
+        if ($food->delete()) {
+            return response()->json([
+                'message' => 'Food Deleted Successfully'
+            ]);
+        }
+    }
+
+    public function showFoodByCategory($id)
+    {
+        $food = Food::where('categoryID', $id)->get();
+        // return json response
         return response()->json([
-            'message' => 'food deleted'
+            'id' => $id,
+            'food' => $food,
         ]);
     }
 }

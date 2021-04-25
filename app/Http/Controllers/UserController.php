@@ -29,7 +29,8 @@ class UserController extends Controller
             'lname' => $request->lname,
             'username' => $request->username,
             'email' => $request->email,
-            'password' => Hash::make($request->password)
+            'password' => Hash::make($request->password),
+            'isAdmin' => $request->isAdmin
         );
         
 
@@ -47,12 +48,15 @@ class UserController extends Controller
         $user = User::create($user_array);
 
         if(!is_null($user)) {
-            $user->save();
-            $token =$user->createToken($user->email.'-'.now());
-            return response()->json(["status" => $this->status_code, "success" => true, "message" => "Registration completed successfully", 'token' =>$token->accessToken, "user" => $user]);
-        }
-
-        else {
+            $token =$user->createToken($user->username.'-'.now());
+            return response()->json([
+                "status" => $this->status_code,
+                'token' => $token->accessToken,
+                'user' => $user,
+                'success' => true,
+                "message" => "Registration completed successfully"
+            ]);
+            } else {
             return response()->json(["status" => "failed", "success" => false, "message" => "failed to register"]);
         }
     }

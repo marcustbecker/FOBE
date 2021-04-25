@@ -6,6 +6,10 @@ body {
 /*
 CSS FOR NAVBAR COMPONENT
 */
+nav {
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+}
+
 .navbar-custom {
     background-color: #191919;
 }
@@ -19,7 +23,7 @@ CSS FOR NAVBAR COMPONENT
 }
 
 .navbar-brand:hover {
-    color: #2ecc71;
+    color: #3498db;
     transition: all 500ms;
 }
 .li {
@@ -27,7 +31,7 @@ CSS FOR NAVBAR COMPONENT
     display: inline;
 }
 .navbar__link--active {
-    color: #2ecc71;
+    color: #3498db;
 }
 
 .nav > li > a {
@@ -36,7 +40,7 @@ CSS FOR NAVBAR COMPONENT
 }
 .nav > li > a:hover {
     text-decoration: none;
-    color: #2ecc71;
+    color: #3498db;
     transition: all 500ms;
 }
 /*
@@ -79,7 +83,7 @@ CSS FOR REGISTER AND SIGNIN COMPONENT
 .box input[type="text"]:focus,
 .box input[type="password"]:focus {
     width: 300px;
-    border-color: #2ecc71;
+    border-color: #3498db;
 }
 
 .box input[type="submit"] {
@@ -88,7 +92,7 @@ CSS FOR REGISTER AND SIGNIN COMPONENT
     display: block;
     margin: 20px auto;
     text-align: center;
-    border: 2px solid #2ecc71;
+    border: 2px solid #3498db;
     padding: 14px 40px;
     outline: none;
     color: white;
@@ -98,7 +102,7 @@ CSS FOR REGISTER AND SIGNIN COMPONENT
 }
 
 .box input[type="submit"]:hover {
-    background: #2ecc71;
+    background: #3498db;
 }
 
 .forgot {
@@ -117,7 +121,7 @@ CSS FOR REGISTER AND SIGNIN COMPONENT
 CSS FOR DASHBOARD
 */
 .container {
-    background-color: white;
+    background-color: rgba(0, 0, 0, 0.6);
 }
 .container-category {
     flex: 1;
@@ -129,8 +133,9 @@ CSS FOR DASHBOARD
     justify-content: center;
 }
 .container-categories-item {
-    background-color: #191919;
-    border: 1 px solid #dbdadf;
+    background-color: black;
+    border-style: solid;
+    border-width: 5px;
     border-radius: 2px;
     display: flex;
     flex-direction: column;
@@ -141,19 +146,39 @@ CSS FOR DASHBOARD
     margin: 2rem 1rem 2rem;
     max-width: 30%;
     height: 15rem;
+    font-size: larger;
 }
 .container-categories-item:hover {
-    background-color: #2ecc71;
+    background-color: #3498db;
 }
 .container-categories-text {
     padding-top: 1rem;
     text-align: center;
     font-size: 18px;
 }
-
+.container-rest-item {
+    background-color: black;
+    border-style: solid;
+    border-width: 5px;
+    border-radius: 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 2rem;
+    flex: 1 1 25%;
+    max-width: 30%;
+    font-size: larger;
+    margin: auto;
+}
 /*
 CSS
 */
+.loading {
+    text-align: center;
+    padding: 10px;
+    margin-top: 5%;
+}
 .header {
     text-align: center;
     background-color: white;
@@ -165,7 +190,6 @@ CSS
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
-    background-color: white;
     padding: 10px;
 }
 .flex-container > .card {
@@ -190,4 +214,21 @@ td {
 }
 .table tr:hover {
     background-color: #f5f5f5;
+}
+/*
+MAP
+*/
+.map-list-container {
+    float: left;
+    height: 100vh;
+    width: 28%;
+    margin: 10px;
+    padding: 30px 0;
+    background-color: rgba(0, 0, 0, 0.6);
+}
+.map {
+    float: right;
+}
+.rest-create {
+    margin: 10px 0 410px;
 }

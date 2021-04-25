@@ -3,6 +3,7 @@ import "../../../css/app.css";
 import { NavLink } from "react-router-dom";
 
 export class NavbarMenu extends React.Component {
+
     render() {
         return (
             <nav className="navbar sticky-top navbar-custom">
@@ -10,7 +11,7 @@ export class NavbarMenu extends React.Component {
                     <div className="navbar-header">
                         <NavLink className="navbar-brand" to="/dashboard">
                             FOBE
-                        </NavLink>
+                            </NavLink>
                     </div>
                     <ul className="nav navbar-nav navbar-right">
                         <li>
@@ -19,22 +20,23 @@ export class NavbarMenu extends React.Component {
                                 to="/login"
                             >
                                 LOGIN
-                            </NavLink>
+                                </NavLink>
                         </li>
                         <li>
                             <NavLink
                                 activeClassName="navbar__link--active"
                                 to="/register"
                             >
-                                {" "}
-                                REGISTER{" "}
-                            </NavLink>
+                                REGISTER
+                                </NavLink>
                         </li>
                     </ul>
                 </div>
             </nav>
-        );
+        )
     }
+
 }
+
 
 export default NavbarMenu;

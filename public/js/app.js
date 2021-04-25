@@ -114,6 +114,5626 @@ module.exports = __webpack_require__(/*! regenerator-runtime */ "./node_modules/
 
 /***/ }),
 
+/***/ "./node_modules/async/dist/async.js":
+/*!******************************************!*\
+  !*** ./node_modules/async/dist/async.js ***!
+  \******************************************/
+/***/ (function(module, exports, __webpack_require__) {
+
+/* module decorator */ module = __webpack_require__.nmd(module);
+/* provided dependency */ var process = __webpack_require__(/*! process/browser */ "./node_modules/process/browser.js");
+(function (global, factory) {
+   true ? factory(exports) :
+  0;
+}(this, (function (exports) { 'use strict';
+
+function slice(arrayLike, start) {
+    start = start|0;
+    var newLen = Math.max(arrayLike.length - start, 0);
+    var newArr = Array(newLen);
+    for(var idx = 0; idx < newLen; idx++)  {
+        newArr[idx] = arrayLike[start + idx];
+    }
+    return newArr;
+}
+
+/**
+ * Creates a continuation function with some arguments already applied.
+ *
+ * Useful as a shorthand when combined with other control flow functions. Any
+ * arguments passed to the returned function are added to the arguments
+ * originally passed to apply.
+ *
+ * @name apply
+ * @static
+ * @memberOf module:Utils
+ * @method
+ * @category Util
+ * @param {Function} fn - The function you want to eventually apply all
+ * arguments to. Invokes with (arguments...).
+ * @param {...*} arguments... - Any number of arguments to automatically apply
+ * when the continuation is called.
+ * @returns {Function} the partially-applied function
+ * @example
+ *
+ * // using apply
+ * async.parallel([
+ *     async.apply(fs.writeFile, 'testfile1', 'test1'),
+ *     async.apply(fs.writeFile, 'testfile2', 'test2')
+ * ]);
+ *
+ *
+ * // the same process without using apply
+ * async.parallel([
+ *     function(callback) {
+ *         fs.writeFile('testfile1', 'test1', callback);
+ *     },
+ *     function(callback) {
+ *         fs.writeFile('testfile2', 'test2', callback);
+ *     }
+ * ]);
+ *
+ * // It's possible to pass any number of additional arguments when calling the
+ * // continuation:
+ *
+ * node> var fn = async.apply(sys.puts, 'one');
+ * node> fn('two', 'three');
+ * one
+ * two
+ * three
+ */
+var apply = function(fn/*, ...args*/) {
+    var args = slice(arguments, 1);
+    return function(/*callArgs*/) {
+        var callArgs = slice(arguments);
+        return fn.apply(null, args.concat(callArgs));
+    };
+};
+
+var initialParams = function (fn) {
+    return function (/*...args, callback*/) {
+        var args = slice(arguments);
+        var callback = args.pop();
+        fn.call(this, args, callback);
+    };
+};
+
+/**
+ * Checks if `value` is the
+ * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
+ * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+ * @example
+ *
+ * _.isObject({});
+ * // => true
+ *
+ * _.isObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isObject(_.noop);
+ * // => true
+ *
+ * _.isObject(null);
+ * // => false
+ */
+function isObject(value) {
+  var type = typeof value;
+  return value != null && (type == 'object' || type == 'function');
+}
+
+var hasSetImmediate = typeof setImmediate === 'function' && setImmediate;
+var hasNextTick = typeof process === 'object' && typeof process.nextTick === 'function';
+
+function fallback(fn) {
+    setTimeout(fn, 0);
+}
+
+function wrap(defer) {
+    return function (fn/*, ...args*/) {
+        var args = slice(arguments, 1);
+        defer(function () {
+            fn.apply(null, args);
+        });
+    };
+}
+
+var _defer;
+
+if (hasSetImmediate) {
+    _defer = setImmediate;
+} else if (hasNextTick) {
+    _defer = process.nextTick;
+} else {
+    _defer = fallback;
+}
+
+var setImmediate$1 = wrap(_defer);
+
+/**
+ * Take a sync function and make it async, passing its return value to a
+ * callback. This is useful for plugging sync functions into a waterfall,
+ * series, or other async functions. Any arguments passed to the generated
+ * function will be passed to the wrapped function (except for the final
+ * callback argument). Errors thrown will be passed to the callback.
+ *
+ * If the function passed to `asyncify` returns a Promise, that promises's
+ * resolved/rejected state will be used to call the callback, rather than simply
+ * the synchronous return value.
+ *
+ * This also means you can asyncify ES2017 `async` functions.
+ *
+ * @name asyncify
+ * @static
+ * @memberOf module:Utils
+ * @method
+ * @alias wrapSync
+ * @category Util
+ * @param {Function} func - The synchronous function, or Promise-returning
+ * function to convert to an {@link AsyncFunction}.
+ * @returns {AsyncFunction} An asynchronous wrapper of the `func`. To be
+ * invoked with `(args..., callback)`.
+ * @example
+ *
+ * // passing a regular synchronous function
+ * async.waterfall([
+ *     async.apply(fs.readFile, filename, "utf8"),
+ *     async.asyncify(JSON.parse),
+ *     function (data, next) {
+ *         // data is the result of parsing the text.
+ *         // If there was a parsing error, it would have been caught.
+ *     }
+ * ], callback);
+ *
+ * // passing a function returning a promise
+ * async.waterfall([
+ *     async.apply(fs.readFile, filename, "utf8"),
+ *     async.asyncify(function (contents) {
+ *         return db.model.create(contents);
+ *     }),
+ *     function (model, next) {
+ *         // `model` is the instantiated model object.
+ *         // If there was an error, this function would be skipped.
+ *     }
+ * ], callback);
+ *
+ * // es2017 example, though `asyncify` is not needed if your JS environment
+ * // supports async functions out of the box
+ * var q = async.queue(async.asyncify(async function(file) {
+ *     var intermediateStep = await processFile(file);
+ *     return await somePromise(intermediateStep)
+ * }));
+ *
+ * q.push(files);
+ */
+function asyncify(func) {
+    return initialParams(function (args, callback) {
+        var result;
+        try {
+            result = func.apply(this, args);
+        } catch (e) {
+            return callback(e);
+        }
+        // if result is Promise object
+        if (isObject(result) && typeof result.then === 'function') {
+            result.then(function(value) {
+                invokeCallback(callback, null, value);
+            }, function(err) {
+                invokeCallback(callback, err.message ? err : new Error(err));
+            });
+        } else {
+            callback(null, result);
+        }
+    });
+}
+
+function invokeCallback(callback, error, value) {
+    try {
+        callback(error, value);
+    } catch (e) {
+        setImmediate$1(rethrow, e);
+    }
+}
+
+function rethrow(error) {
+    throw error;
+}
+
+var supportsSymbol = typeof Symbol === 'function';
+
+function isAsync(fn) {
+    return supportsSymbol && fn[Symbol.toStringTag] === 'AsyncFunction';
+}
+
+function wrapAsync(asyncFn) {
+    return isAsync(asyncFn) ? asyncify(asyncFn) : asyncFn;
+}
+
+function applyEach$1(eachfn) {
+    return function(fns/*, ...args*/) {
+        var args = slice(arguments, 1);
+        var go = initialParams(function(args, callback) {
+            var that = this;
+            return eachfn(fns, function (fn, cb) {
+                wrapAsync(fn).apply(that, args.concat(cb));
+            }, callback);
+        });
+        if (args.length) {
+            return go.apply(this, args);
+        }
+        else {
+            return go;
+        }
+    };
+}
+
+/** Detect free variable `global` from Node.js. */
+var freeGlobal = typeof __webpack_require__.g == 'object' && __webpack_require__.g && __webpack_require__.g.Object === Object && __webpack_require__.g;
+
+/** Detect free variable `self`. */
+var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
+
+/** Used as a reference to the global object. */
+var root = freeGlobal || freeSelf || Function('return this')();
+
+/** Built-in value references. */
+var Symbol$1 = root.Symbol;
+
+/** Used for built-in method references. */
+var objectProto = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var nativeObjectToString = objectProto.toString;
+
+/** Built-in value references. */
+var symToStringTag$1 = Symbol$1 ? Symbol$1.toStringTag : undefined;
+
+/**
+ * A specialized version of `baseGetTag` which ignores `Symbol.toStringTag` values.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @returns {string} Returns the raw `toStringTag`.
+ */
+function getRawTag(value) {
+  var isOwn = hasOwnProperty.call(value, symToStringTag$1),
+      tag = value[symToStringTag$1];
+
+  try {
+    value[symToStringTag$1] = undefined;
+    var unmasked = true;
+  } catch (e) {}
+
+  var result = nativeObjectToString.call(value);
+  if (unmasked) {
+    if (isOwn) {
+      value[symToStringTag$1] = tag;
+    } else {
+      delete value[symToStringTag$1];
+    }
+  }
+  return result;
+}
+
+/** Used for built-in method references. */
+var objectProto$1 = Object.prototype;
+
+/**
+ * Used to resolve the
+ * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var nativeObjectToString$1 = objectProto$1.toString;
+
+/**
+ * Converts `value` to a string using `Object.prototype.toString`.
+ *
+ * @private
+ * @param {*} value The value to convert.
+ * @returns {string} Returns the converted string.
+ */
+function objectToString(value) {
+  return nativeObjectToString$1.call(value);
+}
+
+/** `Object#toString` result references. */
+var nullTag = '[object Null]';
+var undefinedTag = '[object Undefined]';
+
+/** Built-in value references. */
+var symToStringTag = Symbol$1 ? Symbol$1.toStringTag : undefined;
+
+/**
+ * The base implementation of `getTag` without fallbacks for buggy environments.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @returns {string} Returns the `toStringTag`.
+ */
+function baseGetTag(value) {
+  if (value == null) {
+    return value === undefined ? undefinedTag : nullTag;
+  }
+  return (symToStringTag && symToStringTag in Object(value))
+    ? getRawTag(value)
+    : objectToString(value);
+}
+
+/** `Object#toString` result references. */
+var asyncTag = '[object AsyncFunction]';
+var funcTag = '[object Function]';
+var genTag = '[object GeneratorFunction]';
+var proxyTag = '[object Proxy]';
+
+/**
+ * Checks if `value` is classified as a `Function` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a function, else `false`.
+ * @example
+ *
+ * _.isFunction(_);
+ * // => true
+ *
+ * _.isFunction(/abc/);
+ * // => false
+ */
+function isFunction(value) {
+  if (!isObject(value)) {
+    return false;
+  }
+  // The use of `Object#toString` avoids issues with the `typeof` operator
+  // in Safari 9 which returns 'object' for typed arrays and other constructors.
+  var tag = baseGetTag(value);
+  return tag == funcTag || tag == genTag || tag == asyncTag || tag == proxyTag;
+}
+
+/** Used as references for various `Number` constants. */
+var MAX_SAFE_INTEGER = 9007199254740991;
+
+/**
+ * Checks if `value` is a valid array-like length.
+ *
+ * **Note:** This method is loosely based on
+ * [`ToLength`](http://ecma-international.org/ecma-262/7.0/#sec-tolength).
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+ * @example
+ *
+ * _.isLength(3);
+ * // => true
+ *
+ * _.isLength(Number.MIN_VALUE);
+ * // => false
+ *
+ * _.isLength(Infinity);
+ * // => false
+ *
+ * _.isLength('3');
+ * // => false
+ */
+function isLength(value) {
+  return typeof value == 'number' &&
+    value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+}
+
+/**
+ * Checks if `value` is array-like. A value is considered array-like if it's
+ * not a function and has a `value.length` that's an integer greater than or
+ * equal to `0` and less than or equal to `Number.MAX_SAFE_INTEGER`.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+ * @example
+ *
+ * _.isArrayLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isArrayLike(document.body.children);
+ * // => true
+ *
+ * _.isArrayLike('abc');
+ * // => true
+ *
+ * _.isArrayLike(_.noop);
+ * // => false
+ */
+function isArrayLike(value) {
+  return value != null && isLength(value.length) && !isFunction(value);
+}
+
+// A temporary value used to identify if the loop should be broken.
+// See #1064, #1293
+var breakLoop = {};
+
+/**
+ * This method returns `undefined`.
+ *
+ * @static
+ * @memberOf _
+ * @since 2.3.0
+ * @category Util
+ * @example
+ *
+ * _.times(2, _.noop);
+ * // => [undefined, undefined]
+ */
+function noop() {
+  // No operation performed.
+}
+
+function once(fn) {
+    return function () {
+        if (fn === null) return;
+        var callFn = fn;
+        fn = null;
+        callFn.apply(this, arguments);
+    };
+}
+
+var iteratorSymbol = typeof Symbol === 'function' && Symbol.iterator;
+
+var getIterator = function (coll) {
+    return iteratorSymbol && coll[iteratorSymbol] && coll[iteratorSymbol]();
+};
+
+/**
+ * The base implementation of `_.times` without support for iteratee shorthands
+ * or max array length checks.
+ *
+ * @private
+ * @param {number} n The number of times to invoke `iteratee`.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Array} Returns the array of results.
+ */
+function baseTimes(n, iteratee) {
+  var index = -1,
+      result = Array(n);
+
+  while (++index < n) {
+    result[index] = iteratee(index);
+  }
+  return result;
+}
+
+/**
+ * Checks if `value` is object-like. A value is object-like if it's not `null`
+ * and has a `typeof` result of "object".
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+ * @example
+ *
+ * _.isObjectLike({});
+ * // => true
+ *
+ * _.isObjectLike([1, 2, 3]);
+ * // => true
+ *
+ * _.isObjectLike(_.noop);
+ * // => false
+ *
+ * _.isObjectLike(null);
+ * // => false
+ */
+function isObjectLike(value) {
+  return value != null && typeof value == 'object';
+}
+
+/** `Object#toString` result references. */
+var argsTag = '[object Arguments]';
+
+/**
+ * The base implementation of `_.isArguments`.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an `arguments` object,
+ */
+function baseIsArguments(value) {
+  return isObjectLike(value) && baseGetTag(value) == argsTag;
+}
+
+/** Used for built-in method references. */
+var objectProto$3 = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty$2 = objectProto$3.hasOwnProperty;
+
+/** Built-in value references. */
+var propertyIsEnumerable = objectProto$3.propertyIsEnumerable;
+
+/**
+ * Checks if `value` is likely an `arguments` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an `arguments` object,
+ *  else `false`.
+ * @example
+ *
+ * _.isArguments(function() { return arguments; }());
+ * // => true
+ *
+ * _.isArguments([1, 2, 3]);
+ * // => false
+ */
+var isArguments = baseIsArguments(function() { return arguments; }()) ? baseIsArguments : function(value) {
+  return isObjectLike(value) && hasOwnProperty$2.call(value, 'callee') &&
+    !propertyIsEnumerable.call(value, 'callee');
+};
+
+/**
+ * Checks if `value` is classified as an `Array` object.
+ *
+ * @static
+ * @memberOf _
+ * @since 0.1.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an array, else `false`.
+ * @example
+ *
+ * _.isArray([1, 2, 3]);
+ * // => true
+ *
+ * _.isArray(document.body.children);
+ * // => false
+ *
+ * _.isArray('abc');
+ * // => false
+ *
+ * _.isArray(_.noop);
+ * // => false
+ */
+var isArray = Array.isArray;
+
+/**
+ * This method returns `false`.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.13.0
+ * @category Util
+ * @returns {boolean} Returns `false`.
+ * @example
+ *
+ * _.times(2, _.stubFalse);
+ * // => [false, false]
+ */
+function stubFalse() {
+  return false;
+}
+
+/** Detect free variable `exports`. */
+var freeExports = typeof exports == 'object' && exports && !exports.nodeType && exports;
+
+/** Detect free variable `module`. */
+var freeModule = freeExports && "object" == 'object' && module && !module.nodeType && module;
+
+/** Detect the popular CommonJS extension `module.exports`. */
+var moduleExports = freeModule && freeModule.exports === freeExports;
+
+/** Built-in value references. */
+var Buffer = moduleExports ? root.Buffer : undefined;
+
+/* Built-in method references for those with the same name as other `lodash` methods. */
+var nativeIsBuffer = Buffer ? Buffer.isBuffer : undefined;
+
+/**
+ * Checks if `value` is a buffer.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.3.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a buffer, else `false`.
+ * @example
+ *
+ * _.isBuffer(new Buffer(2));
+ * // => true
+ *
+ * _.isBuffer(new Uint8Array(2));
+ * // => false
+ */
+var isBuffer = nativeIsBuffer || stubFalse;
+
+/** Used as references for various `Number` constants. */
+var MAX_SAFE_INTEGER$1 = 9007199254740991;
+
+/** Used to detect unsigned integer values. */
+var reIsUint = /^(?:0|[1-9]\d*)$/;
+
+/**
+ * Checks if `value` is a valid array-like index.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+ * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+ */
+function isIndex(value, length) {
+  var type = typeof value;
+  length = length == null ? MAX_SAFE_INTEGER$1 : length;
+
+  return !!length &&
+    (type == 'number' ||
+      (type != 'symbol' && reIsUint.test(value))) &&
+        (value > -1 && value % 1 == 0 && value < length);
+}
+
+/** `Object#toString` result references. */
+var argsTag$1 = '[object Arguments]';
+var arrayTag = '[object Array]';
+var boolTag = '[object Boolean]';
+var dateTag = '[object Date]';
+var errorTag = '[object Error]';
+var funcTag$1 = '[object Function]';
+var mapTag = '[object Map]';
+var numberTag = '[object Number]';
+var objectTag = '[object Object]';
+var regexpTag = '[object RegExp]';
+var setTag = '[object Set]';
+var stringTag = '[object String]';
+var weakMapTag = '[object WeakMap]';
+
+var arrayBufferTag = '[object ArrayBuffer]';
+var dataViewTag = '[object DataView]';
+var float32Tag = '[object Float32Array]';
+var float64Tag = '[object Float64Array]';
+var int8Tag = '[object Int8Array]';
+var int16Tag = '[object Int16Array]';
+var int32Tag = '[object Int32Array]';
+var uint8Tag = '[object Uint8Array]';
+var uint8ClampedTag = '[object Uint8ClampedArray]';
+var uint16Tag = '[object Uint16Array]';
+var uint32Tag = '[object Uint32Array]';
+
+/** Used to identify `toStringTag` values of typed arrays. */
+var typedArrayTags = {};
+typedArrayTags[float32Tag] = typedArrayTags[float64Tag] =
+typedArrayTags[int8Tag] = typedArrayTags[int16Tag] =
+typedArrayTags[int32Tag] = typedArrayTags[uint8Tag] =
+typedArrayTags[uint8ClampedTag] = typedArrayTags[uint16Tag] =
+typedArrayTags[uint32Tag] = true;
+typedArrayTags[argsTag$1] = typedArrayTags[arrayTag] =
+typedArrayTags[arrayBufferTag] = typedArrayTags[boolTag] =
+typedArrayTags[dataViewTag] = typedArrayTags[dateTag] =
+typedArrayTags[errorTag] = typedArrayTags[funcTag$1] =
+typedArrayTags[mapTag] = typedArrayTags[numberTag] =
+typedArrayTags[objectTag] = typedArrayTags[regexpTag] =
+typedArrayTags[setTag] = typedArrayTags[stringTag] =
+typedArrayTags[weakMapTag] = false;
+
+/**
+ * The base implementation of `_.isTypedArray` without Node.js optimizations.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a typed array, else `false`.
+ */
+function baseIsTypedArray(value) {
+  return isObjectLike(value) &&
+    isLength(value.length) && !!typedArrayTags[baseGetTag(value)];
+}
+
+/**
+ * The base implementation of `_.unary` without support for storing metadata.
+ *
+ * @private
+ * @param {Function} func The function to cap arguments for.
+ * @returns {Function} Returns the new capped function.
+ */
+function baseUnary(func) {
+  return function(value) {
+    return func(value);
+  };
+}
+
+/** Detect free variable `exports`. */
+var freeExports$1 = typeof exports == 'object' && exports && !exports.nodeType && exports;
+
+/** Detect free variable `module`. */
+var freeModule$1 = freeExports$1 && "object" == 'object' && module && !module.nodeType && module;
+
+/** Detect the popular CommonJS extension `module.exports`. */
+var moduleExports$1 = freeModule$1 && freeModule$1.exports === freeExports$1;
+
+/** Detect free variable `process` from Node.js. */
+var freeProcess = moduleExports$1 && freeGlobal.process;
+
+/** Used to access faster Node.js helpers. */
+var nodeUtil = (function() {
+  try {
+    // Use `util.types` for Node.js 10+.
+    var types = freeModule$1 && freeModule$1.require && freeModule$1.require('util').types;
+
+    if (types) {
+      return types;
+    }
+
+    // Legacy `process.binding('util')` for Node.js < 10.
+    return freeProcess && freeProcess.binding && freeProcess.binding('util');
+  } catch (e) {}
+}());
+
+/* Node.js helper references. */
+var nodeIsTypedArray = nodeUtil && nodeUtil.isTypedArray;
+
+/**
+ * Checks if `value` is classified as a typed array.
+ *
+ * @static
+ * @memberOf _
+ * @since 3.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a typed array, else `false`.
+ * @example
+ *
+ * _.isTypedArray(new Uint8Array);
+ * // => true
+ *
+ * _.isTypedArray([]);
+ * // => false
+ */
+var isTypedArray = nodeIsTypedArray ? baseUnary(nodeIsTypedArray) : baseIsTypedArray;
+
+/** Used for built-in method references. */
+var objectProto$2 = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty$1 = objectProto$2.hasOwnProperty;
+
+/**
+ * Creates an array of the enumerable property names of the array-like `value`.
+ *
+ * @private
+ * @param {*} value The value to query.
+ * @param {boolean} inherited Specify returning inherited property names.
+ * @returns {Array} Returns the array of property names.
+ */
+function arrayLikeKeys(value, inherited) {
+  var isArr = isArray(value),
+      isArg = !isArr && isArguments(value),
+      isBuff = !isArr && !isArg && isBuffer(value),
+      isType = !isArr && !isArg && !isBuff && isTypedArray(value),
+      skipIndexes = isArr || isArg || isBuff || isType,
+      result = skipIndexes ? baseTimes(value.length, String) : [],
+      length = result.length;
+
+  for (var key in value) {
+    if ((inherited || hasOwnProperty$1.call(value, key)) &&
+        !(skipIndexes && (
+           // Safari 9 has enumerable `arguments.length` in strict mode.
+           key == 'length' ||
+           // Node.js 0.10 has enumerable non-index properties on buffers.
+           (isBuff && (key == 'offset' || key == 'parent')) ||
+           // PhantomJS 2 has enumerable non-index properties on typed arrays.
+           (isType && (key == 'buffer' || key == 'byteLength' || key == 'byteOffset')) ||
+           // Skip index properties.
+           isIndex(key, length)
+        ))) {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+/** Used for built-in method references. */
+var objectProto$5 = Object.prototype;
+
+/**
+ * Checks if `value` is likely a prototype object.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a prototype, else `false`.
+ */
+function isPrototype(value) {
+  var Ctor = value && value.constructor,
+      proto = (typeof Ctor == 'function' && Ctor.prototype) || objectProto$5;
+
+  return value === proto;
+}
+
+/**
+ * Creates a unary function that invokes `func` with its argument transformed.
+ *
+ * @private
+ * @param {Function} func The function to wrap.
+ * @param {Function} transform The argument transform.
+ * @returns {Function} Returns the new function.
+ */
+function overArg(func, transform) {
+  return function(arg) {
+    return func(transform(arg));
+  };
+}
+
+/* Built-in method references for those with the same name as other `lodash` methods. */
+var nativeKeys = overArg(Object.keys, Object);
+
+/** Used for built-in method references. */
+var objectProto$4 = Object.prototype;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty$3 = objectProto$4.hasOwnProperty;
+
+/**
+ * The base implementation of `_.keys` which doesn't treat sparse arrays as dense.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ */
+function baseKeys(object) {
+  if (!isPrototype(object)) {
+    return nativeKeys(object);
+  }
+  var result = [];
+  for (var key in Object(object)) {
+    if (hasOwnProperty$3.call(object, key) && key != 'constructor') {
+      result.push(key);
+    }
+  }
+  return result;
+}
+
+/**
+ * Creates an array of the own enumerable property names of `object`.
+ *
+ * **Note:** Non-object values are coerced to objects. See the
+ * [ES spec](http://ecma-international.org/ecma-262/7.0/#sec-object.keys)
+ * for more details.
+ *
+ * @static
+ * @since 0.1.0
+ * @memberOf _
+ * @category Object
+ * @param {Object} object The object to query.
+ * @returns {Array} Returns the array of property names.
+ * @example
+ *
+ * function Foo() {
+ *   this.a = 1;
+ *   this.b = 2;
+ * }
+ *
+ * Foo.prototype.c = 3;
+ *
+ * _.keys(new Foo);
+ * // => ['a', 'b'] (iteration order is not guaranteed)
+ *
+ * _.keys('hi');
+ * // => ['0', '1']
+ */
+function keys(object) {
+  return isArrayLike(object) ? arrayLikeKeys(object) : baseKeys(object);
+}
+
+function createArrayIterator(coll) {
+    var i = -1;
+    var len = coll.length;
+    return function next() {
+        return ++i < len ? {value: coll[i], key: i} : null;
+    }
+}
+
+function createES2015Iterator(iterator) {
+    var i = -1;
+    return function next() {
+        var item = iterator.next();
+        if (item.done)
+            return null;
+        i++;
+        return {value: item.value, key: i};
+    }
+}
+
+function createObjectIterator(obj) {
+    var okeys = keys(obj);
+    var i = -1;
+    var len = okeys.length;
+    return function next() {
+        var key = okeys[++i];
+        return i < len ? {value: obj[key], key: key} : null;
+    };
+}
+
+function iterator(coll) {
+    if (isArrayLike(coll)) {
+        return createArrayIterator(coll);
+    }
+
+    var iterator = getIterator(coll);
+    return iterator ? createES2015Iterator(iterator) : createObjectIterator(coll);
+}
+
+function onlyOnce(fn) {
+    return function() {
+        if (fn === null) throw new Error("Callback was already called.");
+        var callFn = fn;
+        fn = null;
+        callFn.apply(this, arguments);
+    };
+}
+
+function _eachOfLimit(limit) {
+    return function (obj, iteratee, callback) {
+        callback = once(callback || noop);
+        if (limit <= 0 || !obj) {
+            return callback(null);
+        }
+        var nextElem = iterator(obj);
+        var done = false;
+        var running = 0;
+        var looping = false;
+
+        function iterateeCallback(err, value) {
+            running -= 1;
+            if (err) {
+                done = true;
+                callback(err);
+            }
+            else if (value === breakLoop || (done && running <= 0)) {
+                done = true;
+                return callback(null);
+            }
+            else if (!looping) {
+                replenish();
+            }
+        }
+
+        function replenish () {
+            looping = true;
+            while (running < limit && !done) {
+                var elem = nextElem();
+                if (elem === null) {
+                    done = true;
+                    if (running <= 0) {
+                        callback(null);
+                    }
+                    return;
+                }
+                running += 1;
+                iteratee(elem.value, elem.key, onlyOnce(iterateeCallback));
+            }
+            looping = false;
+        }
+
+        replenish();
+    };
+}
+
+/**
+ * The same as [`eachOf`]{@link module:Collections.eachOf} but runs a maximum of `limit` async operations at a
+ * time.
+ *
+ * @name eachOfLimit
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.eachOf]{@link module:Collections.eachOf}
+ * @alias forEachOfLimit
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {number} limit - The maximum number of async operations at a time.
+ * @param {AsyncFunction} iteratee - An async function to apply to each
+ * item in `coll`. The `key` is the item's key, or index in the case of an
+ * array.
+ * Invoked with (item, key, callback).
+ * @param {Function} [callback] - A callback which is called when all
+ * `iteratee` functions have finished, or an error occurs. Invoked with (err).
+ */
+function eachOfLimit(coll, limit, iteratee, callback) {
+    _eachOfLimit(limit)(coll, wrapAsync(iteratee), callback);
+}
+
+function doLimit(fn, limit) {
+    return function (iterable, iteratee, callback) {
+        return fn(iterable, limit, iteratee, callback);
+    };
+}
+
+// eachOf implementation optimized for array-likes
+function eachOfArrayLike(coll, iteratee, callback) {
+    callback = once(callback || noop);
+    var index = 0,
+        completed = 0,
+        length = coll.length;
+    if (length === 0) {
+        callback(null);
+    }
+
+    function iteratorCallback(err, value) {
+        if (err) {
+            callback(err);
+        } else if ((++completed === length) || value === breakLoop) {
+            callback(null);
+        }
+    }
+
+    for (; index < length; index++) {
+        iteratee(coll[index], index, onlyOnce(iteratorCallback));
+    }
+}
+
+// a generic version of eachOf which can handle array, object, and iterator cases.
+var eachOfGeneric = doLimit(eachOfLimit, Infinity);
+
+/**
+ * Like [`each`]{@link module:Collections.each}, except that it passes the key (or index) as the second argument
+ * to the iteratee.
+ *
+ * @name eachOf
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @alias forEachOf
+ * @category Collection
+ * @see [async.each]{@link module:Collections.each}
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {AsyncFunction} iteratee - A function to apply to each
+ * item in `coll`.
+ * The `key` is the item's key, or index in the case of an array.
+ * Invoked with (item, key, callback).
+ * @param {Function} [callback] - A callback which is called when all
+ * `iteratee` functions have finished, or an error occurs. Invoked with (err).
+ * @example
+ *
+ * var obj = {dev: "/dev.json", test: "/test.json", prod: "/prod.json"};
+ * var configs = {};
+ *
+ * async.forEachOf(obj, function (value, key, callback) {
+ *     fs.readFile(__dirname + value, "utf8", function (err, data) {
+ *         if (err) return callback(err);
+ *         try {
+ *             configs[key] = JSON.parse(data);
+ *         } catch (e) {
+ *             return callback(e);
+ *         }
+ *         callback();
+ *     });
+ * }, function (err) {
+ *     if (err) console.error(err.message);
+ *     // configs is now a map of JSON data
+ *     doSomethingWith(configs);
+ * });
+ */
+var eachOf = function(coll, iteratee, callback) {
+    var eachOfImplementation = isArrayLike(coll) ? eachOfArrayLike : eachOfGeneric;
+    eachOfImplementation(coll, wrapAsync(iteratee), callback);
+};
+
+function doParallel(fn) {
+    return function (obj, iteratee, callback) {
+        return fn(eachOf, obj, wrapAsync(iteratee), callback);
+    };
+}
+
+function _asyncMap(eachfn, arr, iteratee, callback) {
+    callback = callback || noop;
+    arr = arr || [];
+    var results = [];
+    var counter = 0;
+    var _iteratee = wrapAsync(iteratee);
+
+    eachfn(arr, function (value, _, callback) {
+        var index = counter++;
+        _iteratee(value, function (err, v) {
+            results[index] = v;
+            callback(err);
+        });
+    }, function (err) {
+        callback(err, results);
+    });
+}
+
+/**
+ * Produces a new collection of values by mapping each value in `coll` through
+ * the `iteratee` function. The `iteratee` is called with an item from `coll`
+ * and a callback for when it has finished processing. Each of these callback
+ * takes 2 arguments: an `error`, and the transformed item from `coll`. If
+ * `iteratee` passes an error to its callback, the main `callback` (for the
+ * `map` function) is immediately called with the error.
+ *
+ * Note, that since this function applies the `iteratee` to each item in
+ * parallel, there is no guarantee that the `iteratee` functions will complete
+ * in order. However, the results array will be in the same order as the
+ * original `coll`.
+ *
+ * If `map` is passed an Object, the results will be an Array.  The results
+ * will roughly be in the order of the original Objects' keys (but this can
+ * vary across JavaScript engines).
+ *
+ * @name map
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {AsyncFunction} iteratee - An async function to apply to each item in
+ * `coll`.
+ * The iteratee should complete with the transformed item.
+ * Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called when all `iteratee`
+ * functions have finished, or an error occurs. Results is an Array of the
+ * transformed items from the `coll`. Invoked with (err, results).
+ * @example
+ *
+ * async.map(['file1','file2','file3'], fs.stat, function(err, results) {
+ *     // results is now an array of stats for each file
+ * });
+ */
+var map = doParallel(_asyncMap);
+
+/**
+ * Applies the provided arguments to each function in the array, calling
+ * `callback` after all functions have completed. If you only provide the first
+ * argument, `fns`, then it will return a function which lets you pass in the
+ * arguments as if it were a single function call. If more arguments are
+ * provided, `callback` is required while `args` is still optional.
+ *
+ * @name applyEach
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @category Control Flow
+ * @param {Array|Iterable|Object} fns - A collection of {@link AsyncFunction}s
+ * to all call with the same arguments
+ * @param {...*} [args] - any number of separate arguments to pass to the
+ * function.
+ * @param {Function} [callback] - the final argument should be the callback,
+ * called when all functions have completed processing.
+ * @returns {Function} - If only the first argument, `fns`, is provided, it will
+ * return a function which lets you pass in the arguments as if it were a single
+ * function call. The signature is `(..args, callback)`. If invoked with any
+ * arguments, `callback` is required.
+ * @example
+ *
+ * async.applyEach([enableSearch, updateSchema], 'bucket', callback);
+ *
+ * // partial application example:
+ * async.each(
+ *     buckets,
+ *     async.applyEach([enableSearch, updateSchema]),
+ *     callback
+ * );
+ */
+var applyEach = applyEach$1(map);
+
+function doParallelLimit(fn) {
+    return function (obj, limit, iteratee, callback) {
+        return fn(_eachOfLimit(limit), obj, wrapAsync(iteratee), callback);
+    };
+}
+
+/**
+ * The same as [`map`]{@link module:Collections.map} but runs a maximum of `limit` async operations at a time.
+ *
+ * @name mapLimit
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.map]{@link module:Collections.map}
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {number} limit - The maximum number of async operations at a time.
+ * @param {AsyncFunction} iteratee - An async function to apply to each item in
+ * `coll`.
+ * The iteratee should complete with the transformed item.
+ * Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called when all `iteratee`
+ * functions have finished, or an error occurs. Results is an array of the
+ * transformed items from the `coll`. Invoked with (err, results).
+ */
+var mapLimit = doParallelLimit(_asyncMap);
+
+/**
+ * The same as [`map`]{@link module:Collections.map} but runs only a single async operation at a time.
+ *
+ * @name mapSeries
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.map]{@link module:Collections.map}
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {AsyncFunction} iteratee - An async function to apply to each item in
+ * `coll`.
+ * The iteratee should complete with the transformed item.
+ * Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called when all `iteratee`
+ * functions have finished, or an error occurs. Results is an array of the
+ * transformed items from the `coll`. Invoked with (err, results).
+ */
+var mapSeries = doLimit(mapLimit, 1);
+
+/**
+ * The same as [`applyEach`]{@link module:ControlFlow.applyEach} but runs only a single async operation at a time.
+ *
+ * @name applyEachSeries
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @see [async.applyEach]{@link module:ControlFlow.applyEach}
+ * @category Control Flow
+ * @param {Array|Iterable|Object} fns - A collection of {@link AsyncFunction}s to all
+ * call with the same arguments
+ * @param {...*} [args] - any number of separate arguments to pass to the
+ * function.
+ * @param {Function} [callback] - the final argument should be the callback,
+ * called when all functions have completed processing.
+ * @returns {Function} - If only the first argument is provided, it will return
+ * a function which lets you pass in the arguments as if it were a single
+ * function call.
+ */
+var applyEachSeries = applyEach$1(mapSeries);
+
+/**
+ * A specialized version of `_.forEach` for arrays without support for
+ * iteratee shorthands.
+ *
+ * @private
+ * @param {Array} [array] The array to iterate over.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Array} Returns `array`.
+ */
+function arrayEach(array, iteratee) {
+  var index = -1,
+      length = array == null ? 0 : array.length;
+
+  while (++index < length) {
+    if (iteratee(array[index], index, array) === false) {
+      break;
+    }
+  }
+  return array;
+}
+
+/**
+ * Creates a base function for methods like `_.forIn` and `_.forOwn`.
+ *
+ * @private
+ * @param {boolean} [fromRight] Specify iterating from right to left.
+ * @returns {Function} Returns the new base function.
+ */
+function createBaseFor(fromRight) {
+  return function(object, iteratee, keysFunc) {
+    var index = -1,
+        iterable = Object(object),
+        props = keysFunc(object),
+        length = props.length;
+
+    while (length--) {
+      var key = props[fromRight ? length : ++index];
+      if (iteratee(iterable[key], key, iterable) === false) {
+        break;
+      }
+    }
+    return object;
+  };
+}
+
+/**
+ * The base implementation of `baseForOwn` which iterates over `object`
+ * properties returned by `keysFunc` and invokes `iteratee` for each property.
+ * Iteratee functions may exit iteration early by explicitly returning `false`.
+ *
+ * @private
+ * @param {Object} object The object to iterate over.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @param {Function} keysFunc The function to get the keys of `object`.
+ * @returns {Object} Returns `object`.
+ */
+var baseFor = createBaseFor();
+
+/**
+ * The base implementation of `_.forOwn` without support for iteratee shorthands.
+ *
+ * @private
+ * @param {Object} object The object to iterate over.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Object} Returns `object`.
+ */
+function baseForOwn(object, iteratee) {
+  return object && baseFor(object, iteratee, keys);
+}
+
+/**
+ * The base implementation of `_.findIndex` and `_.findLastIndex` without
+ * support for iteratee shorthands.
+ *
+ * @private
+ * @param {Array} array The array to inspect.
+ * @param {Function} predicate The function invoked per iteration.
+ * @param {number} fromIndex The index to search from.
+ * @param {boolean} [fromRight] Specify iterating from right to left.
+ * @returns {number} Returns the index of the matched value, else `-1`.
+ */
+function baseFindIndex(array, predicate, fromIndex, fromRight) {
+  var length = array.length,
+      index = fromIndex + (fromRight ? 1 : -1);
+
+  while ((fromRight ? index-- : ++index < length)) {
+    if (predicate(array[index], index, array)) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+/**
+ * The base implementation of `_.isNaN` without support for number objects.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is `NaN`, else `false`.
+ */
+function baseIsNaN(value) {
+  return value !== value;
+}
+
+/**
+ * A specialized version of `_.indexOf` which performs strict equality
+ * comparisons of values, i.e. `===`.
+ *
+ * @private
+ * @param {Array} array The array to inspect.
+ * @param {*} value The value to search for.
+ * @param {number} fromIndex The index to search from.
+ * @returns {number} Returns the index of the matched value, else `-1`.
+ */
+function strictIndexOf(array, value, fromIndex) {
+  var index = fromIndex - 1,
+      length = array.length;
+
+  while (++index < length) {
+    if (array[index] === value) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+/**
+ * The base implementation of `_.indexOf` without `fromIndex` bounds checks.
+ *
+ * @private
+ * @param {Array} array The array to inspect.
+ * @param {*} value The value to search for.
+ * @param {number} fromIndex The index to search from.
+ * @returns {number} Returns the index of the matched value, else `-1`.
+ */
+function baseIndexOf(array, value, fromIndex) {
+  return value === value
+    ? strictIndexOf(array, value, fromIndex)
+    : baseFindIndex(array, baseIsNaN, fromIndex);
+}
+
+/**
+ * Determines the best order for running the {@link AsyncFunction}s in `tasks`, based on
+ * their requirements. Each function can optionally depend on other functions
+ * being completed first, and each function is run as soon as its requirements
+ * are satisfied.
+ *
+ * If any of the {@link AsyncFunction}s pass an error to their callback, the `auto` sequence
+ * will stop. Further tasks will not execute (so any other functions depending
+ * on it will not run), and the main `callback` is immediately called with the
+ * error.
+ *
+ * {@link AsyncFunction}s also receive an object containing the results of functions which
+ * have completed so far as the first argument, if they have dependencies. If a
+ * task function has no dependencies, it will only be passed a callback.
+ *
+ * @name auto
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @category Control Flow
+ * @param {Object} tasks - An object. Each of its properties is either a
+ * function or an array of requirements, with the {@link AsyncFunction} itself the last item
+ * in the array. The object's key of a property serves as the name of the task
+ * defined by that property, i.e. can be used when specifying requirements for
+ * other tasks. The function receives one or two arguments:
+ * * a `results` object, containing the results of the previously executed
+ *   functions, only passed if the task has any dependencies,
+ * * a `callback(err, result)` function, which must be called when finished,
+ *   passing an `error` (which can be `null`) and the result of the function's
+ *   execution.
+ * @param {number} [concurrency=Infinity] - An optional `integer` for
+ * determining the maximum number of tasks that can be run in parallel. By
+ * default, as many as possible.
+ * @param {Function} [callback] - An optional callback which is called when all
+ * the tasks have been completed. It receives the `err` argument if any `tasks`
+ * pass an error to their callback. Results are always returned; however, if an
+ * error occurs, no further `tasks` will be performed, and the results object
+ * will only contain partial results. Invoked with (err, results).
+ * @returns undefined
+ * @example
+ *
+ * async.auto({
+ *     // this function will just be passed a callback
+ *     readData: async.apply(fs.readFile, 'data.txt', 'utf-8'),
+ *     showData: ['readData', function(results, cb) {
+ *         // results.readData is the file's contents
+ *         // ...
+ *     }]
+ * }, callback);
+ *
+ * async.auto({
+ *     get_data: function(callback) {
+ *         console.log('in get_data');
+ *         // async code to get some data
+ *         callback(null, 'data', 'converted to array');
+ *     },
+ *     make_folder: function(callback) {
+ *         console.log('in make_folder');
+ *         // async code to create a directory to store a file in
+ *         // this is run at the same time as getting the data
+ *         callback(null, 'folder');
+ *     },
+ *     write_file: ['get_data', 'make_folder', function(results, callback) {
+ *         console.log('in write_file', JSON.stringify(results));
+ *         // once there is some data and the directory exists,
+ *         // write the data to a file in the directory
+ *         callback(null, 'filename');
+ *     }],
+ *     email_link: ['write_file', function(results, callback) {
+ *         console.log('in email_link', JSON.stringify(results));
+ *         // once the file is written let's email a link to it...
+ *         // results.write_file contains the filename returned by write_file.
+ *         callback(null, {'file':results.write_file, 'email':'user@example.com'});
+ *     }]
+ * }, function(err, results) {
+ *     console.log('err = ', err);
+ *     console.log('results = ', results);
+ * });
+ */
+var auto = function (tasks, concurrency, callback) {
+    if (typeof concurrency === 'function') {
+        // concurrency is optional, shift the args.
+        callback = concurrency;
+        concurrency = null;
+    }
+    callback = once(callback || noop);
+    var keys$$1 = keys(tasks);
+    var numTasks = keys$$1.length;
+    if (!numTasks) {
+        return callback(null);
+    }
+    if (!concurrency) {
+        concurrency = numTasks;
+    }
+
+    var results = {};
+    var runningTasks = 0;
+    var hasError = false;
+
+    var listeners = Object.create(null);
+
+    var readyTasks = [];
+
+    // for cycle detection:
+    var readyToCheck = []; // tasks that have been identified as reachable
+    // without the possibility of returning to an ancestor task
+    var uncheckedDependencies = {};
+
+    baseForOwn(tasks, function (task, key) {
+        if (!isArray(task)) {
+            // no dependencies
+            enqueueTask(key, [task]);
+            readyToCheck.push(key);
+            return;
+        }
+
+        var dependencies = task.slice(0, task.length - 1);
+        var remainingDependencies = dependencies.length;
+        if (remainingDependencies === 0) {
+            enqueueTask(key, task);
+            readyToCheck.push(key);
+            return;
+        }
+        uncheckedDependencies[key] = remainingDependencies;
+
+        arrayEach(dependencies, function (dependencyName) {
+            if (!tasks[dependencyName]) {
+                throw new Error('async.auto task `' + key +
+                    '` has a non-existent dependency `' +
+                    dependencyName + '` in ' +
+                    dependencies.join(', '));
+            }
+            addListener(dependencyName, function () {
+                remainingDependencies--;
+                if (remainingDependencies === 0) {
+                    enqueueTask(key, task);
+                }
+            });
+        });
+    });
+
+    checkForDeadlocks();
+    processQueue();
+
+    function enqueueTask(key, task) {
+        readyTasks.push(function () {
+            runTask(key, task);
+        });
+    }
+
+    function processQueue() {
+        if (readyTasks.length === 0 && runningTasks === 0) {
+            return callback(null, results);
+        }
+        while(readyTasks.length && runningTasks < concurrency) {
+            var run = readyTasks.shift();
+            run();
+        }
+
+    }
+
+    function addListener(taskName, fn) {
+        var taskListeners = listeners[taskName];
+        if (!taskListeners) {
+            taskListeners = listeners[taskName] = [];
+        }
+
+        taskListeners.push(fn);
+    }
+
+    function taskComplete(taskName) {
+        var taskListeners = listeners[taskName] || [];
+        arrayEach(taskListeners, function (fn) {
+            fn();
+        });
+        processQueue();
+    }
+
+
+    function runTask(key, task) {
+        if (hasError) return;
+
+        var taskCallback = onlyOnce(function(err, result) {
+            runningTasks--;
+            if (arguments.length > 2) {
+                result = slice(arguments, 1);
+            }
+            if (err) {
+                var safeResults = {};
+                baseForOwn(results, function(val, rkey) {
+                    safeResults[rkey] = val;
+                });
+                safeResults[key] = result;
+                hasError = true;
+                listeners = Object.create(null);
+
+                callback(err, safeResults);
+            } else {
+                results[key] = result;
+                taskComplete(key);
+            }
+        });
+
+        runningTasks++;
+        var taskFn = wrapAsync(task[task.length - 1]);
+        if (task.length > 1) {
+            taskFn(results, taskCallback);
+        } else {
+            taskFn(taskCallback);
+        }
+    }
+
+    function checkForDeadlocks() {
+        // Kahn's algorithm
+        // https://en.wikipedia.org/wiki/Topological_sorting#Kahn.27s_algorithm
+        // http://connalle.blogspot.com/2013/10/topological-sortingkahn-algorithm.html
+        var currentTask;
+        var counter = 0;
+        while (readyToCheck.length) {
+            currentTask = readyToCheck.pop();
+            counter++;
+            arrayEach(getDependents(currentTask), function (dependent) {
+                if (--uncheckedDependencies[dependent] === 0) {
+                    readyToCheck.push(dependent);
+                }
+            });
+        }
+
+        if (counter !== numTasks) {
+            throw new Error(
+                'async.auto cannot execute tasks due to a recursive dependency'
+            );
+        }
+    }
+
+    function getDependents(taskName) {
+        var result = [];
+        baseForOwn(tasks, function (task, key) {
+            if (isArray(task) && baseIndexOf(task, taskName, 0) >= 0) {
+                result.push(key);
+            }
+        });
+        return result;
+    }
+};
+
+/**
+ * A specialized version of `_.map` for arrays without support for iteratee
+ * shorthands.
+ *
+ * @private
+ * @param {Array} [array] The array to iterate over.
+ * @param {Function} iteratee The function invoked per iteration.
+ * @returns {Array} Returns the new mapped array.
+ */
+function arrayMap(array, iteratee) {
+  var index = -1,
+      length = array == null ? 0 : array.length,
+      result = Array(length);
+
+  while (++index < length) {
+    result[index] = iteratee(array[index], index, array);
+  }
+  return result;
+}
+
+/** `Object#toString` result references. */
+var symbolTag = '[object Symbol]';
+
+/**
+ * Checks if `value` is classified as a `Symbol` primitive or object.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
+ * @example
+ *
+ * _.isSymbol(Symbol.iterator);
+ * // => true
+ *
+ * _.isSymbol('abc');
+ * // => false
+ */
+function isSymbol(value) {
+  return typeof value == 'symbol' ||
+    (isObjectLike(value) && baseGetTag(value) == symbolTag);
+}
+
+/** Used as references for various `Number` constants. */
+var INFINITY = 1 / 0;
+
+/** Used to convert symbols to primitives and strings. */
+var symbolProto = Symbol$1 ? Symbol$1.prototype : undefined;
+var symbolToString = symbolProto ? symbolProto.toString : undefined;
+
+/**
+ * The base implementation of `_.toString` which doesn't convert nullish
+ * values to empty strings.
+ *
+ * @private
+ * @param {*} value The value to process.
+ * @returns {string} Returns the string.
+ */
+function baseToString(value) {
+  // Exit early for strings to avoid a performance hit in some environments.
+  if (typeof value == 'string') {
+    return value;
+  }
+  if (isArray(value)) {
+    // Recursively convert values (susceptible to call stack limits).
+    return arrayMap(value, baseToString) + '';
+  }
+  if (isSymbol(value)) {
+    return symbolToString ? symbolToString.call(value) : '';
+  }
+  var result = (value + '');
+  return (result == '0' && (1 / value) == -INFINITY) ? '-0' : result;
+}
+
+/**
+ * The base implementation of `_.slice` without an iteratee call guard.
+ *
+ * @private
+ * @param {Array} array The array to slice.
+ * @param {number} [start=0] The start position.
+ * @param {number} [end=array.length] The end position.
+ * @returns {Array} Returns the slice of `array`.
+ */
+function baseSlice(array, start, end) {
+  var index = -1,
+      length = array.length;
+
+  if (start < 0) {
+    start = -start > length ? 0 : (length + start);
+  }
+  end = end > length ? length : end;
+  if (end < 0) {
+    end += length;
+  }
+  length = start > end ? 0 : ((end - start) >>> 0);
+  start >>>= 0;
+
+  var result = Array(length);
+  while (++index < length) {
+    result[index] = array[index + start];
+  }
+  return result;
+}
+
+/**
+ * Casts `array` to a slice if it's needed.
+ *
+ * @private
+ * @param {Array} array The array to inspect.
+ * @param {number} start The start position.
+ * @param {number} [end=array.length] The end position.
+ * @returns {Array} Returns the cast slice.
+ */
+function castSlice(array, start, end) {
+  var length = array.length;
+  end = end === undefined ? length : end;
+  return (!start && end >= length) ? array : baseSlice(array, start, end);
+}
+
+/**
+ * Used by `_.trim` and `_.trimEnd` to get the index of the last string symbol
+ * that is not found in the character symbols.
+ *
+ * @private
+ * @param {Array} strSymbols The string symbols to inspect.
+ * @param {Array} chrSymbols The character symbols to find.
+ * @returns {number} Returns the index of the last unmatched string symbol.
+ */
+function charsEndIndex(strSymbols, chrSymbols) {
+  var index = strSymbols.length;
+
+  while (index-- && baseIndexOf(chrSymbols, strSymbols[index], 0) > -1) {}
+  return index;
+}
+
+/**
+ * Used by `_.trim` and `_.trimStart` to get the index of the first string symbol
+ * that is not found in the character symbols.
+ *
+ * @private
+ * @param {Array} strSymbols The string symbols to inspect.
+ * @param {Array} chrSymbols The character symbols to find.
+ * @returns {number} Returns the index of the first unmatched string symbol.
+ */
+function charsStartIndex(strSymbols, chrSymbols) {
+  var index = -1,
+      length = strSymbols.length;
+
+  while (++index < length && baseIndexOf(chrSymbols, strSymbols[index], 0) > -1) {}
+  return index;
+}
+
+/**
+ * Converts an ASCII `string` to an array.
+ *
+ * @private
+ * @param {string} string The string to convert.
+ * @returns {Array} Returns the converted array.
+ */
+function asciiToArray(string) {
+  return string.split('');
+}
+
+/** Used to compose unicode character classes. */
+var rsAstralRange = '\\ud800-\\udfff';
+var rsComboMarksRange = '\\u0300-\\u036f';
+var reComboHalfMarksRange = '\\ufe20-\\ufe2f';
+var rsComboSymbolsRange = '\\u20d0-\\u20ff';
+var rsComboRange = rsComboMarksRange + reComboHalfMarksRange + rsComboSymbolsRange;
+var rsVarRange = '\\ufe0e\\ufe0f';
+
+/** Used to compose unicode capture groups. */
+var rsZWJ = '\\u200d';
+
+/** Used to detect strings with [zero-width joiners or code points from the astral planes](http://eev.ee/blog/2015/09/12/dark-corners-of-unicode/). */
+var reHasUnicode = RegExp('[' + rsZWJ + rsAstralRange  + rsComboRange + rsVarRange + ']');
+
+/**
+ * Checks if `string` contains Unicode symbols.
+ *
+ * @private
+ * @param {string} string The string to inspect.
+ * @returns {boolean} Returns `true` if a symbol is found, else `false`.
+ */
+function hasUnicode(string) {
+  return reHasUnicode.test(string);
+}
+
+/** Used to compose unicode character classes. */
+var rsAstralRange$1 = '\\ud800-\\udfff';
+var rsComboMarksRange$1 = '\\u0300-\\u036f';
+var reComboHalfMarksRange$1 = '\\ufe20-\\ufe2f';
+var rsComboSymbolsRange$1 = '\\u20d0-\\u20ff';
+var rsComboRange$1 = rsComboMarksRange$1 + reComboHalfMarksRange$1 + rsComboSymbolsRange$1;
+var rsVarRange$1 = '\\ufe0e\\ufe0f';
+
+/** Used to compose unicode capture groups. */
+var rsAstral = '[' + rsAstralRange$1 + ']';
+var rsCombo = '[' + rsComboRange$1 + ']';
+var rsFitz = '\\ud83c[\\udffb-\\udfff]';
+var rsModifier = '(?:' + rsCombo + '|' + rsFitz + ')';
+var rsNonAstral = '[^' + rsAstralRange$1 + ']';
+var rsRegional = '(?:\\ud83c[\\udde6-\\uddff]){2}';
+var rsSurrPair = '[\\ud800-\\udbff][\\udc00-\\udfff]';
+var rsZWJ$1 = '\\u200d';
+
+/** Used to compose unicode regexes. */
+var reOptMod = rsModifier + '?';
+var rsOptVar = '[' + rsVarRange$1 + ']?';
+var rsOptJoin = '(?:' + rsZWJ$1 + '(?:' + [rsNonAstral, rsRegional, rsSurrPair].join('|') + ')' + rsOptVar + reOptMod + ')*';
+var rsSeq = rsOptVar + reOptMod + rsOptJoin;
+var rsSymbol = '(?:' + [rsNonAstral + rsCombo + '?', rsCombo, rsRegional, rsSurrPair, rsAstral].join('|') + ')';
+
+/** Used to match [string symbols](https://mathiasbynens.be/notes/javascript-unicode). */
+var reUnicode = RegExp(rsFitz + '(?=' + rsFitz + ')|' + rsSymbol + rsSeq, 'g');
+
+/**
+ * Converts a Unicode `string` to an array.
+ *
+ * @private
+ * @param {string} string The string to convert.
+ * @returns {Array} Returns the converted array.
+ */
+function unicodeToArray(string) {
+  return string.match(reUnicode) || [];
+}
+
+/**
+ * Converts `string` to an array.
+ *
+ * @private
+ * @param {string} string The string to convert.
+ * @returns {Array} Returns the converted array.
+ */
+function stringToArray(string) {
+  return hasUnicode(string)
+    ? unicodeToArray(string)
+    : asciiToArray(string);
+}
+
+/**
+ * Converts `value` to a string. An empty string is returned for `null`
+ * and `undefined` values. The sign of `-0` is preserved.
+ *
+ * @static
+ * @memberOf _
+ * @since 4.0.0
+ * @category Lang
+ * @param {*} value The value to convert.
+ * @returns {string} Returns the converted string.
+ * @example
+ *
+ * _.toString(null);
+ * // => ''
+ *
+ * _.toString(-0);
+ * // => '-0'
+ *
+ * _.toString([1, 2, 3]);
+ * // => '1,2,3'
+ */
+function toString(value) {
+  return value == null ? '' : baseToString(value);
+}
+
+/** Used to match leading and trailing whitespace. */
+var reTrim = /^\s+|\s+$/g;
+
+/**
+ * Removes leading and trailing whitespace or specified characters from `string`.
+ *
+ * @static
+ * @memberOf _
+ * @since 3.0.0
+ * @category String
+ * @param {string} [string=''] The string to trim.
+ * @param {string} [chars=whitespace] The characters to trim.
+ * @param- {Object} [guard] Enables use as an iteratee for methods like `_.map`.
+ * @returns {string} Returns the trimmed string.
+ * @example
+ *
+ * _.trim('  abc  ');
+ * // => 'abc'
+ *
+ * _.trim('-_-abc-_-', '_-');
+ * // => 'abc'
+ *
+ * _.map(['  foo  ', '  bar  '], _.trim);
+ * // => ['foo', 'bar']
+ */
+function trim(string, chars, guard) {
+  string = toString(string);
+  if (string && (guard || chars === undefined)) {
+    return string.replace(reTrim, '');
+  }
+  if (!string || !(chars = baseToString(chars))) {
+    return string;
+  }
+  var strSymbols = stringToArray(string),
+      chrSymbols = stringToArray(chars),
+      start = charsStartIndex(strSymbols, chrSymbols),
+      end = charsEndIndex(strSymbols, chrSymbols) + 1;
+
+  return castSlice(strSymbols, start, end).join('');
+}
+
+var FN_ARGS = /^(?:async\s+)?(function)?\s*[^\(]*\(\s*([^\)]*)\)/m;
+var FN_ARG_SPLIT = /,/;
+var FN_ARG = /(=.+)?(\s*)$/;
+var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
+
+function parseParams(func) {
+    func = func.toString().replace(STRIP_COMMENTS, '');
+    func = func.match(FN_ARGS)[2].replace(' ', '');
+    func = func ? func.split(FN_ARG_SPLIT) : [];
+    func = func.map(function (arg){
+        return trim(arg.replace(FN_ARG, ''));
+    });
+    return func;
+}
+
+/**
+ * A dependency-injected version of the [async.auto]{@link module:ControlFlow.auto} function. Dependent
+ * tasks are specified as parameters to the function, after the usual callback
+ * parameter, with the parameter names matching the names of the tasks it
+ * depends on. This can provide even more readable task graphs which can be
+ * easier to maintain.
+ *
+ * If a final callback is specified, the task results are similarly injected,
+ * specified as named parameters after the initial error parameter.
+ *
+ * The autoInject function is purely syntactic sugar and its semantics are
+ * otherwise equivalent to [async.auto]{@link module:ControlFlow.auto}.
+ *
+ * @name autoInject
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @see [async.auto]{@link module:ControlFlow.auto}
+ * @category Control Flow
+ * @param {Object} tasks - An object, each of whose properties is an {@link AsyncFunction} of
+ * the form 'func([dependencies...], callback). The object's key of a property
+ * serves as the name of the task defined by that property, i.e. can be used
+ * when specifying requirements for other tasks.
+ * * The `callback` parameter is a `callback(err, result)` which must be called
+ *   when finished, passing an `error` (which can be `null`) and the result of
+ *   the function's execution. The remaining parameters name other tasks on
+ *   which the task is dependent, and the results from those tasks are the
+ *   arguments of those parameters.
+ * @param {Function} [callback] - An optional callback which is called when all
+ * the tasks have been completed. It receives the `err` argument if any `tasks`
+ * pass an error to their callback, and a `results` object with any completed
+ * task results, similar to `auto`.
+ * @example
+ *
+ * //  The example from `auto` can be rewritten as follows:
+ * async.autoInject({
+ *     get_data: function(callback) {
+ *         // async code to get some data
+ *         callback(null, 'data', 'converted to array');
+ *     },
+ *     make_folder: function(callback) {
+ *         // async code to create a directory to store a file in
+ *         // this is run at the same time as getting the data
+ *         callback(null, 'folder');
+ *     },
+ *     write_file: function(get_data, make_folder, callback) {
+ *         // once there is some data and the directory exists,
+ *         // write the data to a file in the directory
+ *         callback(null, 'filename');
+ *     },
+ *     email_link: function(write_file, callback) {
+ *         // once the file is written let's email a link to it...
+ *         // write_file contains the filename returned by write_file.
+ *         callback(null, {'file':write_file, 'email':'user@example.com'});
+ *     }
+ * }, function(err, results) {
+ *     console.log('err = ', err);
+ *     console.log('email_link = ', results.email_link);
+ * });
+ *
+ * // If you are using a JS minifier that mangles parameter names, `autoInject`
+ * // will not work with plain functions, since the parameter names will be
+ * // collapsed to a single letter identifier.  To work around this, you can
+ * // explicitly specify the names of the parameters your task function needs
+ * // in an array, similar to Angular.js dependency injection.
+ *
+ * // This still has an advantage over plain `auto`, since the results a task
+ * // depends on are still spread into arguments.
+ * async.autoInject({
+ *     //...
+ *     write_file: ['get_data', 'make_folder', function(get_data, make_folder, callback) {
+ *         callback(null, 'filename');
+ *     }],
+ *     email_link: ['write_file', function(write_file, callback) {
+ *         callback(null, {'file':write_file, 'email':'user@example.com'});
+ *     }]
+ *     //...
+ * }, function(err, results) {
+ *     console.log('err = ', err);
+ *     console.log('email_link = ', results.email_link);
+ * });
+ */
+function autoInject(tasks, callback) {
+    var newTasks = {};
+
+    baseForOwn(tasks, function (taskFn, key) {
+        var params;
+        var fnIsAsync = isAsync(taskFn);
+        var hasNoDeps =
+            (!fnIsAsync && taskFn.length === 1) ||
+            (fnIsAsync && taskFn.length === 0);
+
+        if (isArray(taskFn)) {
+            params = taskFn.slice(0, -1);
+            taskFn = taskFn[taskFn.length - 1];
+
+            newTasks[key] = params.concat(params.length > 0 ? newTask : taskFn);
+        } else if (hasNoDeps) {
+            // no dependencies, use the function as-is
+            newTasks[key] = taskFn;
+        } else {
+            params = parseParams(taskFn);
+            if (taskFn.length === 0 && !fnIsAsync && params.length === 0) {
+                throw new Error("autoInject task functions require explicit parameters.");
+            }
+
+            // remove callback param
+            if (!fnIsAsync) params.pop();
+
+            newTasks[key] = params.concat(newTask);
+        }
+
+        function newTask(results, taskCb) {
+            var newArgs = arrayMap(params, function (name) {
+                return results[name];
+            });
+            newArgs.push(taskCb);
+            wrapAsync(taskFn).apply(null, newArgs);
+        }
+    });
+
+    auto(newTasks, callback);
+}
+
+// Simple doubly linked list (https://en.wikipedia.org/wiki/Doubly_linked_list) implementation
+// used for queues. This implementation assumes that the node provided by the user can be modified
+// to adjust the next and last properties. We implement only the minimal functionality
+// for queue support.
+function DLL() {
+    this.head = this.tail = null;
+    this.length = 0;
+}
+
+function setInitial(dll, node) {
+    dll.length = 1;
+    dll.head = dll.tail = node;
+}
+
+DLL.prototype.removeLink = function(node) {
+    if (node.prev) node.prev.next = node.next;
+    else this.head = node.next;
+    if (node.next) node.next.prev = node.prev;
+    else this.tail = node.prev;
+
+    node.prev = node.next = null;
+    this.length -= 1;
+    return node;
+};
+
+DLL.prototype.empty = function () {
+    while(this.head) this.shift();
+    return this;
+};
+
+DLL.prototype.insertAfter = function(node, newNode) {
+    newNode.prev = node;
+    newNode.next = node.next;
+    if (node.next) node.next.prev = newNode;
+    else this.tail = newNode;
+    node.next = newNode;
+    this.length += 1;
+};
+
+DLL.prototype.insertBefore = function(node, newNode) {
+    newNode.prev = node.prev;
+    newNode.next = node;
+    if (node.prev) node.prev.next = newNode;
+    else this.head = newNode;
+    node.prev = newNode;
+    this.length += 1;
+};
+
+DLL.prototype.unshift = function(node) {
+    if (this.head) this.insertBefore(this.head, node);
+    else setInitial(this, node);
+};
+
+DLL.prototype.push = function(node) {
+    if (this.tail) this.insertAfter(this.tail, node);
+    else setInitial(this, node);
+};
+
+DLL.prototype.shift = function() {
+    return this.head && this.removeLink(this.head);
+};
+
+DLL.prototype.pop = function() {
+    return this.tail && this.removeLink(this.tail);
+};
+
+DLL.prototype.toArray = function () {
+    var arr = Array(this.length);
+    var curr = this.head;
+    for(var idx = 0; idx < this.length; idx++) {
+        arr[idx] = curr.data;
+        curr = curr.next;
+    }
+    return arr;
+};
+
+DLL.prototype.remove = function (testFn) {
+    var curr = this.head;
+    while(!!curr) {
+        var next = curr.next;
+        if (testFn(curr)) {
+            this.removeLink(curr);
+        }
+        curr = next;
+    }
+    return this;
+};
+
+function queue(worker, concurrency, payload) {
+    if (concurrency == null) {
+        concurrency = 1;
+    }
+    else if(concurrency === 0) {
+        throw new Error('Concurrency must not be zero');
+    }
+
+    var _worker = wrapAsync(worker);
+    var numRunning = 0;
+    var workersList = [];
+
+    var processingScheduled = false;
+    function _insert(data, insertAtFront, callback) {
+        if (callback != null && typeof callback !== 'function') {
+            throw new Error('task callback must be a function');
+        }
+        q.started = true;
+        if (!isArray(data)) {
+            data = [data];
+        }
+        if (data.length === 0 && q.idle()) {
+            // call drain immediately if there are no tasks
+            return setImmediate$1(function() {
+                q.drain();
+            });
+        }
+
+        for (var i = 0, l = data.length; i < l; i++) {
+            var item = {
+                data: data[i],
+                callback: callback || noop
+            };
+
+            if (insertAtFront) {
+                q._tasks.unshift(item);
+            } else {
+                q._tasks.push(item);
+            }
+        }
+
+        if (!processingScheduled) {
+            processingScheduled = true;
+            setImmediate$1(function() {
+                processingScheduled = false;
+                q.process();
+            });
+        }
+    }
+
+    function _next(tasks) {
+        return function(err){
+            numRunning -= 1;
+
+            for (var i = 0, l = tasks.length; i < l; i++) {
+                var task = tasks[i];
+
+                var index = baseIndexOf(workersList, task, 0);
+                if (index === 0) {
+                    workersList.shift();
+                } else if (index > 0) {
+                    workersList.splice(index, 1);
+                }
+
+                task.callback.apply(task, arguments);
+
+                if (err != null) {
+                    q.error(err, task.data);
+                }
+            }
+
+            if (numRunning <= (q.concurrency - q.buffer) ) {
+                q.unsaturated();
+            }
+
+            if (q.idle()) {
+                q.drain();
+            }
+            q.process();
+        };
+    }
+
+    var isProcessing = false;
+    var q = {
+        _tasks: new DLL(),
+        concurrency: concurrency,
+        payload: payload,
+        saturated: noop,
+        unsaturated:noop,
+        buffer: concurrency / 4,
+        empty: noop,
+        drain: noop,
+        error: noop,
+        started: false,
+        paused: false,
+        push: function (data, callback) {
+            _insert(data, false, callback);
+        },
+        kill: function () {
+            q.drain = noop;
+            q._tasks.empty();
+        },
+        unshift: function (data, callback) {
+            _insert(data, true, callback);
+        },
+        remove: function (testFn) {
+            q._tasks.remove(testFn);
+        },
+        process: function () {
+            // Avoid trying to start too many processing operations. This can occur
+            // when callbacks resolve synchronously (#1267).
+            if (isProcessing) {
+                return;
+            }
+            isProcessing = true;
+            while(!q.paused && numRunning < q.concurrency && q._tasks.length){
+                var tasks = [], data = [];
+                var l = q._tasks.length;
+                if (q.payload) l = Math.min(l, q.payload);
+                for (var i = 0; i < l; i++) {
+                    var node = q._tasks.shift();
+                    tasks.push(node);
+                    workersList.push(node);
+                    data.push(node.data);
+                }
+
+                numRunning += 1;
+
+                if (q._tasks.length === 0) {
+                    q.empty();
+                }
+
+                if (numRunning === q.concurrency) {
+                    q.saturated();
+                }
+
+                var cb = onlyOnce(_next(tasks));
+                _worker(data, cb);
+            }
+            isProcessing = false;
+        },
+        length: function () {
+            return q._tasks.length;
+        },
+        running: function () {
+            return numRunning;
+        },
+        workersList: function () {
+            return workersList;
+        },
+        idle: function() {
+            return q._tasks.length + numRunning === 0;
+        },
+        pause: function () {
+            q.paused = true;
+        },
+        resume: function () {
+            if (q.paused === false) { return; }
+            q.paused = false;
+            setImmediate$1(q.process);
+        }
+    };
+    return q;
+}
+
+/**
+ * A cargo of tasks for the worker function to complete. Cargo inherits all of
+ * the same methods and event callbacks as [`queue`]{@link module:ControlFlow.queue}.
+ * @typedef {Object} CargoObject
+ * @memberOf module:ControlFlow
+ * @property {Function} length - A function returning the number of items
+ * waiting to be processed. Invoke like `cargo.length()`.
+ * @property {number} payload - An `integer` for determining how many tasks
+ * should be process per round. This property can be changed after a `cargo` is
+ * created to alter the payload on-the-fly.
+ * @property {Function} push - Adds `task` to the `queue`. The callback is
+ * called once the `worker` has finished processing the task. Instead of a
+ * single task, an array of `tasks` can be submitted. The respective callback is
+ * used for every task in the list. Invoke like `cargo.push(task, [callback])`.
+ * @property {Function} saturated - A callback that is called when the
+ * `queue.length()` hits the concurrency and further tasks will be queued.
+ * @property {Function} empty - A callback that is called when the last item
+ * from the `queue` is given to a `worker`.
+ * @property {Function} drain - A callback that is called when the last item
+ * from the `queue` has returned from the `worker`.
+ * @property {Function} idle - a function returning false if there are items
+ * waiting or being processed, or true if not. Invoke like `cargo.idle()`.
+ * @property {Function} pause - a function that pauses the processing of tasks
+ * until `resume()` is called. Invoke like `cargo.pause()`.
+ * @property {Function} resume - a function that resumes the processing of
+ * queued tasks when the queue is paused. Invoke like `cargo.resume()`.
+ * @property {Function} kill - a function that removes the `drain` callback and
+ * empties remaining tasks from the queue forcing it to go idle. Invoke like `cargo.kill()`.
+ */
+
+/**
+ * Creates a `cargo` object with the specified payload. Tasks added to the
+ * cargo will be processed altogether (up to the `payload` limit). If the
+ * `worker` is in progress, the task is queued until it becomes available. Once
+ * the `worker` has completed some tasks, each callback of those tasks is
+ * called. Check out [these](https://camo.githubusercontent.com/6bbd36f4cf5b35a0f11a96dcd2e97711ffc2fb37/68747470733a2f2f662e636c6f75642e6769746875622e636f6d2f6173736574732f313637363837312f36383130382f62626330636662302d356632392d313165322d393734662d3333393763363464633835382e676966) [animations](https://camo.githubusercontent.com/f4810e00e1c5f5f8addbe3e9f49064fd5d102699/68747470733a2f2f662e636c6f75642e6769746875622e636f6d2f6173736574732f313637363837312f36383130312f38346339323036362d356632392d313165322d383134662d3964336430323431336266642e676966)
+ * for how `cargo` and `queue` work.
+ *
+ * While [`queue`]{@link module:ControlFlow.queue} passes only one task to one of a group of workers
+ * at a time, cargo passes an array of tasks to a single worker, repeating
+ * when the worker is finished.
+ *
+ * @name cargo
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @see [async.queue]{@link module:ControlFlow.queue}
+ * @category Control Flow
+ * @param {AsyncFunction} worker - An asynchronous function for processing an array
+ * of queued tasks. Invoked with `(tasks, callback)`.
+ * @param {number} [payload=Infinity] - An optional `integer` for determining
+ * how many tasks should be processed per round; if omitted, the default is
+ * unlimited.
+ * @returns {module:ControlFlow.CargoObject} A cargo object to manage the tasks. Callbacks can
+ * attached as certain properties to listen for specific events during the
+ * lifecycle of the cargo and inner queue.
+ * @example
+ *
+ * // create a cargo object with payload 2
+ * var cargo = async.cargo(function(tasks, callback) {
+ *     for (var i=0; i<tasks.length; i++) {
+ *         console.log('hello ' + tasks[i].name);
+ *     }
+ *     callback();
+ * }, 2);
+ *
+ * // add some items
+ * cargo.push({name: 'foo'}, function(err) {
+ *     console.log('finished processing foo');
+ * });
+ * cargo.push({name: 'bar'}, function(err) {
+ *     console.log('finished processing bar');
+ * });
+ * cargo.push({name: 'baz'}, function(err) {
+ *     console.log('finished processing baz');
+ * });
+ */
+function cargo(worker, payload) {
+    return queue(worker, 1, payload);
+}
+
+/**
+ * The same as [`eachOf`]{@link module:Collections.eachOf} but runs only a single async operation at a time.
+ *
+ * @name eachOfSeries
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.eachOf]{@link module:Collections.eachOf}
+ * @alias forEachOfSeries
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {AsyncFunction} iteratee - An async function to apply to each item in
+ * `coll`.
+ * Invoked with (item, key, callback).
+ * @param {Function} [callback] - A callback which is called when all `iteratee`
+ * functions have finished, or an error occurs. Invoked with (err).
+ */
+var eachOfSeries = doLimit(eachOfLimit, 1);
+
+/**
+ * Reduces `coll` into a single value using an async `iteratee` to return each
+ * successive step. `memo` is the initial state of the reduction. This function
+ * only operates in series.
+ *
+ * For performance reasons, it may make sense to split a call to this function
+ * into a parallel map, and then use the normal `Array.prototype.reduce` on the
+ * results. This function is for situations where each step in the reduction
+ * needs to be async; if you can get the data before reducing it, then it's
+ * probably a good idea to do so.
+ *
+ * @name reduce
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @alias inject
+ * @alias foldl
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {*} memo - The initial state of the reduction.
+ * @param {AsyncFunction} iteratee - A function applied to each item in the
+ * array to produce the next step in the reduction.
+ * The `iteratee` should complete with the next state of the reduction.
+ * If the iteratee complete with an error, the reduction is stopped and the
+ * main `callback` is immediately called with the error.
+ * Invoked with (memo, item, callback).
+ * @param {Function} [callback] - A callback which is called after all the
+ * `iteratee` functions have finished. Result is the reduced value. Invoked with
+ * (err, result).
+ * @example
+ *
+ * async.reduce([1,2,3], 0, function(memo, item, callback) {
+ *     // pointless async:
+ *     process.nextTick(function() {
+ *         callback(null, memo + item)
+ *     });
+ * }, function(err, result) {
+ *     // result is now equal to the last value of memo, which is 6
+ * });
+ */
+function reduce(coll, memo, iteratee, callback) {
+    callback = once(callback || noop);
+    var _iteratee = wrapAsync(iteratee);
+    eachOfSeries(coll, function(x, i, callback) {
+        _iteratee(memo, x, function(err, v) {
+            memo = v;
+            callback(err);
+        });
+    }, function(err) {
+        callback(err, memo);
+    });
+}
+
+/**
+ * Version of the compose function that is more natural to read. Each function
+ * consumes the return value of the previous function. It is the equivalent of
+ * [compose]{@link module:ControlFlow.compose} with the arguments reversed.
+ *
+ * Each function is executed with the `this` binding of the composed function.
+ *
+ * @name seq
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @see [async.compose]{@link module:ControlFlow.compose}
+ * @category Control Flow
+ * @param {...AsyncFunction} functions - the asynchronous functions to compose
+ * @returns {Function} a function that composes the `functions` in order
+ * @example
+ *
+ * // Requires lodash (or underscore), express3 and dresende's orm2.
+ * // Part of an app, that fetches cats of the logged user.
+ * // This example uses `seq` function to avoid overnesting and error
+ * // handling clutter.
+ * app.get('/cats', function(request, response) {
+ *     var User = request.models.User;
+ *     async.seq(
+ *         _.bind(User.get, User),  // 'User.get' has signature (id, callback(err, data))
+ *         function(user, fn) {
+ *             user.getCats(fn);      // 'getCats' has signature (callback(err, data))
+ *         }
+ *     )(req.session.user_id, function (err, cats) {
+ *         if (err) {
+ *             console.error(err);
+ *             response.json({ status: 'error', message: err.message });
+ *         } else {
+ *             response.json({ status: 'ok', message: 'Cats found', data: cats });
+ *         }
+ *     });
+ * });
+ */
+function seq(/*...functions*/) {
+    var _functions = arrayMap(arguments, wrapAsync);
+    return function(/*...args*/) {
+        var args = slice(arguments);
+        var that = this;
+
+        var cb = args[args.length - 1];
+        if (typeof cb == 'function') {
+            args.pop();
+        } else {
+            cb = noop;
+        }
+
+        reduce(_functions, args, function(newargs, fn, cb) {
+            fn.apply(that, newargs.concat(function(err/*, ...nextargs*/) {
+                var nextargs = slice(arguments, 1);
+                cb(err, nextargs);
+            }));
+        },
+        function(err, results) {
+            cb.apply(that, [err].concat(results));
+        });
+    };
+}
+
+/**
+ * Creates a function which is a composition of the passed asynchronous
+ * functions. Each function consumes the return value of the function that
+ * follows. Composing functions `f()`, `g()`, and `h()` would produce the result
+ * of `f(g(h()))`, only this version uses callbacks to obtain the return values.
+ *
+ * Each function is executed with the `this` binding of the composed function.
+ *
+ * @name compose
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @category Control Flow
+ * @param {...AsyncFunction} functions - the asynchronous functions to compose
+ * @returns {Function} an asynchronous function that is the composed
+ * asynchronous `functions`
+ * @example
+ *
+ * function add1(n, callback) {
+ *     setTimeout(function () {
+ *         callback(null, n + 1);
+ *     }, 10);
+ * }
+ *
+ * function mul3(n, callback) {
+ *     setTimeout(function () {
+ *         callback(null, n * 3);
+ *     }, 10);
+ * }
+ *
+ * var add1mul3 = async.compose(mul3, add1);
+ * add1mul3(4, function (err, result) {
+ *     // result now equals 15
+ * });
+ */
+var compose = function(/*...args*/) {
+    return seq.apply(null, slice(arguments).reverse());
+};
+
+var _concat = Array.prototype.concat;
+
+/**
+ * The same as [`concat`]{@link module:Collections.concat} but runs a maximum of `limit` async operations at a time.
+ *
+ * @name concatLimit
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.concat]{@link module:Collections.concat}
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {number} limit - The maximum number of async operations at a time.
+ * @param {AsyncFunction} iteratee - A function to apply to each item in `coll`,
+ * which should use an array as its result. Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called after all the
+ * `iteratee` functions have finished, or an error occurs. Results is an array
+ * containing the concatenated results of the `iteratee` function. Invoked with
+ * (err, results).
+ */
+var concatLimit = function(coll, limit, iteratee, callback) {
+    callback = callback || noop;
+    var _iteratee = wrapAsync(iteratee);
+    mapLimit(coll, limit, function(val, callback) {
+        _iteratee(val, function(err /*, ...args*/) {
+            if (err) return callback(err);
+            return callback(null, slice(arguments, 1));
+        });
+    }, function(err, mapResults) {
+        var result = [];
+        for (var i = 0; i < mapResults.length; i++) {
+            if (mapResults[i]) {
+                result = _concat.apply(result, mapResults[i]);
+            }
+        }
+
+        return callback(err, result);
+    });
+};
+
+/**
+ * Applies `iteratee` to each item in `coll`, concatenating the results. Returns
+ * the concatenated list. The `iteratee`s are called in parallel, and the
+ * results are concatenated as they return. There is no guarantee that the
+ * results array will be returned in the original order of `coll` passed to the
+ * `iteratee` function.
+ *
+ * @name concat
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {AsyncFunction} iteratee - A function to apply to each item in `coll`,
+ * which should use an array as its result. Invoked with (item, callback).
+ * @param {Function} [callback(err)] - A callback which is called after all the
+ * `iteratee` functions have finished, or an error occurs. Results is an array
+ * containing the concatenated results of the `iteratee` function. Invoked with
+ * (err, results).
+ * @example
+ *
+ * async.concat(['dir1','dir2','dir3'], fs.readdir, function(err, files) {
+ *     // files is now a list of filenames that exist in the 3 directories
+ * });
+ */
+var concat = doLimit(concatLimit, Infinity);
+
+/**
+ * The same as [`concat`]{@link module:Collections.concat} but runs only a single async operation at a time.
+ *
+ * @name concatSeries
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.concat]{@link module:Collections.concat}
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {AsyncFunction} iteratee - A function to apply to each item in `coll`.
+ * The iteratee should complete with an array an array of results.
+ * Invoked with (item, callback).
+ * @param {Function} [callback(err)] - A callback which is called after all the
+ * `iteratee` functions have finished, or an error occurs. Results is an array
+ * containing the concatenated results of the `iteratee` function. Invoked with
+ * (err, results).
+ */
+var concatSeries = doLimit(concatLimit, 1);
+
+/**
+ * Returns a function that when called, calls-back with the values provided.
+ * Useful as the first function in a [`waterfall`]{@link module:ControlFlow.waterfall}, or for plugging values in to
+ * [`auto`]{@link module:ControlFlow.auto}.
+ *
+ * @name constant
+ * @static
+ * @memberOf module:Utils
+ * @method
+ * @category Util
+ * @param {...*} arguments... - Any number of arguments to automatically invoke
+ * callback with.
+ * @returns {AsyncFunction} Returns a function that when invoked, automatically
+ * invokes the callback with the previous given arguments.
+ * @example
+ *
+ * async.waterfall([
+ *     async.constant(42),
+ *     function (value, next) {
+ *         // value === 42
+ *     },
+ *     //...
+ * ], callback);
+ *
+ * async.waterfall([
+ *     async.constant(filename, "utf8"),
+ *     fs.readFile,
+ *     function (fileData, next) {
+ *         //...
+ *     }
+ *     //...
+ * ], callback);
+ *
+ * async.auto({
+ *     hostname: async.constant("https://server.net/"),
+ *     port: findFreePort,
+ *     launchServer: ["hostname", "port", function (options, cb) {
+ *         startServer(options, cb);
+ *     }],
+ *     //...
+ * }, callback);
+ */
+var constant = function(/*...values*/) {
+    var values = slice(arguments);
+    var args = [null].concat(values);
+    return function (/*...ignoredArgs, callback*/) {
+        var callback = arguments[arguments.length - 1];
+        return callback.apply(this, args);
+    };
+};
+
+/**
+ * This method returns the first argument it receives.
+ *
+ * @static
+ * @since 0.1.0
+ * @memberOf _
+ * @category Util
+ * @param {*} value Any value.
+ * @returns {*} Returns `value`.
+ * @example
+ *
+ * var object = { 'a': 1 };
+ *
+ * console.log(_.identity(object) === object);
+ * // => true
+ */
+function identity(value) {
+  return value;
+}
+
+function _createTester(check, getResult) {
+    return function(eachfn, arr, iteratee, cb) {
+        cb = cb || noop;
+        var testPassed = false;
+        var testResult;
+        eachfn(arr, function(value, _, callback) {
+            iteratee(value, function(err, result) {
+                if (err) {
+                    callback(err);
+                } else if (check(result) && !testResult) {
+                    testPassed = true;
+                    testResult = getResult(true, value);
+                    callback(null, breakLoop);
+                } else {
+                    callback();
+                }
+            });
+        }, function(err) {
+            if (err) {
+                cb(err);
+            } else {
+                cb(null, testPassed ? testResult : getResult(false));
+            }
+        });
+    };
+}
+
+function _findGetResult(v, x) {
+    return x;
+}
+
+/**
+ * Returns the first value in `coll` that passes an async truth test. The
+ * `iteratee` is applied in parallel, meaning the first iteratee to return
+ * `true` will fire the detect `callback` with that result. That means the
+ * result might not be the first item in the original `coll` (in terms of order)
+ * that passes the test.
+
+ * If order within the original `coll` is important, then look at
+ * [`detectSeries`]{@link module:Collections.detectSeries}.
+ *
+ * @name detect
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @alias find
+ * @category Collections
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {AsyncFunction} iteratee - A truth test to apply to each item in `coll`.
+ * The iteratee must complete with a boolean value as its result.
+ * Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called as soon as any
+ * iteratee returns `true`, or after all the `iteratee` functions have finished.
+ * Result will be the first item in the array that passes the truth test
+ * (iteratee) or the value `undefined` if none passed. Invoked with
+ * (err, result).
+ * @example
+ *
+ * async.detect(['file1','file2','file3'], function(filePath, callback) {
+ *     fs.access(filePath, function(err) {
+ *         callback(null, !err)
+ *     });
+ * }, function(err, result) {
+ *     // result now equals the first file in the list that exists
+ * });
+ */
+var detect = doParallel(_createTester(identity, _findGetResult));
+
+/**
+ * The same as [`detect`]{@link module:Collections.detect} but runs a maximum of `limit` async operations at a
+ * time.
+ *
+ * @name detectLimit
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.detect]{@link module:Collections.detect}
+ * @alias findLimit
+ * @category Collections
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {number} limit - The maximum number of async operations at a time.
+ * @param {AsyncFunction} iteratee - A truth test to apply to each item in `coll`.
+ * The iteratee must complete with a boolean value as its result.
+ * Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called as soon as any
+ * iteratee returns `true`, or after all the `iteratee` functions have finished.
+ * Result will be the first item in the array that passes the truth test
+ * (iteratee) or the value `undefined` if none passed. Invoked with
+ * (err, result).
+ */
+var detectLimit = doParallelLimit(_createTester(identity, _findGetResult));
+
+/**
+ * The same as [`detect`]{@link module:Collections.detect} but runs only a single async operation at a time.
+ *
+ * @name detectSeries
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.detect]{@link module:Collections.detect}
+ * @alias findSeries
+ * @category Collections
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {AsyncFunction} iteratee - A truth test to apply to each item in `coll`.
+ * The iteratee must complete with a boolean value as its result.
+ * Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called as soon as any
+ * iteratee returns `true`, or after all the `iteratee` functions have finished.
+ * Result will be the first item in the array that passes the truth test
+ * (iteratee) or the value `undefined` if none passed. Invoked with
+ * (err, result).
+ */
+var detectSeries = doLimit(detectLimit, 1);
+
+function consoleFunc(name) {
+    return function (fn/*, ...args*/) {
+        var args = slice(arguments, 1);
+        args.push(function (err/*, ...args*/) {
+            var args = slice(arguments, 1);
+            if (typeof console === 'object') {
+                if (err) {
+                    if (console.error) {
+                        console.error(err);
+                    }
+                } else if (console[name]) {
+                    arrayEach(args, function (x) {
+                        console[name](x);
+                    });
+                }
+            }
+        });
+        wrapAsync(fn).apply(null, args);
+    };
+}
+
+/**
+ * Logs the result of an [`async` function]{@link AsyncFunction} to the
+ * `console` using `console.dir` to display the properties of the resulting object.
+ * Only works in Node.js or in browsers that support `console.dir` and
+ * `console.error` (such as FF and Chrome).
+ * If multiple arguments are returned from the async function,
+ * `console.dir` is called on each argument in order.
+ *
+ * @name dir
+ * @static
+ * @memberOf module:Utils
+ * @method
+ * @category Util
+ * @param {AsyncFunction} function - The function you want to eventually apply
+ * all arguments to.
+ * @param {...*} arguments... - Any number of arguments to apply to the function.
+ * @example
+ *
+ * // in a module
+ * var hello = function(name, callback) {
+ *     setTimeout(function() {
+ *         callback(null, {hello: name});
+ *     }, 1000);
+ * };
+ *
+ * // in the node repl
+ * node> async.dir(hello, 'world');
+ * {hello: 'world'}
+ */
+var dir = consoleFunc('dir');
+
+/**
+ * The post-check version of [`during`]{@link module:ControlFlow.during}. To reflect the difference in
+ * the order of operations, the arguments `test` and `fn` are switched.
+ *
+ * Also a version of [`doWhilst`]{@link module:ControlFlow.doWhilst} with asynchronous `test` function.
+ * @name doDuring
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @see [async.during]{@link module:ControlFlow.during}
+ * @category Control Flow
+ * @param {AsyncFunction} fn - An async function which is called each time
+ * `test` passes. Invoked with (callback).
+ * @param {AsyncFunction} test - asynchronous truth test to perform before each
+ * execution of `fn`. Invoked with (...args, callback), where `...args` are the
+ * non-error args from the previous callback of `fn`.
+ * @param {Function} [callback] - A callback which is called after the test
+ * function has failed and repeated execution of `fn` has stopped. `callback`
+ * will be passed an error if one occurred, otherwise `null`.
+ */
+function doDuring(fn, test, callback) {
+    callback = onlyOnce(callback || noop);
+    var _fn = wrapAsync(fn);
+    var _test = wrapAsync(test);
+
+    function next(err/*, ...args*/) {
+        if (err) return callback(err);
+        var args = slice(arguments, 1);
+        args.push(check);
+        _test.apply(this, args);
+    }
+
+    function check(err, truth) {
+        if (err) return callback(err);
+        if (!truth) return callback(null);
+        _fn(next);
+    }
+
+    check(null, true);
+
+}
+
+/**
+ * The post-check version of [`whilst`]{@link module:ControlFlow.whilst}. To reflect the difference in
+ * the order of operations, the arguments `test` and `iteratee` are switched.
+ *
+ * `doWhilst` is to `whilst` as `do while` is to `while` in plain JavaScript.
+ *
+ * @name doWhilst
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @see [async.whilst]{@link module:ControlFlow.whilst}
+ * @category Control Flow
+ * @param {AsyncFunction} iteratee - A function which is called each time `test`
+ * passes. Invoked with (callback).
+ * @param {Function} test - synchronous truth test to perform after each
+ * execution of `iteratee`. Invoked with any non-error callback results of
+ * `iteratee`.
+ * @param {Function} [callback] - A callback which is called after the test
+ * function has failed and repeated execution of `iteratee` has stopped.
+ * `callback` will be passed an error and any arguments passed to the final
+ * `iteratee`'s callback. Invoked with (err, [results]);
+ */
+function doWhilst(iteratee, test, callback) {
+    callback = onlyOnce(callback || noop);
+    var _iteratee = wrapAsync(iteratee);
+    var next = function(err/*, ...args*/) {
+        if (err) return callback(err);
+        var args = slice(arguments, 1);
+        if (test.apply(this, args)) return _iteratee(next);
+        callback.apply(null, [null].concat(args));
+    };
+    _iteratee(next);
+}
+
+/**
+ * Like ['doWhilst']{@link module:ControlFlow.doWhilst}, except the `test` is inverted. Note the
+ * argument ordering differs from `until`.
+ *
+ * @name doUntil
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @see [async.doWhilst]{@link module:ControlFlow.doWhilst}
+ * @category Control Flow
+ * @param {AsyncFunction} iteratee - An async function which is called each time
+ * `test` fails. Invoked with (callback).
+ * @param {Function} test - synchronous truth test to perform after each
+ * execution of `iteratee`. Invoked with any non-error callback results of
+ * `iteratee`.
+ * @param {Function} [callback] - A callback which is called after the test
+ * function has passed and repeated execution of `iteratee` has stopped. `callback`
+ * will be passed an error and any arguments passed to the final `iteratee`'s
+ * callback. Invoked with (err, [results]);
+ */
+function doUntil(iteratee, test, callback) {
+    doWhilst(iteratee, function() {
+        return !test.apply(this, arguments);
+    }, callback);
+}
+
+/**
+ * Like [`whilst`]{@link module:ControlFlow.whilst}, except the `test` is an asynchronous function that
+ * is passed a callback in the form of `function (err, truth)`. If error is
+ * passed to `test` or `fn`, the main callback is immediately called with the
+ * value of the error.
+ *
+ * @name during
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @see [async.whilst]{@link module:ControlFlow.whilst}
+ * @category Control Flow
+ * @param {AsyncFunction} test - asynchronous truth test to perform before each
+ * execution of `fn`. Invoked with (callback).
+ * @param {AsyncFunction} fn - An async function which is called each time
+ * `test` passes. Invoked with (callback).
+ * @param {Function} [callback] - A callback which is called after the test
+ * function has failed and repeated execution of `fn` has stopped. `callback`
+ * will be passed an error, if one occurred, otherwise `null`.
+ * @example
+ *
+ * var count = 0;
+ *
+ * async.during(
+ *     function (callback) {
+ *         return callback(null, count < 5);
+ *     },
+ *     function (callback) {
+ *         count++;
+ *         setTimeout(callback, 1000);
+ *     },
+ *     function (err) {
+ *         // 5 seconds have passed
+ *     }
+ * );
+ */
+function during(test, fn, callback) {
+    callback = onlyOnce(callback || noop);
+    var _fn = wrapAsync(fn);
+    var _test = wrapAsync(test);
+
+    function next(err) {
+        if (err) return callback(err);
+        _test(check);
+    }
+
+    function check(err, truth) {
+        if (err) return callback(err);
+        if (!truth) return callback(null);
+        _fn(next);
+    }
+
+    _test(check);
+}
+
+function _withoutIndex(iteratee) {
+    return function (value, index, callback) {
+        return iteratee(value, callback);
+    };
+}
+
+/**
+ * Applies the function `iteratee` to each item in `coll`, in parallel.
+ * The `iteratee` is called with an item from the list, and a callback for when
+ * it has finished. If the `iteratee` passes an error to its `callback`, the
+ * main `callback` (for the `each` function) is immediately called with the
+ * error.
+ *
+ * Note, that since this function applies `iteratee` to each item in parallel,
+ * there is no guarantee that the iteratee functions will complete in order.
+ *
+ * @name each
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @alias forEach
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {AsyncFunction} iteratee - An async function to apply to
+ * each item in `coll`. Invoked with (item, callback).
+ * The array index is not passed to the iteratee.
+ * If you need the index, use `eachOf`.
+ * @param {Function} [callback] - A callback which is called when all
+ * `iteratee` functions have finished, or an error occurs. Invoked with (err).
+ * @example
+ *
+ * // assuming openFiles is an array of file names and saveFile is a function
+ * // to save the modified contents of that file:
+ *
+ * async.each(openFiles, saveFile, function(err){
+ *   // if any of the saves produced an error, err would equal that error
+ * });
+ *
+ * // assuming openFiles is an array of file names
+ * async.each(openFiles, function(file, callback) {
+ *
+ *     // Perform operation on file here.
+ *     console.log('Processing file ' + file);
+ *
+ *     if( file.length > 32 ) {
+ *       console.log('This file name is too long');
+ *       callback('File name too long');
+ *     } else {
+ *       // Do work to process file here
+ *       console.log('File processed');
+ *       callback();
+ *     }
+ * }, function(err) {
+ *     // if any of the file processing produced an error, err would equal that error
+ *     if( err ) {
+ *       // One of the iterations produced an error.
+ *       // All processing will now stop.
+ *       console.log('A file failed to process');
+ *     } else {
+ *       console.log('All files have been processed successfully');
+ *     }
+ * });
+ */
+function eachLimit(coll, iteratee, callback) {
+    eachOf(coll, _withoutIndex(wrapAsync(iteratee)), callback);
+}
+
+/**
+ * The same as [`each`]{@link module:Collections.each} but runs a maximum of `limit` async operations at a time.
+ *
+ * @name eachLimit
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.each]{@link module:Collections.each}
+ * @alias forEachLimit
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {number} limit - The maximum number of async operations at a time.
+ * @param {AsyncFunction} iteratee - An async function to apply to each item in
+ * `coll`.
+ * The array index is not passed to the iteratee.
+ * If you need the index, use `eachOfLimit`.
+ * Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called when all
+ * `iteratee` functions have finished, or an error occurs. Invoked with (err).
+ */
+function eachLimit$1(coll, limit, iteratee, callback) {
+    _eachOfLimit(limit)(coll, _withoutIndex(wrapAsync(iteratee)), callback);
+}
+
+/**
+ * The same as [`each`]{@link module:Collections.each} but runs only a single async operation at a time.
+ *
+ * @name eachSeries
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.each]{@link module:Collections.each}
+ * @alias forEachSeries
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {AsyncFunction} iteratee - An async function to apply to each
+ * item in `coll`.
+ * The array index is not passed to the iteratee.
+ * If you need the index, use `eachOfSeries`.
+ * Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called when all
+ * `iteratee` functions have finished, or an error occurs. Invoked with (err).
+ */
+var eachSeries = doLimit(eachLimit$1, 1);
+
+/**
+ * Wrap an async function and ensure it calls its callback on a later tick of
+ * the event loop.  If the function already calls its callback on a next tick,
+ * no extra deferral is added. This is useful for preventing stack overflows
+ * (`RangeError: Maximum call stack size exceeded`) and generally keeping
+ * [Zalgo](http://blog.izs.me/post/59142742143/designing-apis-for-asynchrony)
+ * contained. ES2017 `async` functions are returned as-is -- they are immune
+ * to Zalgo's corrupting influences, as they always resolve on a later tick.
+ *
+ * @name ensureAsync
+ * @static
+ * @memberOf module:Utils
+ * @method
+ * @category Util
+ * @param {AsyncFunction} fn - an async function, one that expects a node-style
+ * callback as its last argument.
+ * @returns {AsyncFunction} Returns a wrapped function with the exact same call
+ * signature as the function passed in.
+ * @example
+ *
+ * function sometimesAsync(arg, callback) {
+ *     if (cache[arg]) {
+ *         return callback(null, cache[arg]); // this would be synchronous!!
+ *     } else {
+ *         doSomeIO(arg, callback); // this IO would be asynchronous
+ *     }
+ * }
+ *
+ * // this has a risk of stack overflows if many results are cached in a row
+ * async.mapSeries(args, sometimesAsync, done);
+ *
+ * // this will defer sometimesAsync's callback if necessary,
+ * // preventing stack overflows
+ * async.mapSeries(args, async.ensureAsync(sometimesAsync), done);
+ */
+function ensureAsync(fn) {
+    if (isAsync(fn)) return fn;
+    return initialParams(function (args, callback) {
+        var sync = true;
+        args.push(function () {
+            var innerArgs = arguments;
+            if (sync) {
+                setImmediate$1(function () {
+                    callback.apply(null, innerArgs);
+                });
+            } else {
+                callback.apply(null, innerArgs);
+            }
+        });
+        fn.apply(this, args);
+        sync = false;
+    });
+}
+
+function notId(v) {
+    return !v;
+}
+
+/**
+ * Returns `true` if every element in `coll` satisfies an async test. If any
+ * iteratee call returns `false`, the main `callback` is immediately called.
+ *
+ * @name every
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @alias all
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {AsyncFunction} iteratee - An async truth test to apply to each item
+ * in the collection in parallel.
+ * The iteratee must complete with a boolean result value.
+ * Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called after all the
+ * `iteratee` functions have finished. Result will be either `true` or `false`
+ * depending on the values of the async tests. Invoked with (err, result).
+ * @example
+ *
+ * async.every(['file1','file2','file3'], function(filePath, callback) {
+ *     fs.access(filePath, function(err) {
+ *         callback(null, !err)
+ *     });
+ * }, function(err, result) {
+ *     // if result is true then every file exists
+ * });
+ */
+var every = doParallel(_createTester(notId, notId));
+
+/**
+ * The same as [`every`]{@link module:Collections.every} but runs a maximum of `limit` async operations at a time.
+ *
+ * @name everyLimit
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.every]{@link module:Collections.every}
+ * @alias allLimit
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {number} limit - The maximum number of async operations at a time.
+ * @param {AsyncFunction} iteratee - An async truth test to apply to each item
+ * in the collection in parallel.
+ * The iteratee must complete with a boolean result value.
+ * Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called after all the
+ * `iteratee` functions have finished. Result will be either `true` or `false`
+ * depending on the values of the async tests. Invoked with (err, result).
+ */
+var everyLimit = doParallelLimit(_createTester(notId, notId));
+
+/**
+ * The same as [`every`]{@link module:Collections.every} but runs only a single async operation at a time.
+ *
+ * @name everySeries
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.every]{@link module:Collections.every}
+ * @alias allSeries
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {AsyncFunction} iteratee - An async truth test to apply to each item
+ * in the collection in series.
+ * The iteratee must complete with a boolean result value.
+ * Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called after all the
+ * `iteratee` functions have finished. Result will be either `true` or `false`
+ * depending on the values of the async tests. Invoked with (err, result).
+ */
+var everySeries = doLimit(everyLimit, 1);
+
+/**
+ * The base implementation of `_.property` without support for deep paths.
+ *
+ * @private
+ * @param {string} key The key of the property to get.
+ * @returns {Function} Returns the new accessor function.
+ */
+function baseProperty(key) {
+  return function(object) {
+    return object == null ? undefined : object[key];
+  };
+}
+
+function filterArray(eachfn, arr, iteratee, callback) {
+    var truthValues = new Array(arr.length);
+    eachfn(arr, function (x, index, callback) {
+        iteratee(x, function (err, v) {
+            truthValues[index] = !!v;
+            callback(err);
+        });
+    }, function (err) {
+        if (err) return callback(err);
+        var results = [];
+        for (var i = 0; i < arr.length; i++) {
+            if (truthValues[i]) results.push(arr[i]);
+        }
+        callback(null, results);
+    });
+}
+
+function filterGeneric(eachfn, coll, iteratee, callback) {
+    var results = [];
+    eachfn(coll, function (x, index, callback) {
+        iteratee(x, function (err, v) {
+            if (err) {
+                callback(err);
+            } else {
+                if (v) {
+                    results.push({index: index, value: x});
+                }
+                callback();
+            }
+        });
+    }, function (err) {
+        if (err) {
+            callback(err);
+        } else {
+            callback(null, arrayMap(results.sort(function (a, b) {
+                return a.index - b.index;
+            }), baseProperty('value')));
+        }
+    });
+}
+
+function _filter(eachfn, coll, iteratee, callback) {
+    var filter = isArrayLike(coll) ? filterArray : filterGeneric;
+    filter(eachfn, coll, wrapAsync(iteratee), callback || noop);
+}
+
+/**
+ * Returns a new array of all the values in `coll` which pass an async truth
+ * test. This operation is performed in parallel, but the results array will be
+ * in the same order as the original.
+ *
+ * @name filter
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @alias select
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {Function} iteratee - A truth test to apply to each item in `coll`.
+ * The `iteratee` is passed a `callback(err, truthValue)`, which must be called
+ * with a boolean argument once it has completed. Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called after all the
+ * `iteratee` functions have finished. Invoked with (err, results).
+ * @example
+ *
+ * async.filter(['file1','file2','file3'], function(filePath, callback) {
+ *     fs.access(filePath, function(err) {
+ *         callback(null, !err)
+ *     });
+ * }, function(err, results) {
+ *     // results now equals an array of the existing files
+ * });
+ */
+var filter = doParallel(_filter);
+
+/**
+ * The same as [`filter`]{@link module:Collections.filter} but runs a maximum of `limit` async operations at a
+ * time.
+ *
+ * @name filterLimit
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.filter]{@link module:Collections.filter}
+ * @alias selectLimit
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {number} limit - The maximum number of async operations at a time.
+ * @param {Function} iteratee - A truth test to apply to each item in `coll`.
+ * The `iteratee` is passed a `callback(err, truthValue)`, which must be called
+ * with a boolean argument once it has completed. Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called after all the
+ * `iteratee` functions have finished. Invoked with (err, results).
+ */
+var filterLimit = doParallelLimit(_filter);
+
+/**
+ * The same as [`filter`]{@link module:Collections.filter} but runs only a single async operation at a time.
+ *
+ * @name filterSeries
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.filter]{@link module:Collections.filter}
+ * @alias selectSeries
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {Function} iteratee - A truth test to apply to each item in `coll`.
+ * The `iteratee` is passed a `callback(err, truthValue)`, which must be called
+ * with a boolean argument once it has completed. Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called after all the
+ * `iteratee` functions have finished. Invoked with (err, results)
+ */
+var filterSeries = doLimit(filterLimit, 1);
+
+/**
+ * Calls the asynchronous function `fn` with a callback parameter that allows it
+ * to call itself again, in series, indefinitely.
+
+ * If an error is passed to the callback then `errback` is called with the
+ * error, and execution stops, otherwise it will never be called.
+ *
+ * @name forever
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @category Control Flow
+ * @param {AsyncFunction} fn - an async function to call repeatedly.
+ * Invoked with (next).
+ * @param {Function} [errback] - when `fn` passes an error to it's callback,
+ * this function will be called, and execution stops. Invoked with (err).
+ * @example
+ *
+ * async.forever(
+ *     function(next) {
+ *         // next is suitable for passing to things that need a callback(err [, whatever]);
+ *         // it will result in this function being called again.
+ *     },
+ *     function(err) {
+ *         // if next is called with a value in its first parameter, it will appear
+ *         // in here as 'err', and execution will stop.
+ *     }
+ * );
+ */
+function forever(fn, errback) {
+    var done = onlyOnce(errback || noop);
+    var task = wrapAsync(ensureAsync(fn));
+
+    function next(err) {
+        if (err) return done(err);
+        task(next);
+    }
+    next();
+}
+
+/**
+ * The same as [`groupBy`]{@link module:Collections.groupBy} but runs a maximum of `limit` async operations at a time.
+ *
+ * @name groupByLimit
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.groupBy]{@link module:Collections.groupBy}
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {number} limit - The maximum number of async operations at a time.
+ * @param {AsyncFunction} iteratee - An async function to apply to each item in
+ * `coll`.
+ * The iteratee should complete with a `key` to group the value under.
+ * Invoked with (value, callback).
+ * @param {Function} [callback] - A callback which is called when all `iteratee`
+ * functions have finished, or an error occurs. Result is an `Object` whoses
+ * properties are arrays of values which returned the corresponding key.
+ */
+var groupByLimit = function(coll, limit, iteratee, callback) {
+    callback = callback || noop;
+    var _iteratee = wrapAsync(iteratee);
+    mapLimit(coll, limit, function(val, callback) {
+        _iteratee(val, function(err, key) {
+            if (err) return callback(err);
+            return callback(null, {key: key, val: val});
+        });
+    }, function(err, mapResults) {
+        var result = {};
+        // from MDN, handle object having an `hasOwnProperty` prop
+        var hasOwnProperty = Object.prototype.hasOwnProperty;
+
+        for (var i = 0; i < mapResults.length; i++) {
+            if (mapResults[i]) {
+                var key = mapResults[i].key;
+                var val = mapResults[i].val;
+
+                if (hasOwnProperty.call(result, key)) {
+                    result[key].push(val);
+                } else {
+                    result[key] = [val];
+                }
+            }
+        }
+
+        return callback(err, result);
+    });
+};
+
+/**
+ * Returns a new object, where each value corresponds to an array of items, from
+ * `coll`, that returned the corresponding key. That is, the keys of the object
+ * correspond to the values passed to the `iteratee` callback.
+ *
+ * Note: Since this function applies the `iteratee` to each item in parallel,
+ * there is no guarantee that the `iteratee` functions will complete in order.
+ * However, the values for each key in the `result` will be in the same order as
+ * the original `coll`. For Objects, the values will roughly be in the order of
+ * the original Objects' keys (but this can vary across JavaScript engines).
+ *
+ * @name groupBy
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {AsyncFunction} iteratee - An async function to apply to each item in
+ * `coll`.
+ * The iteratee should complete with a `key` to group the value under.
+ * Invoked with (value, callback).
+ * @param {Function} [callback] - A callback which is called when all `iteratee`
+ * functions have finished, or an error occurs. Result is an `Object` whoses
+ * properties are arrays of values which returned the corresponding key.
+ * @example
+ *
+ * async.groupBy(['userId1', 'userId2', 'userId3'], function(userId, callback) {
+ *     db.findById(userId, function(err, user) {
+ *         if (err) return callback(err);
+ *         return callback(null, user.age);
+ *     });
+ * }, function(err, result) {
+ *     // result is object containing the userIds grouped by age
+ *     // e.g. { 30: ['userId1', 'userId3'], 42: ['userId2']};
+ * });
+ */
+var groupBy = doLimit(groupByLimit, Infinity);
+
+/**
+ * The same as [`groupBy`]{@link module:Collections.groupBy} but runs only a single async operation at a time.
+ *
+ * @name groupBySeries
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.groupBy]{@link module:Collections.groupBy}
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {number} limit - The maximum number of async operations at a time.
+ * @param {AsyncFunction} iteratee - An async function to apply to each item in
+ * `coll`.
+ * The iteratee should complete with a `key` to group the value under.
+ * Invoked with (value, callback).
+ * @param {Function} [callback] - A callback which is called when all `iteratee`
+ * functions have finished, or an error occurs. Result is an `Object` whoses
+ * properties are arrays of values which returned the corresponding key.
+ */
+var groupBySeries = doLimit(groupByLimit, 1);
+
+/**
+ * Logs the result of an `async` function to the `console`. Only works in
+ * Node.js or in browsers that support `console.log` and `console.error` (such
+ * as FF and Chrome). If multiple arguments are returned from the async
+ * function, `console.log` is called on each argument in order.
+ *
+ * @name log
+ * @static
+ * @memberOf module:Utils
+ * @method
+ * @category Util
+ * @param {AsyncFunction} function - The function you want to eventually apply
+ * all arguments to.
+ * @param {...*} arguments... - Any number of arguments to apply to the function.
+ * @example
+ *
+ * // in a module
+ * var hello = function(name, callback) {
+ *     setTimeout(function() {
+ *         callback(null, 'hello ' + name);
+ *     }, 1000);
+ * };
+ *
+ * // in the node repl
+ * node> async.log(hello, 'world');
+ * 'hello world'
+ */
+var log = consoleFunc('log');
+
+/**
+ * The same as [`mapValues`]{@link module:Collections.mapValues} but runs a maximum of `limit` async operations at a
+ * time.
+ *
+ * @name mapValuesLimit
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.mapValues]{@link module:Collections.mapValues}
+ * @category Collection
+ * @param {Object} obj - A collection to iterate over.
+ * @param {number} limit - The maximum number of async operations at a time.
+ * @param {AsyncFunction} iteratee - A function to apply to each value and key
+ * in `coll`.
+ * The iteratee should complete with the transformed value as its result.
+ * Invoked with (value, key, callback).
+ * @param {Function} [callback] - A callback which is called when all `iteratee`
+ * functions have finished, or an error occurs. `result` is a new object consisting
+ * of each key from `obj`, with each transformed value on the right-hand side.
+ * Invoked with (err, result).
+ */
+function mapValuesLimit(obj, limit, iteratee, callback) {
+    callback = once(callback || noop);
+    var newObj = {};
+    var _iteratee = wrapAsync(iteratee);
+    eachOfLimit(obj, limit, function(val, key, next) {
+        _iteratee(val, key, function (err, result) {
+            if (err) return next(err);
+            newObj[key] = result;
+            next();
+        });
+    }, function (err) {
+        callback(err, newObj);
+    });
+}
+
+/**
+ * A relative of [`map`]{@link module:Collections.map}, designed for use with objects.
+ *
+ * Produces a new Object by mapping each value of `obj` through the `iteratee`
+ * function. The `iteratee` is called each `value` and `key` from `obj` and a
+ * callback for when it has finished processing. Each of these callbacks takes
+ * two arguments: an `error`, and the transformed item from `obj`. If `iteratee`
+ * passes an error to its callback, the main `callback` (for the `mapValues`
+ * function) is immediately called with the error.
+ *
+ * Note, the order of the keys in the result is not guaranteed.  The keys will
+ * be roughly in the order they complete, (but this is very engine-specific)
+ *
+ * @name mapValues
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @category Collection
+ * @param {Object} obj - A collection to iterate over.
+ * @param {AsyncFunction} iteratee - A function to apply to each value and key
+ * in `coll`.
+ * The iteratee should complete with the transformed value as its result.
+ * Invoked with (value, key, callback).
+ * @param {Function} [callback] - A callback which is called when all `iteratee`
+ * functions have finished, or an error occurs. `result` is a new object consisting
+ * of each key from `obj`, with each transformed value on the right-hand side.
+ * Invoked with (err, result).
+ * @example
+ *
+ * async.mapValues({
+ *     f1: 'file1',
+ *     f2: 'file2',
+ *     f3: 'file3'
+ * }, function (file, key, callback) {
+ *   fs.stat(file, callback);
+ * }, function(err, result) {
+ *     // result is now a map of stats for each file, e.g.
+ *     // {
+ *     //     f1: [stats for file1],
+ *     //     f2: [stats for file2],
+ *     //     f3: [stats for file3]
+ *     // }
+ * });
+ */
+
+var mapValues = doLimit(mapValuesLimit, Infinity);
+
+/**
+ * The same as [`mapValues`]{@link module:Collections.mapValues} but runs only a single async operation at a time.
+ *
+ * @name mapValuesSeries
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.mapValues]{@link module:Collections.mapValues}
+ * @category Collection
+ * @param {Object} obj - A collection to iterate over.
+ * @param {AsyncFunction} iteratee - A function to apply to each value and key
+ * in `coll`.
+ * The iteratee should complete with the transformed value as its result.
+ * Invoked with (value, key, callback).
+ * @param {Function} [callback] - A callback which is called when all `iteratee`
+ * functions have finished, or an error occurs. `result` is a new object consisting
+ * of each key from `obj`, with each transformed value on the right-hand side.
+ * Invoked with (err, result).
+ */
+var mapValuesSeries = doLimit(mapValuesLimit, 1);
+
+function has(obj, key) {
+    return key in obj;
+}
+
+/**
+ * Caches the results of an async function. When creating a hash to store
+ * function results against, the callback is omitted from the hash and an
+ * optional hash function can be used.
+ *
+ * If no hash function is specified, the first argument is used as a hash key,
+ * which may work reasonably if it is a string or a data type that converts to a
+ * distinct string. Note that objects and arrays will not behave reasonably.
+ * Neither will cases where the other arguments are significant. In such cases,
+ * specify your own hash function.
+ *
+ * The cache of results is exposed as the `memo` property of the function
+ * returned by `memoize`.
+ *
+ * @name memoize
+ * @static
+ * @memberOf module:Utils
+ * @method
+ * @category Util
+ * @param {AsyncFunction} fn - The async function to proxy and cache results from.
+ * @param {Function} hasher - An optional function for generating a custom hash
+ * for storing results. It has all the arguments applied to it apart from the
+ * callback, and must be synchronous.
+ * @returns {AsyncFunction} a memoized version of `fn`
+ * @example
+ *
+ * var slow_fn = function(name, callback) {
+ *     // do something
+ *     callback(null, result);
+ * };
+ * var fn = async.memoize(slow_fn);
+ *
+ * // fn can now be used as if it were slow_fn
+ * fn('some name', function() {
+ *     // callback
+ * });
+ */
+function memoize(fn, hasher) {
+    var memo = Object.create(null);
+    var queues = Object.create(null);
+    hasher = hasher || identity;
+    var _fn = wrapAsync(fn);
+    var memoized = initialParams(function memoized(args, callback) {
+        var key = hasher.apply(null, args);
+        if (has(memo, key)) {
+            setImmediate$1(function() {
+                callback.apply(null, memo[key]);
+            });
+        } else if (has(queues, key)) {
+            queues[key].push(callback);
+        } else {
+            queues[key] = [callback];
+            _fn.apply(null, args.concat(function(/*args*/) {
+                var args = slice(arguments);
+                memo[key] = args;
+                var q = queues[key];
+                delete queues[key];
+                for (var i = 0, l = q.length; i < l; i++) {
+                    q[i].apply(null, args);
+                }
+            }));
+        }
+    });
+    memoized.memo = memo;
+    memoized.unmemoized = fn;
+    return memoized;
+}
+
+/**
+ * Calls `callback` on a later loop around the event loop. In Node.js this just
+ * calls `process.nextTick`.  In the browser it will use `setImmediate` if
+ * available, otherwise `setTimeout(callback, 0)`, which means other higher
+ * priority events may precede the execution of `callback`.
+ *
+ * This is used internally for browser-compatibility purposes.
+ *
+ * @name nextTick
+ * @static
+ * @memberOf module:Utils
+ * @method
+ * @see [async.setImmediate]{@link module:Utils.setImmediate}
+ * @category Util
+ * @param {Function} callback - The function to call on a later loop around
+ * the event loop. Invoked with (args...).
+ * @param {...*} args... - any number of additional arguments to pass to the
+ * callback on the next tick.
+ * @example
+ *
+ * var call_order = [];
+ * async.nextTick(function() {
+ *     call_order.push('two');
+ *     // call_order now equals ['one','two']
+ * });
+ * call_order.push('one');
+ *
+ * async.setImmediate(function (a, b, c) {
+ *     // a, b, and c equal 1, 2, and 3
+ * }, 1, 2, 3);
+ */
+var _defer$1;
+
+if (hasNextTick) {
+    _defer$1 = process.nextTick;
+} else if (hasSetImmediate) {
+    _defer$1 = setImmediate;
+} else {
+    _defer$1 = fallback;
+}
+
+var nextTick = wrap(_defer$1);
+
+function _parallel(eachfn, tasks, callback) {
+    callback = callback || noop;
+    var results = isArrayLike(tasks) ? [] : {};
+
+    eachfn(tasks, function (task, key, callback) {
+        wrapAsync(task)(function (err, result) {
+            if (arguments.length > 2) {
+                result = slice(arguments, 1);
+            }
+            results[key] = result;
+            callback(err);
+        });
+    }, function (err) {
+        callback(err, results);
+    });
+}
+
+/**
+ * Run the `tasks` collection of functions in parallel, without waiting until
+ * the previous function has completed. If any of the functions pass an error to
+ * its callback, the main `callback` is immediately called with the value of the
+ * error. Once the `tasks` have completed, the results are passed to the final
+ * `callback` as an array.
+ *
+ * **Note:** `parallel` is about kicking-off I/O tasks in parallel, not about
+ * parallel execution of code.  If your tasks do not use any timers or perform
+ * any I/O, they will actually be executed in series.  Any synchronous setup
+ * sections for each task will happen one after the other.  JavaScript remains
+ * single-threaded.
+ *
+ * **Hint:** Use [`reflect`]{@link module:Utils.reflect} to continue the
+ * execution of other tasks when a task fails.
+ *
+ * It is also possible to use an object instead of an array. Each property will
+ * be run as a function and the results will be passed to the final `callback`
+ * as an object instead of an array. This can be a more readable way of handling
+ * results from {@link async.parallel}.
+ *
+ * @name parallel
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @category Control Flow
+ * @param {Array|Iterable|Object} tasks - A collection of
+ * [async functions]{@link AsyncFunction} to run.
+ * Each async function can complete with any number of optional `result` values.
+ * @param {Function} [callback] - An optional callback to run once all the
+ * functions have completed successfully. This function gets a results array
+ * (or object) containing all the result arguments passed to the task callbacks.
+ * Invoked with (err, results).
+ *
+ * @example
+ * async.parallel([
+ *     function(callback) {
+ *         setTimeout(function() {
+ *             callback(null, 'one');
+ *         }, 200);
+ *     },
+ *     function(callback) {
+ *         setTimeout(function() {
+ *             callback(null, 'two');
+ *         }, 100);
+ *     }
+ * ],
+ * // optional callback
+ * function(err, results) {
+ *     // the results array will equal ['one','two'] even though
+ *     // the second function had a shorter timeout.
+ * });
+ *
+ * // an example using an object instead of an array
+ * async.parallel({
+ *     one: function(callback) {
+ *         setTimeout(function() {
+ *             callback(null, 1);
+ *         }, 200);
+ *     },
+ *     two: function(callback) {
+ *         setTimeout(function() {
+ *             callback(null, 2);
+ *         }, 100);
+ *     }
+ * }, function(err, results) {
+ *     // results is now equals to: {one: 1, two: 2}
+ * });
+ */
+function parallelLimit(tasks, callback) {
+    _parallel(eachOf, tasks, callback);
+}
+
+/**
+ * The same as [`parallel`]{@link module:ControlFlow.parallel} but runs a maximum of `limit` async operations at a
+ * time.
+ *
+ * @name parallelLimit
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @see [async.parallel]{@link module:ControlFlow.parallel}
+ * @category Control Flow
+ * @param {Array|Iterable|Object} tasks - A collection of
+ * [async functions]{@link AsyncFunction} to run.
+ * Each async function can complete with any number of optional `result` values.
+ * @param {number} limit - The maximum number of async operations at a time.
+ * @param {Function} [callback] - An optional callback to run once all the
+ * functions have completed successfully. This function gets a results array
+ * (or object) containing all the result arguments passed to the task callbacks.
+ * Invoked with (err, results).
+ */
+function parallelLimit$1(tasks, limit, callback) {
+    _parallel(_eachOfLimit(limit), tasks, callback);
+}
+
+/**
+ * A queue of tasks for the worker function to complete.
+ * @typedef {Object} QueueObject
+ * @memberOf module:ControlFlow
+ * @property {Function} length - a function returning the number of items
+ * waiting to be processed. Invoke with `queue.length()`.
+ * @property {boolean} started - a boolean indicating whether or not any
+ * items have been pushed and processed by the queue.
+ * @property {Function} running - a function returning the number of items
+ * currently being processed. Invoke with `queue.running()`.
+ * @property {Function} workersList - a function returning the array of items
+ * currently being processed. Invoke with `queue.workersList()`.
+ * @property {Function} idle - a function returning false if there are items
+ * waiting or being processed, or true if not. Invoke with `queue.idle()`.
+ * @property {number} concurrency - an integer for determining how many `worker`
+ * functions should be run in parallel. This property can be changed after a
+ * `queue` is created to alter the concurrency on-the-fly.
+ * @property {Function} push - add a new task to the `queue`. Calls `callback`
+ * once the `worker` has finished processing the task. Instead of a single task,
+ * a `tasks` array can be submitted. The respective callback is used for every
+ * task in the list. Invoke with `queue.push(task, [callback])`,
+ * @property {Function} unshift - add a new task to the front of the `queue`.
+ * Invoke with `queue.unshift(task, [callback])`.
+ * @property {Function} remove - remove items from the queue that match a test
+ * function.  The test function will be passed an object with a `data` property,
+ * and a `priority` property, if this is a
+ * [priorityQueue]{@link module:ControlFlow.priorityQueue} object.
+ * Invoked with `queue.remove(testFn)`, where `testFn` is of the form
+ * `function ({data, priority}) {}` and returns a Boolean.
+ * @property {Function} saturated - a callback that is called when the number of
+ * running workers hits the `concurrency` limit, and further tasks will be
+ * queued.
+ * @property {Function} unsaturated - a callback that is called when the number
+ * of running workers is less than the `concurrency` & `buffer` limits, and
+ * further tasks will not be queued.
+ * @property {number} buffer - A minimum threshold buffer in order to say that
+ * the `queue` is `unsaturated`.
+ * @property {Function} empty - a callback that is called when the last item
+ * from the `queue` is given to a `worker`.
+ * @property {Function} drain - a callback that is called when the last item
+ * from the `queue` has returned from the `worker`.
+ * @property {Function} error - a callback that is called when a task errors.
+ * Has the signature `function(error, task)`.
+ * @property {boolean} paused - a boolean for determining whether the queue is
+ * in a paused state.
+ * @property {Function} pause - a function that pauses the processing of tasks
+ * until `resume()` is called. Invoke with `queue.pause()`.
+ * @property {Function} resume - a function that resumes the processing of
+ * queued tasks when the queue is paused. Invoke with `queue.resume()`.
+ * @property {Function} kill - a function that removes the `drain` callback and
+ * empties remaining tasks from the queue forcing it to go idle. No more tasks
+ * should be pushed to the queue after calling this function. Invoke with `queue.kill()`.
+ */
+
+/**
+ * Creates a `queue` object with the specified `concurrency`. Tasks added to the
+ * `queue` are processed in parallel (up to the `concurrency` limit). If all
+ * `worker`s are in progress, the task is queued until one becomes available.
+ * Once a `worker` completes a `task`, that `task`'s callback is called.
+ *
+ * @name queue
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @category Control Flow
+ * @param {AsyncFunction} worker - An async function for processing a queued task.
+ * If you want to handle errors from an individual task, pass a callback to
+ * `q.push()`. Invoked with (task, callback).
+ * @param {number} [concurrency=1] - An `integer` for determining how many
+ * `worker` functions should be run in parallel.  If omitted, the concurrency
+ * defaults to `1`.  If the concurrency is `0`, an error is thrown.
+ * @returns {module:ControlFlow.QueueObject} A queue object to manage the tasks. Callbacks can
+ * attached as certain properties to listen for specific events during the
+ * lifecycle of the queue.
+ * @example
+ *
+ * // create a queue object with concurrency 2
+ * var q = async.queue(function(task, callback) {
+ *     console.log('hello ' + task.name);
+ *     callback();
+ * }, 2);
+ *
+ * // assign a callback
+ * q.drain = function() {
+ *     console.log('all items have been processed');
+ * };
+ *
+ * // add some items to the queue
+ * q.push({name: 'foo'}, function(err) {
+ *     console.log('finished processing foo');
+ * });
+ * q.push({name: 'bar'}, function (err) {
+ *     console.log('finished processing bar');
+ * });
+ *
+ * // add some items to the queue (batch-wise)
+ * q.push([{name: 'baz'},{name: 'bay'},{name: 'bax'}], function(err) {
+ *     console.log('finished processing item');
+ * });
+ *
+ * // add some items to the front of the queue
+ * q.unshift({name: 'bar'}, function (err) {
+ *     console.log('finished processing bar');
+ * });
+ */
+var queue$1 = function (worker, concurrency) {
+    var _worker = wrapAsync(worker);
+    return queue(function (items, cb) {
+        _worker(items[0], cb);
+    }, concurrency, 1);
+};
+
+/**
+ * The same as [async.queue]{@link module:ControlFlow.queue} only tasks are assigned a priority and
+ * completed in ascending priority order.
+ *
+ * @name priorityQueue
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @see [async.queue]{@link module:ControlFlow.queue}
+ * @category Control Flow
+ * @param {AsyncFunction} worker - An async function for processing a queued task.
+ * If you want to handle errors from an individual task, pass a callback to
+ * `q.push()`.
+ * Invoked with (task, callback).
+ * @param {number} concurrency - An `integer` for determining how many `worker`
+ * functions should be run in parallel.  If omitted, the concurrency defaults to
+ * `1`.  If the concurrency is `0`, an error is thrown.
+ * @returns {module:ControlFlow.QueueObject} A priorityQueue object to manage the tasks. There are two
+ * differences between `queue` and `priorityQueue` objects:
+ * * `push(task, priority, [callback])` - `priority` should be a number. If an
+ *   array of `tasks` is given, all tasks will be assigned the same priority.
+ * * The `unshift` method was removed.
+ */
+var priorityQueue = function(worker, concurrency) {
+    // Start with a normal queue
+    var q = queue$1(worker, concurrency);
+
+    // Override push to accept second parameter representing priority
+    q.push = function(data, priority, callback) {
+        if (callback == null) callback = noop;
+        if (typeof callback !== 'function') {
+            throw new Error('task callback must be a function');
+        }
+        q.started = true;
+        if (!isArray(data)) {
+            data = [data];
+        }
+        if (data.length === 0) {
+            // call drain immediately if there are no tasks
+            return setImmediate$1(function() {
+                q.drain();
+            });
+        }
+
+        priority = priority || 0;
+        var nextNode = q._tasks.head;
+        while (nextNode && priority >= nextNode.priority) {
+            nextNode = nextNode.next;
+        }
+
+        for (var i = 0, l = data.length; i < l; i++) {
+            var item = {
+                data: data[i],
+                priority: priority,
+                callback: callback
+            };
+
+            if (nextNode) {
+                q._tasks.insertBefore(nextNode, item);
+            } else {
+                q._tasks.push(item);
+            }
+        }
+        setImmediate$1(q.process);
+    };
+
+    // Remove unshift function
+    delete q.unshift;
+
+    return q;
+};
+
+/**
+ * Runs the `tasks` array of functions in parallel, without waiting until the
+ * previous function has completed. Once any of the `tasks` complete or pass an
+ * error to its callback, the main `callback` is immediately called. It's
+ * equivalent to `Promise.race()`.
+ *
+ * @name race
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @category Control Flow
+ * @param {Array} tasks - An array containing [async functions]{@link AsyncFunction}
+ * to run. Each function can complete with an optional `result` value.
+ * @param {Function} callback - A callback to run once any of the functions have
+ * completed. This function gets an error or result from the first function that
+ * completed. Invoked with (err, result).
+ * @returns undefined
+ * @example
+ *
+ * async.race([
+ *     function(callback) {
+ *         setTimeout(function() {
+ *             callback(null, 'one');
+ *         }, 200);
+ *     },
+ *     function(callback) {
+ *         setTimeout(function() {
+ *             callback(null, 'two');
+ *         }, 100);
+ *     }
+ * ],
+ * // main callback
+ * function(err, result) {
+ *     // the result will be equal to 'two' as it finishes earlier
+ * });
+ */
+function race(tasks, callback) {
+    callback = once(callback || noop);
+    if (!isArray(tasks)) return callback(new TypeError('First argument to race must be an array of functions'));
+    if (!tasks.length) return callback();
+    for (var i = 0, l = tasks.length; i < l; i++) {
+        wrapAsync(tasks[i])(callback);
+    }
+}
+
+/**
+ * Same as [`reduce`]{@link module:Collections.reduce}, only operates on `array` in reverse order.
+ *
+ * @name reduceRight
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.reduce]{@link module:Collections.reduce}
+ * @alias foldr
+ * @category Collection
+ * @param {Array} array - A collection to iterate over.
+ * @param {*} memo - The initial state of the reduction.
+ * @param {AsyncFunction} iteratee - A function applied to each item in the
+ * array to produce the next step in the reduction.
+ * The `iteratee` should complete with the next state of the reduction.
+ * If the iteratee complete with an error, the reduction is stopped and the
+ * main `callback` is immediately called with the error.
+ * Invoked with (memo, item, callback).
+ * @param {Function} [callback] - A callback which is called after all the
+ * `iteratee` functions have finished. Result is the reduced value. Invoked with
+ * (err, result).
+ */
+function reduceRight (array, memo, iteratee, callback) {
+    var reversed = slice(array).reverse();
+    reduce(reversed, memo, iteratee, callback);
+}
+
+/**
+ * Wraps the async function in another function that always completes with a
+ * result object, even when it errors.
+ *
+ * The result object has either the property `error` or `value`.
+ *
+ * @name reflect
+ * @static
+ * @memberOf module:Utils
+ * @method
+ * @category Util
+ * @param {AsyncFunction} fn - The async function you want to wrap
+ * @returns {Function} - A function that always passes null to it's callback as
+ * the error. The second argument to the callback will be an `object` with
+ * either an `error` or a `value` property.
+ * @example
+ *
+ * async.parallel([
+ *     async.reflect(function(callback) {
+ *         // do some stuff ...
+ *         callback(null, 'one');
+ *     }),
+ *     async.reflect(function(callback) {
+ *         // do some more stuff but error ...
+ *         callback('bad stuff happened');
+ *     }),
+ *     async.reflect(function(callback) {
+ *         // do some more stuff ...
+ *         callback(null, 'two');
+ *     })
+ * ],
+ * // optional callback
+ * function(err, results) {
+ *     // values
+ *     // results[0].value = 'one'
+ *     // results[1].error = 'bad stuff happened'
+ *     // results[2].value = 'two'
+ * });
+ */
+function reflect(fn) {
+    var _fn = wrapAsync(fn);
+    return initialParams(function reflectOn(args, reflectCallback) {
+        args.push(function callback(error, cbArg) {
+            if (error) {
+                reflectCallback(null, { error: error });
+            } else {
+                var value;
+                if (arguments.length <= 2) {
+                    value = cbArg;
+                } else {
+                    value = slice(arguments, 1);
+                }
+                reflectCallback(null, { value: value });
+            }
+        });
+
+        return _fn.apply(this, args);
+    });
+}
+
+/**
+ * A helper function that wraps an array or an object of functions with `reflect`.
+ *
+ * @name reflectAll
+ * @static
+ * @memberOf module:Utils
+ * @method
+ * @see [async.reflect]{@link module:Utils.reflect}
+ * @category Util
+ * @param {Array|Object|Iterable} tasks - The collection of
+ * [async functions]{@link AsyncFunction} to wrap in `async.reflect`.
+ * @returns {Array} Returns an array of async functions, each wrapped in
+ * `async.reflect`
+ * @example
+ *
+ * let tasks = [
+ *     function(callback) {
+ *         setTimeout(function() {
+ *             callback(null, 'one');
+ *         }, 200);
+ *     },
+ *     function(callback) {
+ *         // do some more stuff but error ...
+ *         callback(new Error('bad stuff happened'));
+ *     },
+ *     function(callback) {
+ *         setTimeout(function() {
+ *             callback(null, 'two');
+ *         }, 100);
+ *     }
+ * ];
+ *
+ * async.parallel(async.reflectAll(tasks),
+ * // optional callback
+ * function(err, results) {
+ *     // values
+ *     // results[0].value = 'one'
+ *     // results[1].error = Error('bad stuff happened')
+ *     // results[2].value = 'two'
+ * });
+ *
+ * // an example using an object instead of an array
+ * let tasks = {
+ *     one: function(callback) {
+ *         setTimeout(function() {
+ *             callback(null, 'one');
+ *         }, 200);
+ *     },
+ *     two: function(callback) {
+ *         callback('two');
+ *     },
+ *     three: function(callback) {
+ *         setTimeout(function() {
+ *             callback(null, 'three');
+ *         }, 100);
+ *     }
+ * };
+ *
+ * async.parallel(async.reflectAll(tasks),
+ * // optional callback
+ * function(err, results) {
+ *     // values
+ *     // results.one.value = 'one'
+ *     // results.two.error = 'two'
+ *     // results.three.value = 'three'
+ * });
+ */
+function reflectAll(tasks) {
+    var results;
+    if (isArray(tasks)) {
+        results = arrayMap(tasks, reflect);
+    } else {
+        results = {};
+        baseForOwn(tasks, function(task, key) {
+            results[key] = reflect.call(this, task);
+        });
+    }
+    return results;
+}
+
+function reject$1(eachfn, arr, iteratee, callback) {
+    _filter(eachfn, arr, function(value, cb) {
+        iteratee(value, function(err, v) {
+            cb(err, !v);
+        });
+    }, callback);
+}
+
+/**
+ * The opposite of [`filter`]{@link module:Collections.filter}. Removes values that pass an `async` truth test.
+ *
+ * @name reject
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.filter]{@link module:Collections.filter}
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {Function} iteratee - An async truth test to apply to each item in
+ * `coll`.
+ * The should complete with a boolean value as its `result`.
+ * Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called after all the
+ * `iteratee` functions have finished. Invoked with (err, results).
+ * @example
+ *
+ * async.reject(['file1','file2','file3'], function(filePath, callback) {
+ *     fs.access(filePath, function(err) {
+ *         callback(null, !err)
+ *     });
+ * }, function(err, results) {
+ *     // results now equals an array of missing files
+ *     createFiles(results);
+ * });
+ */
+var reject = doParallel(reject$1);
+
+/**
+ * The same as [`reject`]{@link module:Collections.reject} but runs a maximum of `limit` async operations at a
+ * time.
+ *
+ * @name rejectLimit
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.reject]{@link module:Collections.reject}
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {number} limit - The maximum number of async operations at a time.
+ * @param {Function} iteratee - An async truth test to apply to each item in
+ * `coll`.
+ * The should complete with a boolean value as its `result`.
+ * Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called after all the
+ * `iteratee` functions have finished. Invoked with (err, results).
+ */
+var rejectLimit = doParallelLimit(reject$1);
+
+/**
+ * The same as [`reject`]{@link module:Collections.reject} but runs only a single async operation at a time.
+ *
+ * @name rejectSeries
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.reject]{@link module:Collections.reject}
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {Function} iteratee - An async truth test to apply to each item in
+ * `coll`.
+ * The should complete with a boolean value as its `result`.
+ * Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called after all the
+ * `iteratee` functions have finished. Invoked with (err, results).
+ */
+var rejectSeries = doLimit(rejectLimit, 1);
+
+/**
+ * Creates a function that returns `value`.
+ *
+ * @static
+ * @memberOf _
+ * @since 2.4.0
+ * @category Util
+ * @param {*} value The value to return from the new function.
+ * @returns {Function} Returns the new constant function.
+ * @example
+ *
+ * var objects = _.times(2, _.constant({ 'a': 1 }));
+ *
+ * console.log(objects);
+ * // => [{ 'a': 1 }, { 'a': 1 }]
+ *
+ * console.log(objects[0] === objects[1]);
+ * // => true
+ */
+function constant$1(value) {
+  return function() {
+    return value;
+  };
+}
+
+/**
+ * Attempts to get a successful response from `task` no more than `times` times
+ * before returning an error. If the task is successful, the `callback` will be
+ * passed the result of the successful task. If all attempts fail, the callback
+ * will be passed the error and result (if any) of the final attempt.
+ *
+ * @name retry
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @category Control Flow
+ * @see [async.retryable]{@link module:ControlFlow.retryable}
+ * @param {Object|number} [opts = {times: 5, interval: 0}| 5] - Can be either an
+ * object with `times` and `interval` or a number.
+ * * `times` - The number of attempts to make before giving up.  The default
+ *   is `5`.
+ * * `interval` - The time to wait between retries, in milliseconds.  The
+ *   default is `0`. The interval may also be specified as a function of the
+ *   retry count (see example).
+ * * `errorFilter` - An optional synchronous function that is invoked on
+ *   erroneous result. If it returns `true` the retry attempts will continue;
+ *   if the function returns `false` the retry flow is aborted with the current
+ *   attempt's error and result being returned to the final callback.
+ *   Invoked with (err).
+ * * If `opts` is a number, the number specifies the number of times to retry,
+ *   with the default interval of `0`.
+ * @param {AsyncFunction} task - An async function to retry.
+ * Invoked with (callback).
+ * @param {Function} [callback] - An optional callback which is called when the
+ * task has succeeded, or after the final failed attempt. It receives the `err`
+ * and `result` arguments of the last attempt at completing the `task`. Invoked
+ * with (err, results).
+ *
+ * @example
+ *
+ * // The `retry` function can be used as a stand-alone control flow by passing
+ * // a callback, as shown below:
+ *
+ * // try calling apiMethod 3 times
+ * async.retry(3, apiMethod, function(err, result) {
+ *     // do something with the result
+ * });
+ *
+ * // try calling apiMethod 3 times, waiting 200 ms between each retry
+ * async.retry({times: 3, interval: 200}, apiMethod, function(err, result) {
+ *     // do something with the result
+ * });
+ *
+ * // try calling apiMethod 10 times with exponential backoff
+ * // (i.e. intervals of 100, 200, 400, 800, 1600, ... milliseconds)
+ * async.retry({
+ *   times: 10,
+ *   interval: function(retryCount) {
+ *     return 50 * Math.pow(2, retryCount);
+ *   }
+ * }, apiMethod, function(err, result) {
+ *     // do something with the result
+ * });
+ *
+ * // try calling apiMethod the default 5 times no delay between each retry
+ * async.retry(apiMethod, function(err, result) {
+ *     // do something with the result
+ * });
+ *
+ * // try calling apiMethod only when error condition satisfies, all other
+ * // errors will abort the retry control flow and return to final callback
+ * async.retry({
+ *   errorFilter: function(err) {
+ *     return err.message === 'Temporary error'; // only retry on a specific error
+ *   }
+ * }, apiMethod, function(err, result) {
+ *     // do something with the result
+ * });
+ *
+ * // to retry individual methods that are not as reliable within other
+ * // control flow functions, use the `retryable` wrapper:
+ * async.auto({
+ *     users: api.getUsers.bind(api),
+ *     payments: async.retryable(3, api.getPayments.bind(api))
+ * }, function(err, results) {
+ *     // do something with the results
+ * });
+ *
+ */
+function retry(opts, task, callback) {
+    var DEFAULT_TIMES = 5;
+    var DEFAULT_INTERVAL = 0;
+
+    var options = {
+        times: DEFAULT_TIMES,
+        intervalFunc: constant$1(DEFAULT_INTERVAL)
+    };
+
+    function parseTimes(acc, t) {
+        if (typeof t === 'object') {
+            acc.times = +t.times || DEFAULT_TIMES;
+
+            acc.intervalFunc = typeof t.interval === 'function' ?
+                t.interval :
+                constant$1(+t.interval || DEFAULT_INTERVAL);
+
+            acc.errorFilter = t.errorFilter;
+        } else if (typeof t === 'number' || typeof t === 'string') {
+            acc.times = +t || DEFAULT_TIMES;
+        } else {
+            throw new Error("Invalid arguments for async.retry");
+        }
+    }
+
+    if (arguments.length < 3 && typeof opts === 'function') {
+        callback = task || noop;
+        task = opts;
+    } else {
+        parseTimes(options, opts);
+        callback = callback || noop;
+    }
+
+    if (typeof task !== 'function') {
+        throw new Error("Invalid arguments for async.retry");
+    }
+
+    var _task = wrapAsync(task);
+
+    var attempt = 1;
+    function retryAttempt() {
+        _task(function(err) {
+            if (err && attempt++ < options.times &&
+                (typeof options.errorFilter != 'function' ||
+                    options.errorFilter(err))) {
+                setTimeout(retryAttempt, options.intervalFunc(attempt));
+            } else {
+                callback.apply(null, arguments);
+            }
+        });
+    }
+
+    retryAttempt();
+}
+
+/**
+ * A close relative of [`retry`]{@link module:ControlFlow.retry}.  This method
+ * wraps a task and makes it retryable, rather than immediately calling it
+ * with retries.
+ *
+ * @name retryable
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @see [async.retry]{@link module:ControlFlow.retry}
+ * @category Control Flow
+ * @param {Object|number} [opts = {times: 5, interval: 0}| 5] - optional
+ * options, exactly the same as from `retry`
+ * @param {AsyncFunction} task - the asynchronous function to wrap.
+ * This function will be passed any arguments passed to the returned wrapper.
+ * Invoked with (...args, callback).
+ * @returns {AsyncFunction} The wrapped function, which when invoked, will
+ * retry on an error, based on the parameters specified in `opts`.
+ * This function will accept the same parameters as `task`.
+ * @example
+ *
+ * async.auto({
+ *     dep1: async.retryable(3, getFromFlakyService),
+ *     process: ["dep1", async.retryable(3, function (results, cb) {
+ *         maybeProcessData(results.dep1, cb);
+ *     })]
+ * }, callback);
+ */
+var retryable = function (opts, task) {
+    if (!task) {
+        task = opts;
+        opts = null;
+    }
+    var _task = wrapAsync(task);
+    return initialParams(function (args, callback) {
+        function taskFn(cb) {
+            _task.apply(null, args.concat(cb));
+        }
+
+        if (opts) retry(opts, taskFn, callback);
+        else retry(taskFn, callback);
+
+    });
+};
+
+/**
+ * Run the functions in the `tasks` collection in series, each one running once
+ * the previous function has completed. If any functions in the series pass an
+ * error to its callback, no more functions are run, and `callback` is
+ * immediately called with the value of the error. Otherwise, `callback`
+ * receives an array of results when `tasks` have completed.
+ *
+ * It is also possible to use an object instead of an array. Each property will
+ * be run as a function, and the results will be passed to the final `callback`
+ * as an object instead of an array. This can be a more readable way of handling
+ *  results from {@link async.series}.
+ *
+ * **Note** that while many implementations preserve the order of object
+ * properties, the [ECMAScript Language Specification](http://www.ecma-international.org/ecma-262/5.1/#sec-8.6)
+ * explicitly states that
+ *
+ * > The mechanics and order of enumerating the properties is not specified.
+ *
+ * So if you rely on the order in which your series of functions are executed,
+ * and want this to work on all platforms, consider using an array.
+ *
+ * @name series
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @category Control Flow
+ * @param {Array|Iterable|Object} tasks - A collection containing
+ * [async functions]{@link AsyncFunction} to run in series.
+ * Each function can complete with any number of optional `result` values.
+ * @param {Function} [callback] - An optional callback to run once all the
+ * functions have completed. This function gets a results array (or object)
+ * containing all the result arguments passed to the `task` callbacks. Invoked
+ * with (err, result).
+ * @example
+ * async.series([
+ *     function(callback) {
+ *         // do some stuff ...
+ *         callback(null, 'one');
+ *     },
+ *     function(callback) {
+ *         // do some more stuff ...
+ *         callback(null, 'two');
+ *     }
+ * ],
+ * // optional callback
+ * function(err, results) {
+ *     // results is now equal to ['one', 'two']
+ * });
+ *
+ * async.series({
+ *     one: function(callback) {
+ *         setTimeout(function() {
+ *             callback(null, 1);
+ *         }, 200);
+ *     },
+ *     two: function(callback){
+ *         setTimeout(function() {
+ *             callback(null, 2);
+ *         }, 100);
+ *     }
+ * }, function(err, results) {
+ *     // results is now equal to: {one: 1, two: 2}
+ * });
+ */
+function series(tasks, callback) {
+    _parallel(eachOfSeries, tasks, callback);
+}
+
+/**
+ * Returns `true` if at least one element in the `coll` satisfies an async test.
+ * If any iteratee call returns `true`, the main `callback` is immediately
+ * called.
+ *
+ * @name some
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @alias any
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {AsyncFunction} iteratee - An async truth test to apply to each item
+ * in the collections in parallel.
+ * The iteratee should complete with a boolean `result` value.
+ * Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called as soon as any
+ * iteratee returns `true`, or after all the iteratee functions have finished.
+ * Result will be either `true` or `false` depending on the values of the async
+ * tests. Invoked with (err, result).
+ * @example
+ *
+ * async.some(['file1','file2','file3'], function(filePath, callback) {
+ *     fs.access(filePath, function(err) {
+ *         callback(null, !err)
+ *     });
+ * }, function(err, result) {
+ *     // if result is true then at least one of the files exists
+ * });
+ */
+var some = doParallel(_createTester(Boolean, identity));
+
+/**
+ * The same as [`some`]{@link module:Collections.some} but runs a maximum of `limit` async operations at a time.
+ *
+ * @name someLimit
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.some]{@link module:Collections.some}
+ * @alias anyLimit
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {number} limit - The maximum number of async operations at a time.
+ * @param {AsyncFunction} iteratee - An async truth test to apply to each item
+ * in the collections in parallel.
+ * The iteratee should complete with a boolean `result` value.
+ * Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called as soon as any
+ * iteratee returns `true`, or after all the iteratee functions have finished.
+ * Result will be either `true` or `false` depending on the values of the async
+ * tests. Invoked with (err, result).
+ */
+var someLimit = doParallelLimit(_createTester(Boolean, identity));
+
+/**
+ * The same as [`some`]{@link module:Collections.some} but runs only a single async operation at a time.
+ *
+ * @name someSeries
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @see [async.some]{@link module:Collections.some}
+ * @alias anySeries
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {AsyncFunction} iteratee - An async truth test to apply to each item
+ * in the collections in series.
+ * The iteratee should complete with a boolean `result` value.
+ * Invoked with (item, callback).
+ * @param {Function} [callback] - A callback which is called as soon as any
+ * iteratee returns `true`, or after all the iteratee functions have finished.
+ * Result will be either `true` or `false` depending on the values of the async
+ * tests. Invoked with (err, result).
+ */
+var someSeries = doLimit(someLimit, 1);
+
+/**
+ * Sorts a list by the results of running each `coll` value through an async
+ * `iteratee`.
+ *
+ * @name sortBy
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {AsyncFunction} iteratee - An async function to apply to each item in
+ * `coll`.
+ * The iteratee should complete with a value to use as the sort criteria as
+ * its `result`.
+ * Invoked with (item, callback).
+ * @param {Function} callback - A callback which is called after all the
+ * `iteratee` functions have finished, or an error occurs. Results is the items
+ * from the original `coll` sorted by the values returned by the `iteratee`
+ * calls. Invoked with (err, results).
+ * @example
+ *
+ * async.sortBy(['file1','file2','file3'], function(file, callback) {
+ *     fs.stat(file, function(err, stats) {
+ *         callback(err, stats.mtime);
+ *     });
+ * }, function(err, results) {
+ *     // results is now the original array of files sorted by
+ *     // modified date
+ * });
+ *
+ * // By modifying the callback parameter the
+ * // sorting order can be influenced:
+ *
+ * // ascending order
+ * async.sortBy([1,9,3,5], function(x, callback) {
+ *     callback(null, x);
+ * }, function(err,result) {
+ *     // result callback
+ * });
+ *
+ * // descending order
+ * async.sortBy([1,9,3,5], function(x, callback) {
+ *     callback(null, x*-1);    //<- x*-1 instead of x, turns the order around
+ * }, function(err,result) {
+ *     // result callback
+ * });
+ */
+function sortBy (coll, iteratee, callback) {
+    var _iteratee = wrapAsync(iteratee);
+    map(coll, function (x, callback) {
+        _iteratee(x, function (err, criteria) {
+            if (err) return callback(err);
+            callback(null, {value: x, criteria: criteria});
+        });
+    }, function (err, results) {
+        if (err) return callback(err);
+        callback(null, arrayMap(results.sort(comparator), baseProperty('value')));
+    });
+
+    function comparator(left, right) {
+        var a = left.criteria, b = right.criteria;
+        return a < b ? -1 : a > b ? 1 : 0;
+    }
+}
+
+/**
+ * Sets a time limit on an asynchronous function. If the function does not call
+ * its callback within the specified milliseconds, it will be called with a
+ * timeout error. The code property for the error object will be `'ETIMEDOUT'`.
+ *
+ * @name timeout
+ * @static
+ * @memberOf module:Utils
+ * @method
+ * @category Util
+ * @param {AsyncFunction} asyncFn - The async function to limit in time.
+ * @param {number} milliseconds - The specified time limit.
+ * @param {*} [info] - Any variable you want attached (`string`, `object`, etc)
+ * to timeout Error for more information..
+ * @returns {AsyncFunction} Returns a wrapped function that can be used with any
+ * of the control flow functions.
+ * Invoke this function with the same parameters as you would `asyncFunc`.
+ * @example
+ *
+ * function myFunction(foo, callback) {
+ *     doAsyncTask(foo, function(err, data) {
+ *         // handle errors
+ *         if (err) return callback(err);
+ *
+ *         // do some stuff ...
+ *
+ *         // return processed data
+ *         return callback(null, data);
+ *     });
+ * }
+ *
+ * var wrapped = async.timeout(myFunction, 1000);
+ *
+ * // call `wrapped` as you would `myFunction`
+ * wrapped({ bar: 'bar' }, function(err, data) {
+ *     // if `myFunction` takes < 1000 ms to execute, `err`
+ *     // and `data` will have their expected values
+ *
+ *     // else `err` will be an Error with the code 'ETIMEDOUT'
+ * });
+ */
+function timeout(asyncFn, milliseconds, info) {
+    var fn = wrapAsync(asyncFn);
+
+    return initialParams(function (args, callback) {
+        var timedOut = false;
+        var timer;
+
+        function timeoutCallback() {
+            var name = asyncFn.name || 'anonymous';
+            var error  = new Error('Callback function "' + name + '" timed out.');
+            error.code = 'ETIMEDOUT';
+            if (info) {
+                error.info = info;
+            }
+            timedOut = true;
+            callback(error);
+        }
+
+        args.push(function () {
+            if (!timedOut) {
+                callback.apply(null, arguments);
+                clearTimeout(timer);
+            }
+        });
+
+        // setup timer and call original function
+        timer = setTimeout(timeoutCallback, milliseconds);
+        fn.apply(null, args);
+    });
+}
+
+/* Built-in method references for those with the same name as other `lodash` methods. */
+var nativeCeil = Math.ceil;
+var nativeMax = Math.max;
+
+/**
+ * The base implementation of `_.range` and `_.rangeRight` which doesn't
+ * coerce arguments.
+ *
+ * @private
+ * @param {number} start The start of the range.
+ * @param {number} end The end of the range.
+ * @param {number} step The value to increment or decrement by.
+ * @param {boolean} [fromRight] Specify iterating from right to left.
+ * @returns {Array} Returns the range of numbers.
+ */
+function baseRange(start, end, step, fromRight) {
+  var index = -1,
+      length = nativeMax(nativeCeil((end - start) / (step || 1)), 0),
+      result = Array(length);
+
+  while (length--) {
+    result[fromRight ? length : ++index] = start;
+    start += step;
+  }
+  return result;
+}
+
+/**
+ * The same as [times]{@link module:ControlFlow.times} but runs a maximum of `limit` async operations at a
+ * time.
+ *
+ * @name timesLimit
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @see [async.times]{@link module:ControlFlow.times}
+ * @category Control Flow
+ * @param {number} count - The number of times to run the function.
+ * @param {number} limit - The maximum number of async operations at a time.
+ * @param {AsyncFunction} iteratee - The async function to call `n` times.
+ * Invoked with the iteration index and a callback: (n, next).
+ * @param {Function} callback - see [async.map]{@link module:Collections.map}.
+ */
+function timeLimit(count, limit, iteratee, callback) {
+    var _iteratee = wrapAsync(iteratee);
+    mapLimit(baseRange(0, count, 1), limit, _iteratee, callback);
+}
+
+/**
+ * Calls the `iteratee` function `n` times, and accumulates results in the same
+ * manner you would use with [map]{@link module:Collections.map}.
+ *
+ * @name times
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @see [async.map]{@link module:Collections.map}
+ * @category Control Flow
+ * @param {number} n - The number of times to run the function.
+ * @param {AsyncFunction} iteratee - The async function to call `n` times.
+ * Invoked with the iteration index and a callback: (n, next).
+ * @param {Function} callback - see {@link module:Collections.map}.
+ * @example
+ *
+ * // Pretend this is some complicated async factory
+ * var createUser = function(id, callback) {
+ *     callback(null, {
+ *         id: 'user' + id
+ *     });
+ * };
+ *
+ * // generate 5 users
+ * async.times(5, function(n, next) {
+ *     createUser(n, function(err, user) {
+ *         next(err, user);
+ *     });
+ * }, function(err, users) {
+ *     // we should now have 5 users
+ * });
+ */
+var times = doLimit(timeLimit, Infinity);
+
+/**
+ * The same as [times]{@link module:ControlFlow.times} but runs only a single async operation at a time.
+ *
+ * @name timesSeries
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @see [async.times]{@link module:ControlFlow.times}
+ * @category Control Flow
+ * @param {number} n - The number of times to run the function.
+ * @param {AsyncFunction} iteratee - The async function to call `n` times.
+ * Invoked with the iteration index and a callback: (n, next).
+ * @param {Function} callback - see {@link module:Collections.map}.
+ */
+var timesSeries = doLimit(timeLimit, 1);
+
+/**
+ * A relative of `reduce`.  Takes an Object or Array, and iterates over each
+ * element in series, each step potentially mutating an `accumulator` value.
+ * The type of the accumulator defaults to the type of collection passed in.
+ *
+ * @name transform
+ * @static
+ * @memberOf module:Collections
+ * @method
+ * @category Collection
+ * @param {Array|Iterable|Object} coll - A collection to iterate over.
+ * @param {*} [accumulator] - The initial state of the transform.  If omitted,
+ * it will default to an empty Object or Array, depending on the type of `coll`
+ * @param {AsyncFunction} iteratee - A function applied to each item in the
+ * collection that potentially modifies the accumulator.
+ * Invoked with (accumulator, item, key, callback).
+ * @param {Function} [callback] - A callback which is called after all the
+ * `iteratee` functions have finished. Result is the transformed accumulator.
+ * Invoked with (err, result).
+ * @example
+ *
+ * async.transform([1,2,3], function(acc, item, index, callback) {
+ *     // pointless async:
+ *     process.nextTick(function() {
+ *         acc.push(item * 2)
+ *         callback(null)
+ *     });
+ * }, function(err, result) {
+ *     // result is now equal to [2, 4, 6]
+ * });
+ *
+ * @example
+ *
+ * async.transform({a: 1, b: 2, c: 3}, function (obj, val, key, callback) {
+ *     setImmediate(function () {
+ *         obj[key] = val * 2;
+ *         callback();
+ *     })
+ * }, function (err, result) {
+ *     // result is equal to {a: 2, b: 4, c: 6}
+ * })
+ */
+function transform (coll, accumulator, iteratee, callback) {
+    if (arguments.length <= 3) {
+        callback = iteratee;
+        iteratee = accumulator;
+        accumulator = isArray(coll) ? [] : {};
+    }
+    callback = once(callback || noop);
+    var _iteratee = wrapAsync(iteratee);
+
+    eachOf(coll, function(v, k, cb) {
+        _iteratee(accumulator, v, k, cb);
+    }, function(err) {
+        callback(err, accumulator);
+    });
+}
+
+/**
+ * It runs each task in series but stops whenever any of the functions were
+ * successful. If one of the tasks were successful, the `callback` will be
+ * passed the result of the successful task. If all tasks fail, the callback
+ * will be passed the error and result (if any) of the final attempt.
+ *
+ * @name tryEach
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @category Control Flow
+ * @param {Array|Iterable|Object} tasks - A collection containing functions to
+ * run, each function is passed a `callback(err, result)` it must call on
+ * completion with an error `err` (which can be `null`) and an optional `result`
+ * value.
+ * @param {Function} [callback] - An optional callback which is called when one
+ * of the tasks has succeeded, or all have failed. It receives the `err` and
+ * `result` arguments of the last attempt at completing the `task`. Invoked with
+ * (err, results).
+ * @example
+ * async.tryEach([
+ *     function getDataFromFirstWebsite(callback) {
+ *         // Try getting the data from the first website
+ *         callback(err, data);
+ *     },
+ *     function getDataFromSecondWebsite(callback) {
+ *         // First website failed,
+ *         // Try getting the data from the backup website
+ *         callback(err, data);
+ *     }
+ * ],
+ * // optional callback
+ * function(err, results) {
+ *     Now do something with the data.
+ * });
+ *
+ */
+function tryEach(tasks, callback) {
+    var error = null;
+    var result;
+    callback = callback || noop;
+    eachSeries(tasks, function(task, callback) {
+        wrapAsync(task)(function (err, res/*, ...args*/) {
+            if (arguments.length > 2) {
+                result = slice(arguments, 1);
+            } else {
+                result = res;
+            }
+            error = err;
+            callback(!err);
+        });
+    }, function () {
+        callback(error, result);
+    });
+}
+
+/**
+ * Undoes a [memoize]{@link module:Utils.memoize}d function, reverting it to the original,
+ * unmemoized form. Handy for testing.
+ *
+ * @name unmemoize
+ * @static
+ * @memberOf module:Utils
+ * @method
+ * @see [async.memoize]{@link module:Utils.memoize}
+ * @category Util
+ * @param {AsyncFunction} fn - the memoized function
+ * @returns {AsyncFunction} a function that calls the original unmemoized function
+ */
+function unmemoize(fn) {
+    return function () {
+        return (fn.unmemoized || fn).apply(null, arguments);
+    };
+}
+
+/**
+ * Repeatedly call `iteratee`, while `test` returns `true`. Calls `callback` when
+ * stopped, or an error occurs.
+ *
+ * @name whilst
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @category Control Flow
+ * @param {Function} test - synchronous truth test to perform before each
+ * execution of `iteratee`. Invoked with ().
+ * @param {AsyncFunction} iteratee - An async function which is called each time
+ * `test` passes. Invoked with (callback).
+ * @param {Function} [callback] - A callback which is called after the test
+ * function has failed and repeated execution of `iteratee` has stopped. `callback`
+ * will be passed an error and any arguments passed to the final `iteratee`'s
+ * callback. Invoked with (err, [results]);
+ * @returns undefined
+ * @example
+ *
+ * var count = 0;
+ * async.whilst(
+ *     function() { return count < 5; },
+ *     function(callback) {
+ *         count++;
+ *         setTimeout(function() {
+ *             callback(null, count);
+ *         }, 1000);
+ *     },
+ *     function (err, n) {
+ *         // 5 seconds have passed, n = 5
+ *     }
+ * );
+ */
+function whilst(test, iteratee, callback) {
+    callback = onlyOnce(callback || noop);
+    var _iteratee = wrapAsync(iteratee);
+    if (!test()) return callback(null);
+    var next = function(err/*, ...args*/) {
+        if (err) return callback(err);
+        if (test()) return _iteratee(next);
+        var args = slice(arguments, 1);
+        callback.apply(null, [null].concat(args));
+    };
+    _iteratee(next);
+}
+
+/**
+ * Repeatedly call `iteratee` until `test` returns `true`. Calls `callback` when
+ * stopped, or an error occurs. `callback` will be passed an error and any
+ * arguments passed to the final `iteratee`'s callback.
+ *
+ * The inverse of [whilst]{@link module:ControlFlow.whilst}.
+ *
+ * @name until
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @see [async.whilst]{@link module:ControlFlow.whilst}
+ * @category Control Flow
+ * @param {Function} test - synchronous truth test to perform before each
+ * execution of `iteratee`. Invoked with ().
+ * @param {AsyncFunction} iteratee - An async function which is called each time
+ * `test` fails. Invoked with (callback).
+ * @param {Function} [callback] - A callback which is called after the test
+ * function has passed and repeated execution of `iteratee` has stopped. `callback`
+ * will be passed an error and any arguments passed to the final `iteratee`'s
+ * callback. Invoked with (err, [results]);
+ */
+function until(test, iteratee, callback) {
+    whilst(function() {
+        return !test.apply(this, arguments);
+    }, iteratee, callback);
+}
+
+/**
+ * Runs the `tasks` array of functions in series, each passing their results to
+ * the next in the array. However, if any of the `tasks` pass an error to their
+ * own callback, the next function is not executed, and the main `callback` is
+ * immediately called with the error.
+ *
+ * @name waterfall
+ * @static
+ * @memberOf module:ControlFlow
+ * @method
+ * @category Control Flow
+ * @param {Array} tasks - An array of [async functions]{@link AsyncFunction}
+ * to run.
+ * Each function should complete with any number of `result` values.
+ * The `result` values will be passed as arguments, in order, to the next task.
+ * @param {Function} [callback] - An optional callback to run once all the
+ * functions have completed. This will be passed the results of the last task's
+ * callback. Invoked with (err, [results]).
+ * @returns undefined
+ * @example
+ *
+ * async.waterfall([
+ *     function(callback) {
+ *         callback(null, 'one', 'two');
+ *     },
+ *     function(arg1, arg2, callback) {
+ *         // arg1 now equals 'one' and arg2 now equals 'two'
+ *         callback(null, 'three');
+ *     },
+ *     function(arg1, callback) {
+ *         // arg1 now equals 'three'
+ *         callback(null, 'done');
+ *     }
+ * ], function (err, result) {
+ *     // result now equals 'done'
+ * });
+ *
+ * // Or, with named functions:
+ * async.waterfall([
+ *     myFirstFunction,
+ *     mySecondFunction,
+ *     myLastFunction,
+ * ], function (err, result) {
+ *     // result now equals 'done'
+ * });
+ * function myFirstFunction(callback) {
+ *     callback(null, 'one', 'two');
+ * }
+ * function mySecondFunction(arg1, arg2, callback) {
+ *     // arg1 now equals 'one' and arg2 now equals 'two'
+ *     callback(null, 'three');
+ * }
+ * function myLastFunction(arg1, callback) {
+ *     // arg1 now equals 'three'
+ *     callback(null, 'done');
+ * }
+ */
+var waterfall = function(tasks, callback) {
+    callback = once(callback || noop);
+    if (!isArray(tasks)) return callback(new Error('First argument to waterfall must be an array of functions'));
+    if (!tasks.length) return callback();
+    var taskIndex = 0;
+
+    function nextTask(args) {
+        var task = wrapAsync(tasks[taskIndex++]);
+        args.push(onlyOnce(next));
+        task.apply(null, args);
+    }
+
+    function next(err/*, ...args*/) {
+        if (err || taskIndex === tasks.length) {
+            return callback.apply(null, arguments);
+        }
+        nextTask(slice(arguments, 1));
+    }
+
+    nextTask([]);
+};
+
+/**
+ * An "async function" in the context of Async is an asynchronous function with
+ * a variable number of parameters, with the final parameter being a callback.
+ * (`function (arg1, arg2, ..., callback) {}`)
+ * The final callback is of the form `callback(err, results...)`, which must be
+ * called once the function is completed.  The callback should be called with a
+ * Error as its first argument to signal that an error occurred.
+ * Otherwise, if no error occurred, it should be called with `null` as the first
+ * argument, and any additional `result` arguments that may apply, to signal
+ * successful completion.
+ * The callback must be called exactly once, ideally on a later tick of the
+ * JavaScript event loop.
+ *
+ * This type of function is also referred to as a "Node-style async function",
+ * or a "continuation passing-style function" (CPS). Most of the methods of this
+ * library are themselves CPS/Node-style async functions, or functions that
+ * return CPS/Node-style async functions.
+ *
+ * Wherever we accept a Node-style async function, we also directly accept an
+ * [ES2017 `async` function]{@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function}.
+ * In this case, the `async` function will not be passed a final callback
+ * argument, and any thrown error will be used as the `err` argument of the
+ * implicit callback, and the return value will be used as the `result` value.
+ * (i.e. a `rejected` of the returned Promise becomes the `err` callback
+ * argument, and a `resolved` value becomes the `result`.)
+ *
+ * Note, due to JavaScript limitations, we can only detect native `async`
+ * functions and not transpilied implementations.
+ * Your environment must have `async`/`await` support for this to work.
+ * (e.g. Node > v7.6, or a recent version of a modern browser).
+ * If you are using `async` functions through a transpiler (e.g. Babel), you
+ * must still wrap the function with [asyncify]{@link module:Utils.asyncify},
+ * because the `async function` will be compiled to an ordinary function that
+ * returns a promise.
+ *
+ * @typedef {Function} AsyncFunction
+ * @static
+ */
+
+/**
+ * Async is a utility module which provides straight-forward, powerful functions
+ * for working with asynchronous JavaScript. Although originally designed for
+ * use with [Node.js](http://nodejs.org) and installable via
+ * `npm install --save async`, it can also be used directly in the browser.
+ * @module async
+ * @see AsyncFunction
+ */
+
+
+/**
+ * A collection of `async` functions for manipulating collections, such as
+ * arrays and objects.
+ * @module Collections
+ */
+
+/**
+ * A collection of `async` functions for controlling the flow through a script.
+ * @module ControlFlow
+ */
+
+/**
+ * A collection of `async` utility functions.
+ * @module Utils
+ */
+
+var index = {
+    apply: apply,
+    applyEach: applyEach,
+    applyEachSeries: applyEachSeries,
+    asyncify: asyncify,
+    auto: auto,
+    autoInject: autoInject,
+    cargo: cargo,
+    compose: compose,
+    concat: concat,
+    concatLimit: concatLimit,
+    concatSeries: concatSeries,
+    constant: constant,
+    detect: detect,
+    detectLimit: detectLimit,
+    detectSeries: detectSeries,
+    dir: dir,
+    doDuring: doDuring,
+    doUntil: doUntil,
+    doWhilst: doWhilst,
+    during: during,
+    each: eachLimit,
+    eachLimit: eachLimit$1,
+    eachOf: eachOf,
+    eachOfLimit: eachOfLimit,
+    eachOfSeries: eachOfSeries,
+    eachSeries: eachSeries,
+    ensureAsync: ensureAsync,
+    every: every,
+    everyLimit: everyLimit,
+    everySeries: everySeries,
+    filter: filter,
+    filterLimit: filterLimit,
+    filterSeries: filterSeries,
+    forever: forever,
+    groupBy: groupBy,
+    groupByLimit: groupByLimit,
+    groupBySeries: groupBySeries,
+    log: log,
+    map: map,
+    mapLimit: mapLimit,
+    mapSeries: mapSeries,
+    mapValues: mapValues,
+    mapValuesLimit: mapValuesLimit,
+    mapValuesSeries: mapValuesSeries,
+    memoize: memoize,
+    nextTick: nextTick,
+    parallel: parallelLimit,
+    parallelLimit: parallelLimit$1,
+    priorityQueue: priorityQueue,
+    queue: queue$1,
+    race: race,
+    reduce: reduce,
+    reduceRight: reduceRight,
+    reflect: reflect,
+    reflectAll: reflectAll,
+    reject: reject,
+    rejectLimit: rejectLimit,
+    rejectSeries: rejectSeries,
+    retry: retry,
+    retryable: retryable,
+    seq: seq,
+    series: series,
+    setImmediate: setImmediate$1,
+    some: some,
+    someLimit: someLimit,
+    someSeries: someSeries,
+    sortBy: sortBy,
+    timeout: timeout,
+    times: times,
+    timesLimit: timeLimit,
+    timesSeries: timesSeries,
+    transform: transform,
+    tryEach: tryEach,
+    unmemoize: unmemoize,
+    until: until,
+    waterfall: waterfall,
+    whilst: whilst,
+
+    // aliases
+    all: every,
+    allLimit: everyLimit,
+    allSeries: everySeries,
+    any: some,
+    anyLimit: someLimit,
+    anySeries: someSeries,
+    find: detect,
+    findLimit: detectLimit,
+    findSeries: detectSeries,
+    forEach: eachLimit,
+    forEachSeries: eachSeries,
+    forEachLimit: eachLimit$1,
+    forEachOf: eachOf,
+    forEachOfSeries: eachOfSeries,
+    forEachOfLimit: eachOfLimit,
+    inject: reduce,
+    foldl: reduce,
+    foldr: reduceRight,
+    select: filter,
+    selectLimit: filterLimit,
+    selectSeries: filterSeries,
+    wrapSync: asyncify
+};
+
+exports['default'] = index;
+exports.apply = apply;
+exports.applyEach = applyEach;
+exports.applyEachSeries = applyEachSeries;
+exports.asyncify = asyncify;
+exports.auto = auto;
+exports.autoInject = autoInject;
+exports.cargo = cargo;
+exports.compose = compose;
+exports.concat = concat;
+exports.concatLimit = concatLimit;
+exports.concatSeries = concatSeries;
+exports.constant = constant;
+exports.detect = detect;
+exports.detectLimit = detectLimit;
+exports.detectSeries = detectSeries;
+exports.dir = dir;
+exports.doDuring = doDuring;
+exports.doUntil = doUntil;
+exports.doWhilst = doWhilst;
+exports.during = during;
+exports.each = eachLimit;
+exports.eachLimit = eachLimit$1;
+exports.eachOf = eachOf;
+exports.eachOfLimit = eachOfLimit;
+exports.eachOfSeries = eachOfSeries;
+exports.eachSeries = eachSeries;
+exports.ensureAsync = ensureAsync;
+exports.every = every;
+exports.everyLimit = everyLimit;
+exports.everySeries = everySeries;
+exports.filter = filter;
+exports.filterLimit = filterLimit;
+exports.filterSeries = filterSeries;
+exports.forever = forever;
+exports.groupBy = groupBy;
+exports.groupByLimit = groupByLimit;
+exports.groupBySeries = groupBySeries;
+exports.log = log;
+exports.map = map;
+exports.mapLimit = mapLimit;
+exports.mapSeries = mapSeries;
+exports.mapValues = mapValues;
+exports.mapValuesLimit = mapValuesLimit;
+exports.mapValuesSeries = mapValuesSeries;
+exports.memoize = memoize;
+exports.nextTick = nextTick;
+exports.parallel = parallelLimit;
+exports.parallelLimit = parallelLimit$1;
+exports.priorityQueue = priorityQueue;
+exports.queue = queue$1;
+exports.race = race;
+exports.reduce = reduce;
+exports.reduceRight = reduceRight;
+exports.reflect = reflect;
+exports.reflectAll = reflectAll;
+exports.reject = reject;
+exports.rejectLimit = rejectLimit;
+exports.rejectSeries = rejectSeries;
+exports.retry = retry;
+exports.retryable = retryable;
+exports.seq = seq;
+exports.series = series;
+exports.setImmediate = setImmediate$1;
+exports.some = some;
+exports.someLimit = someLimit;
+exports.someSeries = someSeries;
+exports.sortBy = sortBy;
+exports.timeout = timeout;
+exports.times = times;
+exports.timesLimit = timeLimit;
+exports.timesSeries = timesSeries;
+exports.transform = transform;
+exports.tryEach = tryEach;
+exports.unmemoize = unmemoize;
+exports.until = until;
+exports.waterfall = waterfall;
+exports.whilst = whilst;
+exports.all = every;
+exports.allLimit = everyLimit;
+exports.allSeries = everySeries;
+exports.any = some;
+exports.anyLimit = someLimit;
+exports.anySeries = someSeries;
+exports.find = detect;
+exports.findLimit = detectLimit;
+exports.findSeries = detectSeries;
+exports.forEach = eachLimit;
+exports.forEachSeries = eachSeries;
+exports.forEachLimit = eachLimit$1;
+exports.forEachOf = eachOf;
+exports.forEachOfSeries = eachOfSeries;
+exports.forEachOfLimit = eachOfLimit;
+exports.inject = reduce;
+exports.foldl = reduce;
+exports.foldr = reduceRight;
+exports.select = filter;
+exports.selectLimit = filterLimit;
+exports.selectSeries = filterSeries;
+exports.wrapSync = asyncify;
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+})));
+
+
+/***/ }),
+
 /***/ "./node_modules/axios/index.js":
 /*!*************************************!*\
   !*** ./node_modules/axios/index.js ***!
@@ -2101,6 +7721,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 /* harmony import */ var _css_app_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../css/app.css */ "./resources/css/app.css");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router-dom/esm/react-router-dom.js");
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
@@ -2128,6 +7749,7 @@ function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.g
 
 
 
+
 var AdminHome = /*#__PURE__*/function (_React$Component) {
   _inherits(AdminHome, _React$Component);
 
@@ -2142,35 +7764,42 @@ var AdminHome = /*#__PURE__*/function (_React$Component) {
   _createClass(AdminHome, [{
     key: "render",
     value: function render() {
-      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
         className: "container",
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
-          className: "header",
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("h1", {
-            children: " Admin Home"
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("hr", {})]
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
-          className: "flex-container",
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
-            className: "card",
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("a", {
-              href: "/foodList",
-              children: "Foods"
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
-            className: "card",
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("a", {
-              href: "/categoryList",
-              children: "Food Types"
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
-            className: "card",
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("a", {
-              href: "/restaurantList",
-              children: "Restaurants"
-            })
-          })]
-        })]
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+          className: "container-category",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+            className: "container-category-grid",
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_3__.Link, {
+              className: "container-categories-item",
+              to: "/foodList",
+              children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+                className: "container-categories-text",
+                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("h2", {
+                  children: "Foods"
+                })
+              })
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_3__.Link, {
+              className: "container-categories-item",
+              to: "/categoryList",
+              children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+                className: "container-categories-text",
+                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("h2", {
+                  children: "Food Types"
+                })
+              })
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_3__.Link, {
+              className: "container-categories-item",
+              to: "/restaurantList",
+              children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+                className: "container-categories-text",
+                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("h2", {
+                  children: "Restaurants"
+                })
+              })
+            })]
+          })
+        })
       });
     }
   }]);
@@ -2178,6 +7807,461 @@ var AdminHome = /*#__PURE__*/function (_React$Component) {
   return AdminHome;
 }(react__WEBPACK_IMPORTED_MODULE_0__.Component);
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (AdminHome);
+
+/***/ }),
+
+/***/ "./resources/js/components/Category/CategoryAdd.js":
+/*!*********************************************************!*\
+  !*** ./resources/js/components/Category/CategoryAdd.js ***!
+  \*********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ FoodAdd)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
+/* harmony import */ var _css_app_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../css/app.css */ "./resources/css/app.css");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+
+
+
+
+
+
+var FoodAdd = /*#__PURE__*/function (_Component) {
+  _inherits(FoodAdd, _Component);
+
+  var _super = _createSuper(FoodAdd);
+
+  function FoodAdd(props) {
+    var _this;
+
+    _classCallCheck(this, FoodAdd);
+
+    _this = _super.call(this, props);
+    _this.state = {
+      categoryName: ""
+    }; // bind
+
+    _this.handleChange = _this.handleChange.bind(_assertThisInitialized(_this));
+    _this.handleSubmit = _this.handleSubmit.bind(_assertThisInitialized(_this));
+    return _this;
+  } // handle change
+
+
+  _createClass(FoodAdd, [{
+    key: "handleChange",
+    value: function handleChange(e) {
+      this.setState(_defineProperty({}, e.target.name, e.target.value));
+      console.log(e.target.name);
+    }
+  }, {
+    key: "handleSubmit",
+    value: function handleSubmit(e) {
+      var _this2 = this;
+
+      var categoryName = this.state.categoryName;
+      e.preventDefault();
+      console.log("name : ", categoryName);
+      axios.post("/category", {
+        categoryName: categoryName
+      }).then(function (res) {
+        console.log("from handle submit", res);
+
+        _this2.setState({
+          categoryName: ""
+        });
+      });
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+        className: "container",
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+          className: "row justify-content-center",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+            className: "col-md-8",
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+              className: "card",
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+                className: "card-header",
+                children: "Create Category"
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+                className: "card-body",
+                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("form", {
+                  onSubmit: this.handleSubmit,
+                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+                    className: "form-group",
+                    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("input", {
+                      name: "categoryName",
+                      className: "form-control",
+                      type: "text",
+                      placeholder: "Category Name",
+                      value: this.state.categoryName,
+                      onChange: this.handleChange,
+                      required: true
+                    })
+                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
+                    type: "submit",
+                    className: "btn btn-primary",
+                    to: "/categoryList",
+                    children: "Create Category"
+                  })]
+                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("hr", {})]
+              })]
+            })
+          })
+        })
+      });
+    }
+  }]);
+
+  return FoodAdd;
+}(react__WEBPACK_IMPORTED_MODULE_0__.Component);
+
+
+
+/***/ }),
+
+/***/ "./resources/js/components/Category/CategoryEdit.js":
+/*!**********************************************************!*\
+  !*** ./resources/js/components/Category/CategoryEdit.js ***!
+  \**********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ CategoryEdit)
+/* harmony export */ });
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! axios */ "./node_modules/axios/index.js");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(axios__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router-dom/esm/react-router-dom.js");
+/* harmony import */ var _css_app_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../css/app.css */ "./resources/css/app.css");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+
+
+
+ //const { id } = useParams();
+
+
+
+
+var CategoryEdit = /*#__PURE__*/function (_Component) {
+  _inherits(CategoryEdit, _Component);
+
+  var _super = _createSuper(CategoryEdit);
+
+  function CategoryEdit(props) {
+    var _this;
+
+    _classCallCheck(this, CategoryEdit);
+
+    _this = _super.call(this, props);
+    _this.state = {
+      categoryName: ""
+    };
+    _this.nameChange = _this.nameChange.bind(_assertThisInitialized(_this));
+    _this.handleSubmit = _this.handleSubmit.bind(_assertThisInitialized(_this));
+    return _this;
+  }
+
+  _createClass(CategoryEdit, [{
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      var _this2 = this;
+
+      console.log("params.id:");
+      console.log(this.props.match.params.id);
+      var id = this.props.match.params.id; // console.log("id:");
+      //console.log(id);
+      //window.location.href === window.origin
+
+      axios__WEBPACK_IMPORTED_MODULE_0___default().get("/category/".concat(id)).then(function (response) {
+        console.log("response data cat name:");
+        console.log(response.data[0].categoryName);
+
+        _this2.setState({
+          categoryName: response.data[0].categoryName
+        });
+      });
+    }
+  }, {
+    key: "nameChange",
+    value: function nameChange(e) {
+      this.setState({
+        categoryName: e.target.value
+      });
+    }
+  }, {
+    key: "handleSubmit",
+    value: function handleSubmit(e) {
+      e.preventDefault();
+      var cat = {
+        categoryName: this.state.categoryName
+      };
+      var uri = "/category/" + this.props.match.params.id;
+      axios__WEBPACK_IMPORTED_MODULE_0___default().patch(uri, cat).then(function (response) {
+        console.log("Updated to :");
+        console.log(cat); // this.props.history.push("/categoryList");
+      });
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+        className: "container",
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+          className: "row justify-content-center",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+            className: "col-md-8",
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+              className: "card",
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+                className: "card-header",
+                children: "Update Category"
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+                className: "card-body",
+                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("form", {
+                  onSubmit: this.handleSubmit,
+                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+                    className: "form-group",
+                    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("label", {
+                      children: "Category Name"
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("input", {
+                      name: "categoryName",
+                      className: "form-control",
+                      type: "text",
+                      value: this.state.categoryName,
+                      onChange: this.nameChange
+                    })]
+                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
+                    type: "submit",
+                    className: "btn btn-primary",
+                    children: "Update Category"
+                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
+                    to: "/categoryList",
+                    className: "btn btn-primary",
+                    children: "Back"
+                  })]
+                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("hr", {})]
+              })]
+            })
+          })
+        })
+      });
+    }
+  }]);
+
+  return CategoryEdit;
+}(react__WEBPACK_IMPORTED_MODULE_1__.Component);
+
+
+
+/***/ }),
+
+/***/ "./resources/js/components/Category/CategoryList.js":
+/*!**********************************************************!*\
+  !*** ./resources/js/components/Category/CategoryList.js ***!
+  \**********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ CategoryList)
+/* harmony export */ });
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! axios */ "./node_modules/axios/index.js");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(axios__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router-dom/esm/react-router-dom.js");
+/* harmony import */ var _css_app_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../css/app.css */ "./resources/css/app.css");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+
+
+
+
+
+
+
+var CategoryList = /*#__PURE__*/function (_Component) {
+  _inherits(CategoryList, _Component);
+
+  var _super = _createSuper(CategoryList);
+
+  function CategoryList() {
+    var _this;
+
+    _classCallCheck(this, CategoryList);
+
+    _this = _super.call(this);
+    _this.state = {
+      categories: []
+    };
+    return _this;
+  }
+
+  _createClass(CategoryList, [{
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      var _this2 = this;
+
+      axios__WEBPACK_IMPORTED_MODULE_0___default().get("/category").then(function (response) {
+        _this2.setState({
+          categories: response.data.categories
+        });
+      });
+    }
+  }, {
+    key: "deleteCat",
+    value: function deleteCat(category) {
+      console.log(category.id);
+      axios__WEBPACK_IMPORTED_MODULE_0___default().delete("/category/".concat(category.id)).then(function (response) {
+        console.log(response);
+        window.location.reload();
+      });
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      var _this3 = this;
+
+      var categories = this.state.categories;
+      console.log(categories);
+      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+        className: "container py-4",
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+          className: "row justify-content-center",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+            className: "col-md-8",
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+              className: "card",
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+                className: "card-header",
+                children: "All Categories"
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+                className: "card-body",
+                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
+                  className: "btn btn-primary btn-sm mb-3",
+                  to: "/categoryAdd",
+                  children: "Create New Category"
+                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("table", {
+                  className: "table table-striped table-bordered table-hover",
+                  children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("tbody", {
+                    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("tr", {
+                      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {
+                        children: "Name"
+                      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {
+                        children: "Edit"
+                      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {
+                        children: "Delete"
+                      })]
+                    }), Object.keys(categories).map(function (category, i) {
+                      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("tr", {
+                        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
+                          children: categories[category].categoryName
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
+                          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
+                            className: "btn btn-primary btn-sm mb-3",
+                            to: "/categoryEdit/".concat(categories[category].id),
+                            children: "Edit"
+                          })
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
+                          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
+                            className: "btn btn-primary btn-sm mb-3",
+                            onClick: _this3.deleteCat.bind(_this3, categories[category]),
+                            children: "Delete"
+                          })
+                        })]
+                      }, categories[category].id);
+                    })]
+                  })
+                })]
+              })]
+            })
+          })
+        })
+      });
+    }
+  }]);
+
+  return CategoryList;
+}(react__WEBPACK_IMPORTED_MODULE_1__.Component);
+
+
 
 /***/ }),
 
@@ -2227,6 +8311,7 @@ function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.g
 
 
 
+
 var Dashboard = /*#__PURE__*/function (_React$Component) {
   _inherits(Dashboard, _React$Component);
 
@@ -2254,11 +8339,6 @@ var Dashboard = /*#__PURE__*/function (_React$Component) {
           category: response.data.categoryData,
           gotData: true
         });
-
-        console.log("inside willMount");
-        console.log();
-        console.log(response);
-        console.log(_this2.state);
       });
     }
   }, {
@@ -2267,10 +8347,6 @@ var Dashboard = /*#__PURE__*/function (_React$Component) {
   }, {
     key: "render",
     value: function render() {
-      var _this3 = this;
-
-      console.log("Inside render");
-      console.log(this.state);
       var token = localStorage.getItem("token");
 
       if (!token) {
@@ -2280,8 +8356,8 @@ var Dashboard = /*#__PURE__*/function (_React$Component) {
       }
 
       if (!this.state.gotData) {
-        console.log("Loading");
-        return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
+        return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("h1", {
+          className: "loading",
           children: "LOADING"
         });
       } else {
@@ -2291,22 +8367,32 @@ var Dashboard = /*#__PURE__*/function (_React$Component) {
         console.log("Outputting data");
         return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
           className: "container",
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
             className: "container-category",
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_5__.Link, {
+              className: "container-rest-item",
+              to: "/mapper",
+              children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+                className: "container-categories-text",
+                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("h2", {
+                  children: "Show All Restaurants"
+                })
+              })
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
               className: "container-category-grid",
               children: Object.keys(categories).map(function (category, i) {
                 return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_5__.Link, {
                   className: "container-categories-item",
-                  onClick: _this3.handleSubmit,
-                  to: "/",
+                  to: "/showFood/".concat(categories[category].id),
                   children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
-                    className: ".container-categories-text",
-                    children: categories[category].categoryName
+                    className: "container-categories-text",
+                    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("h2", {
+                      children: categories[category].categoryName
+                    })
                   })
                 }, i);
               })
-            })
+            })]
           })
         });
       }
@@ -2379,16 +8465,34 @@ var FoodAdd = /*#__PURE__*/function (_Component) {
       foodName: "",
       categoryID: "",
       foodPrice: "",
-      foodDescription: ""
-    }; // bind
-
+      foodDescription: "",
+      res_id: "",
+      categories: [],
+      restaurants: []
+    };
     _this.handleChange = _this.handleChange.bind(_assertThisInitialized(_this));
     _this.handleSubmit = _this.handleSubmit.bind(_assertThisInitialized(_this));
     return _this;
-  } // handle change
-
+  }
 
   _createClass(FoodAdd, [{
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      var _this2 = this;
+
+      axios.get("/category").then(function (response) {
+        _this2.setState({
+          categories: response.data.categories
+        });
+      });
+      axios.get("/restaurant").then(function (response) {
+        _this2.setState({
+          restaurants: response.data.restaurants
+        });
+      });
+    } // handle change
+
+  }, {
     key: "handleChange",
     value: function handleChange(e) {
       this.setState(_defineProperty({}, e.target.name, e.target.value));
@@ -2397,38 +8501,44 @@ var FoodAdd = /*#__PURE__*/function (_Component) {
   }, {
     key: "handleSubmit",
     value: function handleSubmit(e) {
-      var _this2 = this;
+      var _this3 = this;
 
       var _this$state = this.state,
           foodName = _this$state.foodName,
           categoryID = _this$state.categoryID,
           foodPrice = _this$state.foodPrice,
-          foodDescription = _this$state.foodDescription;
+          foodDescription = _this$state.foodDescription,
+          res_id = _this$state.res_id;
       e.preventDefault();
       console.log("name : ", foodName);
       console.log("cat: ", categoryID);
       console.log("price : ", foodPrice);
       console.log("desc : ", foodDescription);
+      console.log("resID : ", res_id);
       axios.post("/food", {
         foodName: foodName,
         categoryID: categoryID,
         foodPrice: foodPrice,
         foodDescription: foodDescription,
+        res_id: res_id,
         img_src: "img"
       }).then(function (res) {
         console.log("from handle submit", res);
 
-        _this2.setState({
+        _this3.setState({
           foodName: "",
           categoryID: "",
           foodPrice: "",
-          foodDescription: ""
+          foodDescription: "",
+          res_id: ""
         });
       });
     }
   }, {
     key: "render",
     value: function render() {
+      var categories = this.state.categories;
+      var restaurants = this.state.restaurants;
       return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
         className: "container",
         children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
@@ -2454,14 +8564,30 @@ var FoodAdd = /*#__PURE__*/function (_Component) {
                       value: this.state.foodName,
                       onChange: this.handleChange,
                       required: true
-                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("input", {
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("select", {
                       name: "categoryID",
                       className: "form-control",
-                      type: "number",
-                      placeholder: "Food Category",
                       value: this.state.categoryID,
                       onChange: this.handleChange,
-                      required: true
+                      required: true,
+                      children: Object.keys(categories).map(function (category, i) {
+                        return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("option", {
+                          value: categories[category].id,
+                          children: categories[category].categoryName
+                        }, categories[category].id);
+                      })
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("select", {
+                      name: "res_id",
+                      className: "form-control",
+                      value: this.state.res_id,
+                      onChange: this.handleChange,
+                      required: true,
+                      children: Object.keys(restaurants).map(function (restaurant, i) {
+                        return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("option", {
+                          value: restaurants[restaurant].id,
+                          children: restaurants[restaurant].name
+                        }, restaurants[restaurant].id);
+                      })
                     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("input", {
                       name: "foodPrice",
                       className: "form-control",
@@ -2495,6 +8621,242 @@ var FoodAdd = /*#__PURE__*/function (_Component) {
   }]);
 
   return FoodAdd;
+}(react__WEBPACK_IMPORTED_MODULE_0__.Component);
+
+
+
+/***/ }),
+
+/***/ "./resources/js/components/Food/FoodEdit.js":
+/*!**************************************************!*\
+  !*** ./resources/js/components/Food/FoodEdit.js ***!
+  \**************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ FoodEdit)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router-dom/esm/react-router-dom.js");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! axios */ "./node_modules/axios/index.js");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(axios__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _css_app_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../css/app.css */ "./resources/css/app.css");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+
+
+
+
+
+
+
+var FoodEdit = /*#__PURE__*/function (_Component) {
+  _inherits(FoodEdit, _Component);
+
+  var _super = _createSuper(FoodEdit);
+
+  function FoodEdit(props) {
+    var _this;
+
+    _classCallCheck(this, FoodEdit);
+
+    _this = _super.call(this, props);
+    _this.state = {
+      foodName: "",
+      categoryID: "",
+      foodPrice: "",
+      foodDescription: "",
+      res_id: "",
+      categories: [],
+      restaurants: []
+    };
+    _this.handleChange = _this.handleChange.bind(_assertThisInitialized(_this));
+    _this.handleSubmit = _this.handleSubmit.bind(_assertThisInitialized(_this));
+    return _this;
+  }
+
+  _createClass(FoodEdit, [{
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      var _this2 = this;
+
+      console.log("params.id:");
+      console.log(this.props.match.params.id);
+      var id = this.props.match.params.id;
+      axios__WEBPACK_IMPORTED_MODULE_1___default().get("/food/".concat(id)).then(function (response) {
+        console.log("food response data:");
+        console.log(response.data);
+
+        _this2.setState({
+          foodName: response.data.foodName,
+          categoryID: response.data.categoryID,
+          foodPrice: response.data.foodPrice,
+          foodDescription: response.data.foodDescription,
+          res_id: response.data.res_id
+        });
+      });
+      axios__WEBPACK_IMPORTED_MODULE_1___default().get("/category").then(function (response) {
+        _this2.setState({
+          categories: response.data.categories
+        });
+      });
+      axios__WEBPACK_IMPORTED_MODULE_1___default().get("/restaurant").then(function (response) {
+        _this2.setState({
+          restaurants: response.data.restaurants
+        });
+      });
+    }
+  }, {
+    key: "handleChange",
+    value: function handleChange(e) {
+      this.setState(_defineProperty({}, e.target.name, e.target.value));
+    }
+  }, {
+    key: "handleSubmit",
+    value: function handleSubmit(e) {
+      var _this$state = this.state,
+          foodName = _this$state.foodName,
+          categoryID = _this$state.categoryID,
+          foodPrice = _this$state.foodPrice,
+          foodDescription = _this$state.foodDescription,
+          res_id = _this$state.res_id;
+      e.preventDefault();
+      var foo = {
+        foodName: foodName,
+        categoryID: categoryID,
+        foodPrice: foodPrice,
+        foodDescription: foodDescription,
+        res_id: res_id
+      };
+      var uri = "/food/" + this.props.match.params.id;
+      axios__WEBPACK_IMPORTED_MODULE_1___default().patch(uri, foo).then(function (response) {
+        console.log("Updated to :");
+        console.log(response);
+      });
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      var categories = this.state.categories;
+      var restaurants = this.state.restaurants;
+      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+        className: "container",
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+          className: "row justify-content-center",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+            className: "col-md-8",
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+              className: "card",
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+                className: "card-header",
+                children: "Update Food"
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+                className: "card-body",
+                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("form", {
+                  onSubmit: this.handleSubmit,
+                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+                    className: "form-group",
+                    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("label", {
+                      children: "Food Name"
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("input", {
+                      name: "foodName",
+                      className: "form-control",
+                      type: "text",
+                      placeholder: "Food Name",
+                      value: this.state.foodName,
+                      onChange: this.handleChange
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("label", {
+                      children: "Category"
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("select", {
+                      name: "categoryID",
+                      className: "form-control",
+                      value: this.state.categoryID,
+                      onChange: this.handleChange,
+                      required: true,
+                      children: Object.keys(categories).map(function (category, i) {
+                        return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("option", {
+                          value: categories[category].id,
+                          children: categories[category].categoryName
+                        }, categories[category].id);
+                      })
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("label", {
+                      children: "Restaurant"
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("select", {
+                      name: "res_id",
+                      className: "form-control",
+                      value: this.state.res_id,
+                      onChange: this.handleChange,
+                      required: true,
+                      children: Object.keys(restaurants).map(function (restaurant, i) {
+                        return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("option", {
+                          value: restaurants[restaurant].id,
+                          children: restaurants[restaurant].name
+                        }, restaurants[restaurant].id);
+                      })
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("label", {
+                      children: "Price"
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("input", {
+                      name: "foodPrice",
+                      className: "form-control",
+                      type: "number",
+                      placeholder: "Food Price",
+                      value: this.state.foodPrice,
+                      onChange: this.handleChange
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("label", {
+                      children: "Description"
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("textarea", {
+                      name: "foodDescription",
+                      className: "form-control",
+                      rows: "5",
+                      maxLength: "255",
+                      placeholder: "Food Description",
+                      value: this.state.foodDescription,
+                      onChange: this.handleChange
+                    })]
+                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
+                    type: "submit",
+                    className: "btn btn-primary",
+                    children: "Update Food"
+                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
+                    to: "/foodList",
+                    className: "btn btn-primary",
+                    children: "Back"
+                  })]
+                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("hr", {})]
+              })]
+            })
+          })
+        })
+      });
+    }
+  }]);
+
+  return FoodEdit;
 }(react__WEBPACK_IMPORTED_MODULE_0__.Component);
 
 
@@ -2577,8 +8939,19 @@ var FoodList = /*#__PURE__*/function (_Component) {
       });
     }
   }, {
+    key: "deleteFood",
+    value: function deleteFood(food) {
+      console.log(food.id);
+      axios__WEBPACK_IMPORTED_MODULE_0___default().delete("/food/".concat(food.id)).then(function (response) {
+        console.log(response);
+        window.location.reload();
+      });
+    }
+  }, {
     key: "render",
     value: function render() {
+      var _this3 = this;
+
       var foods = this.state.foods;
       console.log(foods);
       return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
@@ -2594,7 +8967,11 @@ var FoodList = /*#__PURE__*/function (_Component) {
                 children: "All foods"
               }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
                 className: "card-body",
-                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("table", {
+                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
+                  className: "btn btn-primary btn-sm mb-3",
+                  to: "/foodAdd",
+                  children: "Create new food"
+                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("table", {
                   className: "table",
                   children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("tbody", {
                     children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("tr", {
@@ -2610,42 +8987,29 @@ var FoodList = /*#__PURE__*/function (_Component) {
                         children: "Delete"
                       })]
                     }), Object.keys(foods).map(function (food, i) {
-                      return (
-                        /*#__PURE__*/
-                        //<Link
-                        //    className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                        //    to={`/${foods[food].id}`}
-                        //   key={foods[food].id}
-                        //>
-                        (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("tr", {
-                          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
-                            children: foods[food].foodName
-                          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
-                            children: foods[food].foodDescription
-                          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("td", {
-                            children: ["$", foods[food].foodPrice]
-                          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
-                            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
-                              className: "btn btn-primary btn-sm mb-3",
-                              to: "/foodEdit",
-                              children: "Edit"
-                            })
-                          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
-                            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
-                              className: "btn btn-primary btn-sm mb-3",
-                              to: "/foodDelete",
-                              children: "Delete"
-                            })
-                          })]
-                        }, foods[food].id) //</Link>
-
-                      );
+                      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("tr", {
+                        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
+                          children: foods[food].foodName
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
+                          children: foods[food].foodDescription
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("td", {
+                          children: ["$", foods[food].foodPrice]
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
+                          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
+                            className: "btn btn-primary btn-sm mb-3",
+                            to: "/foodEdit/".concat(foods[food].id),
+                            children: "Edit"
+                          })
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
+                          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
+                            className: "btn btn-primary btn-sm mb-3",
+                            onClick: _this3.deleteFood.bind(_this3, foods[food]),
+                            children: "Delete"
+                          })
+                        })]
+                      }, foods[food].id);
                     })]
                   })
-                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
-                  className: "btn btn-primary btn-sm mb-3",
-                  to: "/foodAdd",
-                  children: "Create new food"
                 })]
               })]
             })
@@ -2662,13 +9026,562 @@ var FoodList = /*#__PURE__*/function (_Component) {
 
 /***/ }),
 
-/***/ "./resources/js/components/Home/Home.js":
-/*!**********************************************!*\
-  !*** ./resources/js/components/Home/Home.js ***!
-  \**********************************************/
-/***/ (() => {
+/***/ "./resources/js/components/FoodUser/ShowFood.js":
+/*!******************************************************!*\
+  !*** ./resources/js/components/FoodUser/ShowFood.js ***!
+  \******************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "ShowFood": () => (/* binding */ ShowFood),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! axios */ "./node_modules/axios/index.js");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(axios__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router-dom/esm/react-router-dom.js");
+/* harmony import */ var _css_app_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../css/app.css */ "./resources/css/app.css");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
 
 
+
+
+
+
+
+var ShowFood = /*#__PURE__*/function (_Component) {
+  _inherits(ShowFood, _Component);
+
+  var _super = _createSuper(ShowFood);
+
+  function ShowFood(props) {
+    var _this;
+
+    _classCallCheck(this, ShowFood);
+
+    _this = _super.call(this, props);
+    _this.state = {
+      foods: [],
+      categories: []
+    };
+    return _this;
+  }
+
+  _createClass(ShowFood, [{
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      var _this2 = this;
+
+      axios__WEBPACK_IMPORTED_MODULE_0___default().get("/userFood/" + this.props.match.params.id).then(function (response) {
+        _this2.setState({
+          foods: response.data.food
+        });
+
+        console.log(response);
+      });
+      axios__WEBPACK_IMPORTED_MODULE_0___default().get("/category/" + this.props.match.params.id).then(function (response) {
+        _this2.setState({
+          categories: response.data[0]
+        });
+
+        console.log(response);
+      });
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      var foods = this.state.foods;
+      var categories = this.state.categories;
+      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+        className: "container py-4",
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+          className: "row justify-content-center",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+            className: "col-md-8",
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+              className: "card",
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+                className: "card-header",
+                children: [categories.categoryName, " foods"]
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+                className: "card-body",
+                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("table", {
+                  className: "table",
+                  "data-filter-control": "true",
+                  "data-show-search-clear-button": "true",
+                  children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("tbody", {
+                    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("tr", {
+                      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {
+                        "data-field": "item name",
+                        "data-filter-control": "input",
+                        children: "Name"
+                      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {
+                        "data-field": "description",
+                        children: "Description"
+                      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {
+                        "data-field": "price",
+                        children: "Price"
+                      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {})]
+                    }), Object.keys(foods).map(function (food, i) {
+                      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("tr", {
+                        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
+                          children: foods[food].foodName
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
+                          children: foods[food].foodDescription
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("td", {
+                          children: ["$", foods[food].foodPrice]
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
+                          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
+                            className: "btn btn-primary",
+                            to: "/mapView/".concat(foods[food].res_id),
+                            children: "Choose"
+                          }, foods[food].res_id)
+                        })]
+                      }, foods[food].id);
+                    })]
+                  })
+                })
+              })]
+            })
+          })
+        })
+      });
+    }
+  }]);
+
+  return ShowFood;
+}(react__WEBPACK_IMPORTED_MODULE_1__.Component);
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (ShowFood);
+
+/***/ }),
+
+/***/ "./resources/js/components/Map/MapReader.js":
+/*!**************************************************!*\
+  !*** ./resources/js/components/Map/MapReader.js ***!
+  \**************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "MapReader": () => (/* binding */ MapReader),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var google_maps_react__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! google-maps-react */ "./node_modules/google-maps-react/dist/index.js");
+/* harmony import */ var google_maps_react__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(google_maps_react__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! axios */ "./node_modules/axios/index.js");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(axios__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _Restaurant_RestaurantList__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../Restaurant/RestaurantList */ "./resources/js/components/Restaurant/RestaurantList.js");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+
+
+
+
+
+
+var mapStyles = {
+  width: "40%",
+  height: "50%"
+};
+var MapReader = /*#__PURE__*/function (_Component) {
+  _inherits(MapReader, _Component);
+
+  var _super = _createSuper(MapReader);
+
+  function MapReader(props) {
+    var _this;
+
+    _classCallCheck(this, MapReader);
+
+    _this = _super.call(this, props);
+    _this.state = {
+      data: []
+    };
+    return _this;
+  }
+
+  _createClass(MapReader, [{
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      var _this2 = this;
+
+      axios__WEBPACK_IMPORTED_MODULE_1___default().get("/map").then(function (res) {
+        console.log("res:");
+        console.log(res);
+
+        _this2.setState({
+          data: res.data.data
+        });
+      });
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      var data = this.state.data;
+      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+          className: "map-list-container",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+            className: "row justify-content-center",
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+              className: "col-md-8",
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("h1", {
+                className: "header",
+                children: "Restaurants"
+              }), Object.keys(data).map(function (MapLocation, i) {
+                return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+                  className: "card",
+                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+                    className: "card-header",
+                    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("h3", {
+                      children: data[MapLocation].name
+                    })
+                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+                    className: "card-body",
+                    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("h5", {
+                      children: "Address:"
+                    }), data[MapLocation].address]
+                  })]
+                });
+              })]
+            })
+          })
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(google_maps_react__WEBPACK_IMPORTED_MODULE_4__.Map, {
+            google: this.props.google,
+            zoom: 11,
+            style: {
+              width: "70%",
+              margin: "0 0 0 auto",
+              height: "100%"
+            },
+            initialCenter: {
+              lat: 41.755,
+              lng: -88.348
+            },
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(google_maps_react__WEBPACK_IMPORTED_MODULE_4__.Marker, {
+              title: "Aurora Univerity",
+              label: "Aurora University",
+              position: {
+                lat: 41.753,
+                lng: -88.3504
+              }
+            }, this.props.index), Object.keys(data).map(function (MapLocation, i) {
+              return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(google_maps_react__WEBPACK_IMPORTED_MODULE_4__.Marker, {
+                label: data[MapLocation].name,
+                title: data[MapLocation].name,
+                position: {
+                  lat: data[MapLocation].lat,
+                  lng: data[MapLocation].lng
+                }
+              });
+            })]
+          })
+        })]
+      });
+    }
+  }]);
+
+  return MapReader;
+}(react__WEBPACK_IMPORTED_MODULE_0__.Component);
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ((0,google_maps_react__WEBPACK_IMPORTED_MODULE_4__.GoogleApiWrapper)({
+  apiKey: "AIzaSyDJ36wKsOaueSQCGUEPc4-KVGEMf9STSAs"
+})(MapReader));
+
+/***/ }),
+
+/***/ "./resources/js/components/Map/MapReaderId.js":
+/*!****************************************************!*\
+  !*** ./resources/js/components/Map/MapReaderId.js ***!
+  \****************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "MapReaderId": () => (/* binding */ MapReaderId),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var google_maps_react__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! google-maps-react */ "./node_modules/google-maps-react/dist/index.js");
+/* harmony import */ var google_maps_react__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(google_maps_react__WEBPACK_IMPORTED_MODULE_6__);
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! axios */ "./node_modules/axios/index.js");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(axios__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var async__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! async */ "./node_modules/async/dist/async.js");
+/* harmony import */ var async__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(async__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _css_app_css__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../css/app.css */ "./resources/css/app.css");
+/* harmony import */ var lodash__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! lodash */ "./node_modules/lodash/lodash.js");
+/* harmony import */ var lodash__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(lodash__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+
+
+
+
+
+
+
+
+var MapReaderId = /*#__PURE__*/function (_Component) {
+  _inherits(MapReaderId, _Component);
+
+  var _super = _createSuper(MapReaderId);
+
+  function MapReaderId(props) {
+    var _this;
+
+    _classCallCheck(this, MapReaderId);
+
+    _this = _super.call(this, props);
+    _this.state = {
+      data: []
+    };
+    return _this;
+  }
+
+  _createClass(MapReaderId, [{
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      var _this2 = this;
+
+      axios__WEBPACK_IMPORTED_MODULE_1___default().get("/map/" + this.props.match.params.id).then(function (res) {
+        console.log("res:");
+        console.log(res);
+
+        _this2.setState({
+          data: res.data.data[0]
+        });
+      });
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      var data = this.state.data;
+      console.log("data:");
+      console.log(data);
+      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)("div", {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("div", {
+          className: "map-list-container",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("div", {
+            className: "row justify-content-center",
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)("div", {
+              className: "col-md-8",
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("h1", {
+                className: "header",
+                children: "Restaurants"
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)("div", {
+                className: "card",
+                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("div", {
+                  className: "card-header",
+                  children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("h3", {
+                    children: data.name
+                  })
+                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)("div", {
+                  className: "card-body",
+                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("h5", {
+                    children: "Address:"
+                  }), data.address]
+                })]
+              })]
+            })
+          })
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("div", {
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(google_maps_react__WEBPACK_IMPORTED_MODULE_6__.Map, {
+            google: this.props.google,
+            zoom: 11,
+            style: {
+              width: "70%",
+              margin: "0 0 0 auto",
+              height: "100%"
+            },
+            initialCenter: {
+              lat: 41.755,
+              lng: -88.348
+            },
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(google_maps_react__WEBPACK_IMPORTED_MODULE_6__.Marker, {
+              title: "Aurora Univerity",
+              label: "Aurora University",
+              position: {
+                lat: 41.753,
+                lng: -88.3504
+              }
+            }, this.props.index), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(google_maps_react__WEBPACK_IMPORTED_MODULE_6__.Marker, {
+              title: data.name,
+              label: data.name,
+              position: {
+                lat: data.lat,
+                lng: data.lng
+              }
+            })]
+          })
+        })]
+      });
+    }
+  }]);
+
+  return MapReaderId;
+}(react__WEBPACK_IMPORTED_MODULE_0__.Component);
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ((0,google_maps_react__WEBPACK_IMPORTED_MODULE_6__.GoogleApiWrapper)({
+  apiKey: "AIzaSyDJ36wKsOaueSQCGUEPc4-KVGEMf9STSAs"
+})(MapReaderId));
+
+/***/ }),
+
+/***/ "./resources/js/components/Navbar/AdminNavbarMenu.js":
+/*!***********************************************************!*\
+  !*** ./resources/js/components/Navbar/AdminNavbarMenu.js ***!
+  \***********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "AdminNavbarMenu": () => (/* binding */ AdminNavbarMenu),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _css_app_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../css/app.css */ "./resources/css/app.css");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router-dom/esm/react-router-dom.js");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+
+
+
+
+
+var AdminNavbarMenu = /*#__PURE__*/function (_React$Component) {
+  _inherits(AdminNavbarMenu, _React$Component);
+
+  var _super = _createSuper(AdminNavbarMenu);
+
+  function AdminNavbarMenu() {
+    _classCallCheck(this, AdminNavbarMenu);
+
+    return _super.apply(this, arguments);
+  }
+
+  _createClass(AdminNavbarMenu, [{
+    key: "render",
+    value: function render() {
+      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("nav", {
+        className: "navbar sticky-top navbar-custom",
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+          className: "container-fluid",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+            className: "navbar-header",
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_3__.NavLink, {
+              className: "navbar-brand",
+              to: "/dashboard",
+              children: "FOBE"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_3__.NavLink, {
+              className: "navbar-brand",
+              to: "/adminHome",
+              children: "Admin Home"
+            })]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("ul", {
+            className: "nav navbar-nav navbar-right",
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_3__.NavLink, {
+              activeClassName: "navbar__link--active",
+              to: "/logout",
+              children: "LOGOUT"
+            })
+          })]
+        })
+      });
+    }
+  }]);
+
+  return AdminNavbarMenu;
+}(react__WEBPACK_IMPORTED_MODULE_0__.Component);
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (AdminNavbarMenu);
 
 /***/ }),
 
@@ -2749,10 +9662,10 @@ var NavbarMenu = /*#__PURE__*/function (_React$Component) {
                 children: "LOGIN"
               })
             }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("li", {
-              children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(react_router_dom__WEBPACK_IMPORTED_MODULE_3__.NavLink, {
+              children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_3__.NavLink, {
                 activeClassName: "navbar__link--active",
                 to: "/register",
-                children: [" ", "REGISTER", " "]
+                children: "REGISTER"
               })
             })]
           })]
@@ -2764,6 +9677,93 @@ var NavbarMenu = /*#__PURE__*/function (_React$Component) {
   return NavbarMenu;
 }(react__WEBPACK_IMPORTED_MODULE_0__.Component);
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (NavbarMenu);
+
+/***/ }),
+
+/***/ "./resources/js/components/Navbar/UserNavbarManu.js":
+/*!**********************************************************!*\
+  !*** ./resources/js/components/Navbar/UserNavbarManu.js ***!
+  \**********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "UserNavbarMenu": () => (/* binding */ UserNavbarMenu),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _css_app_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../css/app.css */ "./resources/css/app.css");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router-dom/esm/react-router-dom.js");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+
+
+
+
+
+var UserNavbarMenu = /*#__PURE__*/function (_React$Component) {
+  _inherits(UserNavbarMenu, _React$Component);
+
+  var _super = _createSuper(UserNavbarMenu);
+
+  function UserNavbarMenu() {
+    _classCallCheck(this, UserNavbarMenu);
+
+    return _super.apply(this, arguments);
+  }
+
+  _createClass(UserNavbarMenu, [{
+    key: "render",
+    value: function render() {
+      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("nav", {
+        className: "navbar sticky-top navbar-custom",
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+          className: "container-fluid",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+            className: "navbar-header",
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_3__.NavLink, {
+              className: "navbar-brand",
+              to: "/dashboard",
+              children: "FOBE"
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("ul", {
+            className: "nav navbar-nav navbar-right",
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_3__.NavLink, {
+              activeClassName: "navbar__link--active",
+              to: "/logout",
+              children: "LOGOUT"
+            })
+          })]
+        })
+      });
+    }
+  }]);
+
+  return UserNavbarMenu;
+}(react__WEBPACK_IMPORTED_MODULE_0__.Component);
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (UserNavbarMenu);
 
 /***/ }),
 
@@ -2866,7 +9866,8 @@ var Register = /*#__PURE__*/function (_React$Component) {
                   username: _this.state.username,
                   email: _this.state.email,
                   password: _this.state.password,
-                  password_confirmation: _this.state.password_confirmation
+                  password_confirmation: _this.state.password_confirmation,
+                  isAdmin: 0
                 }; //sets loading true and sends user data to controller
 
                 _this.setState({
@@ -2874,21 +9875,24 @@ var Register = /*#__PURE__*/function (_React$Component) {
                 });
 
                 axios__WEBPACK_IMPORTED_MODULE_3___default().post(url, user).then(function (res) {
+                  console.log(res.data);
+                  console.log(res.data.success);
+                  console.log(res.data.isAdmin);
+
                   switch (res.data.success) {
                     //if registration is failed then statement sets errors in html
-                    case false:
+                    case true:
                       console.log(res);
+                      localStorage.setItem("token", res.data.token);
+                      localStorage.setItem("users", res.data.user.isAdmin);
+                      break;
+                    //if registration is success then statement sets token
 
+                    case false:
                       _this.state.errors.setErrors(res);
 
                       _this.state.errors.setMessage(res);
 
-                      break;
-                    //if registration is success then statement sets token
-
-                    case true:
-                      localStorage.setItem("token", res.data.token);
-                      localStorage.setItem("user", res.data.user);
                       break;
                   }
 
@@ -3021,6 +10025,637 @@ var Register = /*#__PURE__*/function (_React$Component) {
 
 /***/ }),
 
+/***/ "./resources/js/components/Restaurant/RestaurantAdd.js":
+/*!*************************************************************!*\
+  !*** ./resources/js/components/Restaurant/RestaurantAdd.js ***!
+  \*************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "RestaurantAdd": () => (/* binding */ RestaurantAdd),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var google_maps_react__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! google-maps-react */ "./node_modules/google-maps-react/dist/index.js");
+/* harmony import */ var google_maps_react__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(google_maps_react__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _css_app_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../css/app.css */ "./resources/css/app.css");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+
+
+
+
+
+var RestaurantAdd = /*#__PURE__*/function (_Component) {
+  _inherits(RestaurantAdd, _Component);
+
+  var _super = _createSuper(RestaurantAdd);
+
+  function RestaurantAdd(props) {
+    var _this;
+
+    _classCallCheck(this, RestaurantAdd);
+
+    _this = _super.call(this, props);
+    _this.state = {
+      name: "",
+      address: "",
+      lat: "",
+      lng: "",
+      markers: [{
+        position: {}
+      }]
+    }; // bind
+
+    _this.handleChange = _this.handleChange.bind(_assertThisInitialized(_this));
+    _this.handleSubmit = _this.handleSubmit.bind(_assertThisInitialized(_this));
+    _this.onClick = _this.onClick.bind(_assertThisInitialized(_this));
+    return _this;
+  } // handle change
+
+
+  _createClass(RestaurantAdd, [{
+    key: "handleChange",
+    value: function handleChange(e) {
+      this.setState(_defineProperty({}, e.target.name, e.target.value));
+      console.log(e.target.name);
+    }
+  }, {
+    key: "handleSubmit",
+    value: function handleSubmit(e) {
+      var _this2 = this;
+
+      var _this$state = this.state,
+          name = _this$state.name,
+          address = _this$state.address,
+          lat = _this$state.lat,
+          lng = _this$state.lng;
+      e.preventDefault();
+      console.log("name : ", name);
+      console.log("addy: ", address);
+      console.log("lat : ", lat);
+      console.log("long : ", lng);
+      axios.post("/restaurant", {
+        name: name,
+        address: address,
+        lat: lat,
+        lng: lng
+      }).then(function (res) {
+        console.log("from handle submit", res);
+
+        _this2.setState({
+          name: "",
+          address: "",
+          lat: "",
+          lng: ""
+        });
+      });
+    }
+  }, {
+    key: "onClick",
+    value: function onClick(t, map, coord) {
+      var latLng = coord.latLng;
+      var lat = latLng.lat();
+      var lng = latLng.lng();
+      this.setState(function (previousState) {
+        return {
+          markers: [].concat(_toConsumableArray(previousState.markers), [{
+            position: {
+              lat: lat,
+              lng: lng
+            }
+          }])
+        };
+      });
+      console.log("marker:");
+      console.log(this.state.markers);
+      console.log("lat:");
+      console.log(this.state.markers[1].position.lat);
+      console.log("long:");
+      console.log(this.state.markers[1].position.lng);
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      var _this3 = this;
+
+      var coords = this.state.markers;
+      console.log("coords:");
+      console.log(coords);
+      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+        className: "container",
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+          className: "row justify-content-center",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+            className: "col-md-8",
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+              className: "card",
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+                className: "card-header",
+                children: "Create Restaurant"
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+                className: "card-body",
+                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("form", {
+                  onSubmit: this.handleSubmit,
+                  children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+                    className: "form-group",
+                    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
+                      name: "name",
+                      className: "form-control",
+                      type: "text",
+                      placeholder: "Restaurant Name",
+                      value: this.state.name,
+                      onChange: this.handleChange,
+                      required: true
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
+                      name: "address",
+                      className: "form-control",
+                      type: "text",
+                      placeholder: "Address",
+                      value: this.state.address,
+                      onChange: this.handleChange,
+                      required: true
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
+                      name: "lat",
+                      className: "form-control",
+                      placeholder: "Latitude",
+                      value: this.state.lat,
+                      onChange: this.handleChange,
+                      required: true
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("input", {
+                      name: "lng",
+                      className: "form-control",
+                      placeholder: "Longitude",
+                      value: this.state.lng,
+                      onChange: this.handleChange,
+                      required: true
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+                      children: "Click the map the get your coordinates:"
+                    }), Object.keys(coords).map(function (coord, i) {
+                      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+                        children: ["Marker:", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("span", {
+                          children: [" ", i]
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("br", {}), "Latitude:", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("span", {
+                          children: _this3.state.markers[coord].position.lat
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("br", {}), "Longitude:", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("span", {
+                          children: _this3.state.markers[coord].position.lng
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("hr", {})]
+                      }, coords[coord].id);
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("button", {
+                      type: "submit",
+                      className: "btn btn-primary rest-create",
+                      children: "Create Restaurant"
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+                      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(google_maps_react__WEBPACK_IMPORTED_MODULE_3__.Map, {
+                        google: this.props.google,
+                        zoom: 11,
+                        onClick: this.onClick,
+                        style: {
+                          width: "90%",
+                          height: "400px",
+                          margin: "-400px 10px 10px 10px"
+                        },
+                        initialCenter: {
+                          lat: 41.755,
+                          lng: -88.348
+                        },
+                        children: [this.state.markers.map(function (marker, index) {
+                          return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(google_maps_react__WEBPACK_IMPORTED_MODULE_3__.Marker, {
+                            title: index,
+                            label: index,
+                            name: index,
+                            position: marker.position
+                          }, index);
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(google_maps_react__WEBPACK_IMPORTED_MODULE_3__.Marker, {
+                          title: "Aurora Univerity",
+                          label: "Aurora University",
+                          position: {
+                            lat: 41.753,
+                            lng: -88.3504
+                          }
+                        }, this.props.index)]
+                      })
+                    })]
+                  })
+                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("hr", {})]
+              })]
+            })
+          })
+        })
+      });
+    }
+  }]);
+
+  return RestaurantAdd;
+}(react__WEBPACK_IMPORTED_MODULE_0__.Component);
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ((0,google_maps_react__WEBPACK_IMPORTED_MODULE_3__.GoogleApiWrapper)({
+  apiKey: "AIzaSyDJ36wKsOaueSQCGUEPc4-KVGEMf9STSAs"
+})(RestaurantAdd));
+
+/***/ }),
+
+/***/ "./resources/js/components/Restaurant/RestaurantEdit.js":
+/*!**************************************************************!*\
+  !*** ./resources/js/components/Restaurant/RestaurantEdit.js ***!
+  \**************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ RestaurantEdit)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router-dom/esm/react-router-dom.js");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! axios */ "./node_modules/axios/index.js");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(axios__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _css_app_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../css/app.css */ "./resources/css/app.css");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+
+
+
+
+
+
+
+var RestaurantEdit = /*#__PURE__*/function (_Component) {
+  _inherits(RestaurantEdit, _Component);
+
+  var _super = _createSuper(RestaurantEdit);
+
+  function RestaurantEdit(props) {
+    var _this;
+
+    _classCallCheck(this, RestaurantEdit);
+
+    _this = _super.call(this, props);
+    _this.state = {
+      name: "",
+      address: "",
+      lat: "",
+      lng: ""
+    };
+    _this.handleChange = _this.handleChange.bind(_assertThisInitialized(_this));
+    _this.handleSubmit = _this.handleSubmit.bind(_assertThisInitialized(_this));
+    return _this;
+  }
+
+  _createClass(RestaurantEdit, [{
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      var _this2 = this;
+
+      console.log("params.id:");
+      console.log(this.props.match.params.id);
+      var id = this.props.match.params.id;
+      axios__WEBPACK_IMPORTED_MODULE_1___default().get("/restaurant/".concat(id)).then(function (response) {
+        console.log("restaurant response dataaa:");
+        console.log(response.data);
+
+        _this2.setState({
+          name: response.data.name,
+          address: response.data.address,
+          lat: response.data.lat,
+          lng: response.data.lng
+        });
+      });
+    }
+  }, {
+    key: "handleChange",
+    value: function handleChange(e) {
+      this.setState(_defineProperty({}, e.target.name, e.target.value));
+    }
+  }, {
+    key: "handleSubmit",
+    value: function handleSubmit(e) {
+      var _this$state = this.state,
+          name = _this$state.name,
+          address = _this$state.address,
+          lat = _this$state.lat,
+          lng = _this$state.lng;
+      e.preventDefault();
+      var rest = {
+        name: name,
+        address: address,
+        lat: lat,
+        lng: lng
+      };
+      var uri = "/restaurant/" + this.props.match.params.id;
+      axios__WEBPACK_IMPORTED_MODULE_1___default().patch(uri, rest).then(function (response) {
+        console.log("Updated to :");
+        console.log(response);
+      });
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+        className: "container",
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+          className: "row justify-content-center",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+            className: "col-md-8",
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+              className: "card",
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+                className: "card-header",
+                children: "Update Restaurant"
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+                className: "card-body",
+                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("form", {
+                  onSubmit: this.handleSubmit,
+                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+                    className: "form-group",
+                    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("label", {
+                      children: "Restaurant Name"
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("input", {
+                      name: "name",
+                      className: "form-control",
+                      type: "text",
+                      placeholder: "Restaurant Name",
+                      value: this.state.name,
+                      onChange: this.handleChange
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("label", {
+                      children: "Address"
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("input", {
+                      name: "address",
+                      className: "form-control",
+                      type: "text",
+                      placeholder: "Address",
+                      value: this.state.address,
+                      onChange: this.handleChange
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("label", {
+                      children: "Latitude"
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("input", {
+                      name: "lat",
+                      className: "form-control",
+                      type: "number",
+                      placeholder: "Latitude",
+                      value: this.state.lat,
+                      onChange: this.handleChange
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("label", {
+                      children: "Longitude"
+                    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("input", {
+                      name: "lng",
+                      className: "form-control",
+                      type: "number",
+                      placeholder: "Longitude",
+                      value: this.state.lng,
+                      onChange: this.handleChange
+                    })]
+                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
+                    type: "submit",
+                    className: "btn btn-primary",
+                    children: "Update Restaurant"
+                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
+                    to: "/restaurantList",
+                    className: "btn btn-primary",
+                    children: "Back"
+                  })]
+                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("hr", {})]
+              })]
+            })
+          })
+        })
+      });
+    }
+  }]);
+
+  return RestaurantEdit;
+}(react__WEBPACK_IMPORTED_MODULE_0__.Component);
+
+
+
+/***/ }),
+
+/***/ "./resources/js/components/Restaurant/RestaurantList.js":
+/*!**************************************************************!*\
+  !*** ./resources/js/components/Restaurant/RestaurantList.js ***!
+  \**************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ RestaurantList)
+/* harmony export */ });
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! axios */ "./node_modules/axios/index.js");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(axios__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router-dom/esm/react-router-dom.js");
+/* harmony import */ var _css_app_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../css/app.css */ "./resources/css/app.css");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+
+
+
+
+
+
+
+var RestaurantList = /*#__PURE__*/function (_Component) {
+  _inherits(RestaurantList, _Component);
+
+  var _super = _createSuper(RestaurantList);
+
+  function RestaurantList() {
+    var _this;
+
+    _classCallCheck(this, RestaurantList);
+
+    _this = _super.call(this);
+    _this.state = {
+      restaurants: []
+    };
+    return _this;
+  }
+
+  _createClass(RestaurantList, [{
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      var _this2 = this;
+
+      axios__WEBPACK_IMPORTED_MODULE_0___default().get("/restaurant").then(function (response) {
+        _this2.setState({
+          restaurants: response.data.restaurants
+        });
+      });
+    }
+  }, {
+    key: "deleteRes",
+    value: function deleteRes(restaurant) {
+      console.log(restaurant.id);
+      axios__WEBPACK_IMPORTED_MODULE_0___default().delete("/restaurant/".concat(restaurant.id)).then(function (response) {
+        console.log(response);
+        window.location.reload();
+      });
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      var _this3 = this;
+
+      var restaurants = this.state.restaurants;
+      console.log(restaurants);
+      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+        className: "container py-4",
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+          className: "row justify-content-center",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+            className: "col-md-8",
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+              className: "card",
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+                className: "card-header",
+                children: "All Restaurants"
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+                className: "card-body",
+                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
+                  className: "btn btn-primary btn-sm mb-3",
+                  to: "/restaurantAdd",
+                  children: "Create New Restaurant"
+                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("table", {
+                  className: "table",
+                  children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("tbody", {
+                    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("tr", {
+                      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {
+                        children: "Name"
+                      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {
+                        children: "Address"
+                      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {
+                        children: "Latitude"
+                      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {
+                        children: "Longitude"
+                      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {
+                        children: "Edit"
+                      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("th", {
+                        children: "Delete"
+                      })]
+                    }), Object.keys(restaurants).map(function (restaurant, i) {
+                      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("tr", {
+                        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
+                          children: restaurants[restaurant].name
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
+                          children: restaurants[restaurant].address
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
+                          children: restaurants[restaurant].lat
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
+                          children: restaurants[restaurant].lng
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
+                          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_4__.Link, {
+                            className: "btn btn-primary btn-sm mb-3",
+                            to: "/restaurantEdit/".concat(restaurants[restaurant].id),
+                            children: "Edit"
+                          })
+                        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("td", {
+                          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
+                            className: "btn btn-primary btn-sm mb-3",
+                            onClick: _this3.deleteRes.bind(_this3, restaurants[restaurant]),
+                            children: "Delete"
+                          })
+                        })]
+                      }, restaurants[restaurant].id) //</Link>
+                      ;
+                    })]
+                  })
+                })]
+              })]
+            })
+          })
+        })
+      });
+    }
+  }]);
+
+  return RestaurantList;
+}(react__WEBPACK_IMPORTED_MODULE_1__.Component);
+
+
+
+/***/ }),
+
 /***/ "./resources/js/components/Router.js":
 /*!*******************************************!*\
   !*** ./resources/js/components/Router.js ***!
@@ -3035,18 +10670,60 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 /* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
 /* harmony import */ var _css_app_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./../../css/app.css */ "./resources/css/app.css");
-/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router-dom/esm/react-router-dom.js");
-/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router/esm/react-router.js");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! react-router */ "./node_modules/react-router/esm/react-router.js");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router-dom/esm/react-router-dom.js");
 /* harmony import */ var _SignIn_SignIn__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./SignIn/SignIn */ "./resources/js/components/SignIn/SignIn.js");
 /* harmony import */ var _Register_Register__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./Register/Register */ "./resources/js/components/Register/Register.js");
-/* harmony import */ var _Home_Home__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./Home/Home */ "./resources/js/components/Home/Home.js");
-/* harmony import */ var _Home_Home__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_Home_Home__WEBPACK_IMPORTED_MODULE_5__);
-/* harmony import */ var _Dashboard_Dashboard__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./Dashboard/Dashboard */ "./resources/js/components/Dashboard/Dashboard.js");
-/* harmony import */ var _Navbar_NavbarMenu__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./Navbar/NavbarMenu */ "./resources/js/components/Navbar/NavbarMenu.js");
-/* harmony import */ var _Food_FoodAdd__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./Food/FoodAdd */ "./resources/js/components/Food/FoodAdd.js");
-/* harmony import */ var _Food_FoodList__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./Food/FoodList */ "./resources/js/components/Food/FoodList.js");
+/* harmony import */ var _SignIn_LogOut__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./SignIn/LogOut */ "./resources/js/components/SignIn/LogOut.js");
+/* harmony import */ var _Navbar_NavbarMenu__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./Navbar/NavbarMenu */ "./resources/js/components/Navbar/NavbarMenu.js");
+/* harmony import */ var _Navbar_AdminNavbarMenu__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./Navbar/AdminNavbarMenu */ "./resources/js/components/Navbar/AdminNavbarMenu.js");
+/* harmony import */ var _Navbar_UserNavbarManu__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./Navbar/UserNavbarManu */ "./resources/js/components/Navbar/UserNavbarManu.js");
+/* harmony import */ var _Dashboard_Dashboard__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./Dashboard/Dashboard */ "./resources/js/components/Dashboard/Dashboard.js");
 /* harmony import */ var _Admin_AdminHome__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./Admin/AdminHome */ "./resources/js/components/Admin/AdminHome.js");
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+/* harmony import */ var _Food_FoodList__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./Food/FoodList */ "./resources/js/components/Food/FoodList.js");
+/* harmony import */ var _Food_FoodAdd__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./Food/FoodAdd */ "./resources/js/components/Food/FoodAdd.js");
+/* harmony import */ var _Food_FoodEdit__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ./Food/FoodEdit */ "./resources/js/components/Food/FoodEdit.js");
+/* harmony import */ var _Category_CategoryList__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ./Category/CategoryList */ "./resources/js/components/Category/CategoryList.js");
+/* harmony import */ var _Category_CategoryAdd__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ./Category/CategoryAdd */ "./resources/js/components/Category/CategoryAdd.js");
+/* harmony import */ var _Category_CategoryEdit__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! ./Category/CategoryEdit */ "./resources/js/components/Category/CategoryEdit.js");
+/* harmony import */ var _Restaurant_RestaurantList__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! ./Restaurant/RestaurantList */ "./resources/js/components/Restaurant/RestaurantList.js");
+/* harmony import */ var _Restaurant_RestaurantAdd__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! ./Restaurant/RestaurantAdd */ "./resources/js/components/Restaurant/RestaurantAdd.js");
+/* harmony import */ var _Restaurant_RestaurantEdit__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! ./Restaurant/RestaurantEdit */ "./resources/js/components/Restaurant/RestaurantEdit.js");
+/* harmony import */ var _FoodUser_ShowFood__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! ./FoodUser/ShowFood */ "./resources/js/components/FoodUser/ShowFood.js");
+/* harmony import */ var _Map_MapReaderId__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! ./Map/MapReaderId */ "./resources/js/components/Map/MapReaderId.js");
+/* harmony import */ var _Map_MapReader__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! ./Map/MapReader */ "./resources/js/components/Map/MapReader.js");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _objectWithoutProperties(source, excluded) { if (source == null) return {}; var target = _objectWithoutPropertiesLoose(source, excluded); var key, i; if (Object.getOwnPropertySymbols) { var sourceSymbolKeys = Object.getOwnPropertySymbols(source); for (i = 0; i < sourceSymbolKeys.length; i++) { key = sourceSymbolKeys[i]; if (excluded.indexOf(key) >= 0) continue; if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue; target[key] = source[key]; } } return target; }
+
+function _objectWithoutPropertiesLoose(source, excluded) { if (source == null) return {}; var target = {}; var sourceKeys = Object.keys(source); var key, i; for (i = 0; i < sourceKeys.length; i++) { key = sourceKeys[i]; if (excluded.indexOf(key) >= 0) continue; target[key] = source[key]; } return target; }
 
 
 
@@ -3062,51 +10739,228 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-function App() {
-  return (
-    /*#__PURE__*/
-    //Routing return navbar and switch case component
-    (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsxs)(react_router_dom__WEBPACK_IMPORTED_MODULE_12__.BrowserRouter, {
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsx)("div", {
-        className: "App",
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsx)(_Navbar_NavbarMenu__WEBPACK_IMPORTED_MODULE_7__.default, {})
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsxs)(react_router_dom__WEBPACK_IMPORTED_MODULE_13__.Switch, {
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_13__.Route, {
-          path: "/login",
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsx)(_SignIn_SignIn__WEBPACK_IMPORTED_MODULE_3__.default, {})
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_13__.Route, {
-          path: "/adminHome",
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsx)(_Admin_AdminHome__WEBPACK_IMPORTED_MODULE_10__.default, {})
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_13__.Route, {
-          path: "/foodAdd",
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsx)(_Food_FoodAdd__WEBPACK_IMPORTED_MODULE_8__.default, {})
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_13__.Route, {
-          path: "/foodEdit",
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsx)(_Food_FoodAdd__WEBPACK_IMPORTED_MODULE_8__.default, {})
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_13__.Route, {
-          path: "/foodList",
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsx)(_Food_FoodList__WEBPACK_IMPORTED_MODULE_9__.default, {})
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_13__.Route, {
-          path: "/dashboard",
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsx)(_Dashboard_Dashboard__WEBPACK_IMPORTED_MODULE_6__.default, {})
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_13__.Route, {
-          path: "/register",
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsx)(_Register_Register__WEBPACK_IMPORTED_MODULE_4__.default, {})
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_13__.Route, {
-          path: "/",
-          exact: true,
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsx)((_Home_Home__WEBPACK_IMPORTED_MODULE_5___default()), {})
-        })]
-      })]
-    })
-  );
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+var AdminRoute = function AdminRoute(_ref) {
+  var component = _ref.component,
+      options = _objectWithoutProperties(_ref, ["component"]);
+
+  var isAdmin = localStorage.getItem("users");
+  console.log();
+
+  if (isAdmin == 1) {
+    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_24__.Route, _objectSpread(_objectSpread({}, options), {}, {
+      component: component
+    }));
+  } else if (isAdmin == 0) {
+    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_24__.Redirect, {
+      to: "/dashboard"
+    });
+  } else if (!isAdmin) {
+    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_24__.Redirect, {
+      to: "/login"
+    });
+  }
+};
+
+var UserRoute = function UserRoute(_ref2) {
+  var component = _ref2.component,
+      options = _objectWithoutProperties(_ref2, ["component"]);
+
+  var loggedIn = localStorage.getItem("token");
+  console.log();
+
+  if (loggedIn) {
+    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_24__.Route, _objectSpread(_objectSpread({}, options), {}, {
+      component: component
+    }));
+  } else {
+    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_24__.Redirect, {
+      to: "/login"
+    });
+  }
+};
+
+var App = /*#__PURE__*/function (_React$Component) {
+  _inherits(App, _React$Component);
+
+  var _super = _createSuper(App);
+
+  function App() {
+    _classCallCheck(this, App);
+
+    return _super.apply(this, arguments);
+  }
+
+  _createClass(App, [{
+    key: "render",
+    value: function render() {
+      var isAdmin = localStorage.getItem("users");
+      var button;
+
+      if (isAdmin == 1) {
+        button = /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(_Navbar_AdminNavbarMenu__WEBPACK_IMPORTED_MODULE_7__.default, {});
+      } else if (isAdmin == 0) {
+        button = /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(_Navbar_UserNavbarManu__WEBPACK_IMPORTED_MODULE_8__.default, {});
+      } else {
+        button = /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(_Navbar_NavbarMenu__WEBPACK_IMPORTED_MODULE_6__.default, {});
+      }
+
+      return (
+        /*#__PURE__*/
+        //Routing return navbar and switch case component
+        (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsxs)(react_router_dom__WEBPACK_IMPORTED_MODULE_25__.BrowserRouter, {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)("div", {
+            className: "App",
+            children: button
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)("br", {}), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsxs)(react_router_dom__WEBPACK_IMPORTED_MODULE_24__.Switch, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_24__.Route, {
+              path: "/login",
+              component: _SignIn_SignIn__WEBPACK_IMPORTED_MODULE_3__.default
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_24__.Route, {
+              path: "/register",
+              component: _Register_Register__WEBPACK_IMPORTED_MODULE_4__.default
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_24__.Route, {
+              path: "/logout",
+              component: _SignIn_LogOut__WEBPACK_IMPORTED_MODULE_5__.default
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_24__.Route, {
+              path: "/dashboard",
+              component: _Dashboard_Dashboard__WEBPACK_IMPORTED_MODULE_9__.default
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(AdminRoute, {
+              path: "/adminHome",
+              component: _Admin_AdminHome__WEBPACK_IMPORTED_MODULE_10__.default
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(AdminRoute, {
+              path: "/foodList",
+              component: _Food_FoodList__WEBPACK_IMPORTED_MODULE_11__.default
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(AdminRoute, {
+              path: "/foodAdd",
+              component: _Food_FoodAdd__WEBPACK_IMPORTED_MODULE_12__.default
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(AdminRoute, {
+              path: "/foodEdit/:id",
+              component: _Food_FoodEdit__WEBPACK_IMPORTED_MODULE_13__.default
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(AdminRoute, {
+              path: "/categoryList",
+              component: _Category_CategoryList__WEBPACK_IMPORTED_MODULE_14__.default
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(AdminRoute, {
+              path: "/categoryAdd",
+              component: _Category_CategoryAdd__WEBPACK_IMPORTED_MODULE_15__.default
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(AdminRoute, {
+              path: "/categoryEdit/:id",
+              component: _Category_CategoryEdit__WEBPACK_IMPORTED_MODULE_16__.default
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(AdminRoute, {
+              path: "/restaurantList",
+              component: _Restaurant_RestaurantList__WEBPACK_IMPORTED_MODULE_17__.default
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(AdminRoute, {
+              path: "/restaurantAdd",
+              component: _Restaurant_RestaurantAdd__WEBPACK_IMPORTED_MODULE_18__.default
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(AdminRoute, {
+              path: "/restaurantEdit/:id",
+              component: _Restaurant_RestaurantEdit__WEBPACK_IMPORTED_MODULE_19__.default
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(UserRoute, {
+              path: "/mapper",
+              component: _Map_MapReader__WEBPACK_IMPORTED_MODULE_22__.default
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(UserRoute, {
+              path: "/mapView/:id",
+              component: _Map_MapReaderId__WEBPACK_IMPORTED_MODULE_21__.default
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(UserRoute, {
+              path: "/showFood/:id",
+              component: _FoodUser_ShowFood__WEBPACK_IMPORTED_MODULE_20__.default
+            })]
+          })]
+        })
+      );
+    }
+  }]);
+
+  return App;
+}(react__WEBPACK_IMPORTED_MODULE_0__.Component);
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (App);
 
 if (document.getElementById("app")) {
-  react_dom__WEBPACK_IMPORTED_MODULE_1__.render( /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_11__.jsx)(App, {}), document.getElementById("app"));
+  react_dom__WEBPACK_IMPORTED_MODULE_1__.render( /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_23__.jsx)(App, {}), document.getElementById("app"));
 }
+
+/***/ }),
+
+/***/ "./resources/js/components/SignIn/LogOut.js":
+/*!**************************************************!*\
+  !*** ./resources/js/components/SignIn/LogOut.js ***!
+  \**************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "LogOut": () => (/* binding */ LogOut),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _css_app_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../css/app.css */ "./resources/css/app.css");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router/esm/react-router.js");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+
+
+
+
+var LogOut = /*#__PURE__*/function (_React$Component) {
+  _inherits(LogOut, _React$Component);
+
+  var _super = _createSuper(LogOut);
+
+  function LogOut() {
+    _classCallCheck(this, LogOut);
+
+    return _super.apply(this, arguments);
+  }
+
+  _createClass(LogOut, [{
+    key: "render",
+    value: function render() {
+      localStorage.clear();
+      return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(react_router_dom__WEBPACK_IMPORTED_MODULE_3__.Redirect, {
+        to: "/login"
+      });
+    }
+  }]);
+
+  return LogOut;
+}(react__WEBPACK_IMPORTED_MODULE_0__.Component);
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (LogOut);
 
 /***/ }),
 
@@ -3197,15 +11051,11 @@ var SignIn = /*#__PURE__*/function (_React$Component) {
       });
 
       axios__WEBPACK_IMPORTED_MODULE_2___default().post(url, data).then(function (res) {
-        console.log(res);
-
         switch (res.data.success) {
           //on success login statement sets token and sends user data
           case true:
             localStorage.setItem("token", res.data.token);
-            localStorage.setItem("users", res.data.user);
-            console.log(res);
-            console.log("Congratulation, you are looged in!");
+            localStorage.setItem("users", res.data.user.isAdmin);
             break;
           //on failed login statement outputs validator errors and error message
 
@@ -7764,7 +15614,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "body {\n    background-image: url(\"/img/AUBackground.jpeg\");\n    background-repeat: no-repeat;\n    background-attachment: fixed;\n}\n/*\nCSS FOR NAVBAR COMPONENT\n*/\n.navbar-custom {\n    background-color: #191919;\n}\n.navbar-nav {\n    float: left;\n}\n.navbar-brand {\n    color: white;\n    font-size: 22px;\n    transition: all 500ms;\n}\n\n.navbar-brand:hover {\n    color: #2ecc71;\n    transition: all 500ms;\n}\n.li {\n    float: left;\n    display: inline;\n}\n.navbar__link--active {\n    color: #2ecc71;\n}\n\n.nav > li > a {\n    font-size: 10px;\n    transition: all 500ms;\n}\n.nav > li > a:hover {\n    text-decoration: none;\n    color: #2ecc71;\n    transition: all 500ms;\n}\n/*\nCSS FOR REGISTER AND SIGNIN COMPONENT\n*/\n.box {\n    width: 500px;\n    padding: 40px;\n    position: absolute;\n    top: 50%;\n    left: 50%;\n    background: #191919;\n    text-align: center;\n    transition: 0.25s;\n    margin-top: 100px;\n}\n\n.box input[type=\"text\"],\n.box input[type=\"password\"] {\n    border: 0;\n    background: none;\n    display: block;\n    margin: 20px auto;\n    text-align: center;\n    border: 2px solid #3498db;\n    padding: 10px 10px;\n    width: 250px;\n    outline: none;\n    color: white;\n    border-radius: 24px;\n    transition: 0.25s;\n}\n\n.box h1 {\n    color: white;\n    text-transform: uppercase;\n    font-weight: 500;\n}\n\n.box input[type=\"text\"]:focus,\n.box input[type=\"password\"]:focus {\n    width: 300px;\n    border-color: #2ecc71;\n}\n\n.box input[type=\"submit\"] {\n    border: 0;\n    background: none;\n    display: block;\n    margin: 20px auto;\n    text-align: center;\n    border: 2px solid #2ecc71;\n    padding: 14px 40px;\n    outline: none;\n    color: white;\n    border-radius: 24px;\n    transition: 0.25s;\n    cursor: pointer;\n}\n\n.box input[type=\"submit\"]:hover {\n    background: #2ecc71;\n}\n\n.forgot {\n    text-decoration: underline;\n}\n\n.register {\n    margin-left: 20px;\n    text-decoration: underline;\n}\n.validation-error {\n    font-size: 15px;\n    color: red;\n}\n/*\nCSS FOR DASHBOARD\n*/\n.container {\n    background-color: white;\n}\n.container-category {\n    flex: 1;\n}\n\n.container-category-grid {\n    display: flex;\n    flex-wrap: wrap;\n    justify-content: center;\n}\n.container-categories-item {\n    background-color: #191919;\n    border: 1 px solid #dbdadf;\n    border-radius: 2px;\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    padding: 3rem;\n    flex: 1 1 25%;\n    margin: 2rem 1rem 2rem;\n    max-width: 30%;\n    height: 15rem;\n}\n.container-categories-item:hover {\n    background-color: #2ecc71;\n}\n.container-categories-text {\n    padding-top: 1rem;\n    text-align: center;\n    font-size: 18px;\n}\n\n/*\nCSS\n*/\n.header {\n    text-align: center;\n    background-color: white;\n    padding: 10px;\n    margin-top: 5%;\n}\n.flex-container {\n    display: flex;\n    flex-direction: row;\n    flex-wrap: wrap;\n    justify-content: center;\n    background-color: white;\n    padding: 10px;\n}\n.flex-container > .card {\n    background-color: rgb(240, 240, 240);\n    text-align: center;\n    width: 250px;\n    padding: 30px 30px;\n    margin: 10px;\n    font-size: 30px;\n}\n/*\nTABLE IN ADMIN PAGES\n*/\n.table {\n    border-collapse: collapse;\n    width: 100%;\n}\n.table th,\ntd {\n    text-align: left;\n    padding: 8px;\n}\n.table tr:hover {\n    background-color: #f5f5f5;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "body {\n    background-image: url(\"/img/AUBackground.jpeg\");\n    background-repeat: no-repeat;\n    background-attachment: fixed;\n}\n/*\nCSS FOR NAVBAR COMPONENT\n*/\nnav {\n    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);\n}\n\n.navbar-custom {\n    background-color: #191919;\n}\n.navbar-nav {\n    float: left;\n}\n.navbar-brand {\n    color: white;\n    font-size: 22px;\n    transition: all 500ms;\n}\n\n.navbar-brand:hover {\n    color: #3498db;\n    transition: all 500ms;\n}\n.li {\n    float: left;\n    display: inline;\n}\n.navbar__link--active {\n    color: #3498db;\n}\n\n.nav > li > a {\n    font-size: 10px;\n    transition: all 500ms;\n}\n.nav > li > a:hover {\n    text-decoration: none;\n    color: #3498db;\n    transition: all 500ms;\n}\n/*\nCSS FOR REGISTER AND SIGNIN COMPONENT\n*/\n.box {\n    width: 500px;\n    padding: 40px;\n    position: absolute;\n    top: 50%;\n    left: 50%;\n    background: #191919;\n    text-align: center;\n    transition: 0.25s;\n    margin-top: 100px;\n}\n\n.box input[type=\"text\"],\n.box input[type=\"password\"] {\n    border: 0;\n    background: none;\n    display: block;\n    margin: 20px auto;\n    text-align: center;\n    border: 2px solid #3498db;\n    padding: 10px 10px;\n    width: 250px;\n    outline: none;\n    color: white;\n    border-radius: 24px;\n    transition: 0.25s;\n}\n\n.box h1 {\n    color: white;\n    text-transform: uppercase;\n    font-weight: 500;\n}\n\n.box input[type=\"text\"]:focus,\n.box input[type=\"password\"]:focus {\n    width: 300px;\n    border-color: #3498db;\n}\n\n.box input[type=\"submit\"] {\n    border: 0;\n    background: none;\n    display: block;\n    margin: 20px auto;\n    text-align: center;\n    border: 2px solid #3498db;\n    padding: 14px 40px;\n    outline: none;\n    color: white;\n    border-radius: 24px;\n    transition: 0.25s;\n    cursor: pointer;\n}\n\n.box input[type=\"submit\"]:hover {\n    background: #3498db;\n}\n\n.forgot {\n    text-decoration: underline;\n}\n\n.register {\n    margin-left: 20px;\n    text-decoration: underline;\n}\n.validation-error {\n    font-size: 15px;\n    color: red;\n}\n/*\nCSS FOR DASHBOARD\n*/\n.container {\n    background-color: rgba(0, 0, 0, 0.6);\n}\n.container-category {\n    flex: 1;\n}\n\n.container-category-grid {\n    display: flex;\n    flex-wrap: wrap;\n    justify-content: center;\n}\n.container-categories-item {\n    background-color: black;\n    border-style: solid;\n    border-width: 5px;\n    border-radius: 2px;\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    padding: 3rem;\n    flex: 1 1 25%;\n    margin: 2rem 1rem 2rem;\n    max-width: 30%;\n    height: 15rem;\n    font-size: larger;\n}\n.container-categories-item:hover {\n    background-color: #3498db;\n}\n.container-categories-text {\n    padding-top: 1rem;\n    text-align: center;\n    font-size: 18px;\n}\n.container-rest-item {\n    background-color: black;\n    border-style: solid;\n    border-width: 5px;\n    border-radius: 2px;\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    padding: 1rem 2rem;\n    flex: 1 1 25%;\n    max-width: 30%;\n    font-size: larger;\n    margin: auto;\n}\n/*\nCSS\n*/\n.loading {\n    text-align: center;\n    padding: 10px;\n    margin-top: 5%;\n}\n.header {\n    text-align: center;\n    background-color: white;\n    padding: 10px;\n    margin-top: 5%;\n}\n.flex-container {\n    display: flex;\n    flex-direction: row;\n    flex-wrap: wrap;\n    justify-content: center;\n    padding: 10px;\n}\n.flex-container > .card {\n    background-color: rgb(240, 240, 240);\n    text-align: center;\n    width: 250px;\n    padding: 30px 30px;\n    margin: 10px;\n    font-size: 30px;\n}\n/*\nTABLE IN ADMIN PAGES\n*/\n.table {\n    border-collapse: collapse;\n    width: 100%;\n}\n.table th,\ntd {\n    text-align: left;\n    padding: 8px;\n}\n.table tr:hover {\n    background-color: #f5f5f5;\n}\n/*\nMAP\n*/\n.map-list-container {\n    float: left;\n    height: 100vh;\n    width: 28%;\n    margin: 10px;\n    padding: 30px 0;\n    background-color: rgba(0, 0, 0, 0.6);\n}\n.map {\n    float: right;\n}\n.rest-create {\n    margin: 10px 0 410px;\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -7844,6 +15694,2900 @@ module.exports = function (cssWithMappingToString) {
 
   return list;
 };
+
+/***/ }),
+
+/***/ "./node_modules/google-maps-react/dist/GoogleApiComponent.js":
+/*!*******************************************************************!*\
+  !*** ./node_modules/google-maps-react/dist/GoogleApiComponent.js ***!
+  \*******************************************************************/
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports, __webpack_require__(/*! react */ "./node_modules/react/index.js"), __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js"), __webpack_require__(/*! ./lib/ScriptCache */ "./node_modules/google-maps-react/dist/lib/ScriptCache.js"), __webpack_require__(/*! ./lib/GoogleApi */ "./node_modules/google-maps-react/dist/lib/GoogleApi.js")], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+		__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+		(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else { var mod; }
+})(this, function (exports, _react, _reactDom, _ScriptCache, _GoogleApi) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.wrapper = undefined;
+
+  var _react2 = _interopRequireDefault(_react);
+
+  var _reactDom2 = _interopRequireDefault(_reactDom);
+
+  var _GoogleApi2 = _interopRequireDefault(_GoogleApi);
+
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {
+      default: obj
+    };
+  }
+
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
+    }
+  }
+
+  var _createClass = function () {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ("value" in descriptor) descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }
+
+    return function (Constructor, protoProps, staticProps) {
+      if (protoProps) defineProperties(Constructor.prototype, protoProps);
+      if (staticProps) defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  }();
+
+  function _possibleConstructorReturn(self, call) {
+    if (!self) {
+      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    }
+
+    return call && (typeof call === "object" || typeof call === "function") ? call : self;
+  }
+
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== "function" && superClass !== null) {
+      throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+    }
+
+    subClass.prototype = Object.create(superClass && superClass.prototype, {
+      constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+    if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+
+  var defaultMapConfig = {};
+
+  var serialize = function serialize(obj) {
+    return JSON.stringify(obj);
+  };
+  var isSame = function isSame(obj1, obj2) {
+    return obj1 === obj2 || serialize(obj1) === serialize(obj2);
+  };
+
+  var defaultCreateCache = function defaultCreateCache(options) {
+    options = options || {};
+    var apiKey = options.apiKey;
+    var libraries = options.libraries || ['places'];
+    var version = options.version || '3';
+    var language = options.language || 'en';
+    var url = options.url;
+    var client = options.client;
+    var region = options.region;
+
+    return (0, _ScriptCache.ScriptCache)({
+      google: (0, _GoogleApi2.default)({
+        apiKey: apiKey,
+        language: language,
+        libraries: libraries,
+        version: version,
+        url: url,
+        client: client,
+        region: region
+      })
+    });
+  };
+
+  var DefaultLoadingContainer = function DefaultLoadingContainer(props) {
+    return _react2.default.createElement(
+      'div',
+      null,
+      'Loading...'
+    );
+  };
+
+  var wrapper = exports.wrapper = function wrapper(input) {
+    return function (WrappedComponent) {
+      var Wrapper = function (_React$Component) {
+        _inherits(Wrapper, _React$Component);
+
+        function Wrapper(props, context) {
+          _classCallCheck(this, Wrapper);
+
+          // Build options from input
+          var _this = _possibleConstructorReturn(this, (Wrapper.__proto__ || Object.getPrototypeOf(Wrapper)).call(this, props, context));
+
+          var options = typeof input === 'function' ? input(props) : input;
+
+          // Initialize required Google scripts and other configured options
+          _this.initialize(options);
+
+          _this.state = {
+            loaded: false,
+            map: null,
+            google: null,
+            options: options
+          };
+
+          _this.mapRef = _react2.default.createRef();
+          return _this;
+        }
+
+        _createClass(Wrapper, [{
+          key: 'UNSAFE_componentWillReceiveProps',
+          value: function UNSAFE_componentWillReceiveProps(props) {
+            // Do not update input if it's not dynamic
+            if (typeof input !== 'function') {
+              return;
+            }
+
+            // Get options to compare
+            var prevOptions = this.state.options;
+            var options = typeof input === 'function' ? input(props) : input;
+
+            // Ignore when options are not changed
+            if (isSame(options, prevOptions)) {
+              return;
+            }
+
+            // Initialize with new options
+            this.initialize(options);
+
+            // Save new options in component state,
+            // and remove information about previous API handlers
+            this.setState({
+              options: options,
+              loaded: false,
+              google: null
+            });
+          }
+        }, {
+          key: 'componentWillUnmount',
+          value: function componentWillUnmount() {
+            if (this.unregisterLoadHandler) {
+              this.unregisterLoadHandler();
+            }
+          }
+        }, {
+          key: 'initialize',
+          value: function initialize(options) {
+            // Avoid race condition: remove previous 'load' listener
+            if (this.unregisterLoadHandler) {
+              this.unregisterLoadHandler();
+              this.unregisterLoadHandler = null;
+            }
+
+            // Load cache factory
+            var createCache = options.createCache || defaultCreateCache;
+
+            // Build script
+            this.scriptCache = createCache(options);
+            this.unregisterLoadHandler = this.scriptCache.google.onLoad(this.onLoad.bind(this));
+
+            // Store information about loading container
+            this.LoadingContainer = options.LoadingContainer || DefaultLoadingContainer;
+          }
+        }, {
+          key: 'onLoad',
+          value: function onLoad(err, tag) {
+            this._gapi = window.google;
+
+            this.setState({ loaded: true, google: this._gapi });
+          }
+        }, {
+          key: 'render',
+          value: function render() {
+            var LoadingContainer = this.LoadingContainer;
+
+            if (!this.state.loaded) {
+              return _react2.default.createElement(LoadingContainer, null);
+            }
+
+            var props = Object.assign({}, this.props, {
+              loaded: this.state.loaded,
+              google: window.google
+            });
+
+            return _react2.default.createElement(
+              'div',
+              null,
+              _react2.default.createElement(WrappedComponent, props),
+              _react2.default.createElement('div', { ref: this.mapRef })
+            );
+          }
+        }]);
+
+        return Wrapper;
+      }(_react2.default.Component);
+
+      return Wrapper;
+    };
+  };
+
+  exports.default = wrapper;
+});
+
+/***/ }),
+
+/***/ "./node_modules/google-maps-react/dist/components/Circle.js":
+/*!******************************************************************!*\
+  !*** ./node_modules/google-maps-react/dist/components/Circle.js ***!
+  \******************************************************************/
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports, __webpack_require__(/*! react */ "./node_modules/react/index.js"), __webpack_require__(/*! prop-types */ "./node_modules/prop-types/index.js"), __webpack_require__(/*! ../lib/arePathsEqual */ "./node_modules/google-maps-react/dist/lib/arePathsEqual.js"), __webpack_require__(/*! ../lib/String */ "./node_modules/google-maps-react/dist/lib/String.js")], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+		__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+		(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else { var mod; }
+})(this, function (exports, _react, _propTypes, _arePathsEqual, _String) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.Circle = undefined;
+
+  var _react2 = _interopRequireDefault(_react);
+
+  var _propTypes2 = _interopRequireDefault(_propTypes);
+
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {
+      default: obj
+    };
+  }
+
+  var _extends = Object.assign || function (target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+
+      for (var key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          target[key] = source[key];
+        }
+      }
+    }
+
+    return target;
+  };
+
+  function _objectWithoutProperties(obj, keys) {
+    var target = {};
+
+    for (var i in obj) {
+      if (keys.indexOf(i) >= 0) continue;
+      if (!Object.prototype.hasOwnProperty.call(obj, i)) continue;
+      target[i] = obj[i];
+    }
+
+    return target;
+  }
+
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
+    }
+  }
+
+  var _createClass = function () {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ("value" in descriptor) descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }
+
+    return function (Constructor, protoProps, staticProps) {
+      if (protoProps) defineProperties(Constructor.prototype, protoProps);
+      if (staticProps) defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  }();
+
+  function _possibleConstructorReturn(self, call) {
+    if (!self) {
+      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    }
+
+    return call && (typeof call === "object" || typeof call === "function") ? call : self;
+  }
+
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== "function" && superClass !== null) {
+      throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+    }
+
+    subClass.prototype = Object.create(superClass && superClass.prototype, {
+      constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+    if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+
+  var evtNames = ['click', 'mouseout', 'mouseover'];
+
+  var wrappedPromise = function wrappedPromise() {
+    var wrappedPromise = {},
+        promise = new Promise(function (resolve, reject) {
+      wrappedPromise.resolve = resolve;
+      wrappedPromise.reject = reject;
+    });
+    wrappedPromise.then = promise.then.bind(promise);
+    wrappedPromise.catch = promise.catch.bind(promise);
+    wrappedPromise.promise = promise;
+
+    return wrappedPromise;
+  };
+
+  var Circle = exports.Circle = function (_React$Component) {
+    _inherits(Circle, _React$Component);
+
+    function Circle() {
+      var _ref;
+
+      var _temp, _this, _ret;
+
+      _classCallCheck(this, Circle);
+
+      for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+
+      return _ret = (_temp = (_this = _possibleConstructorReturn(this, (_ref = Circle.__proto__ || Object.getPrototypeOf(Circle)).call.apply(_ref, [this].concat(args))), _this), _this.centerChanged = function (newCenter) {
+        var _this$props$center = _this.props.center,
+            lat = _this$props$center.lat,
+            lng = _this$props$center.lng;
+
+        return lat !== newCenter.lat || lng !== newCenter.lng;
+      }, _this.propsChanged = function (newProps) {
+        if (_this.centerChanged(newProps.center)) return true;
+
+        return Object.keys(Circle.propTypes).some(function (key) {
+          return _this.props[key] !== newProps[key];
+        });
+      }, _this.destroyCircle = function () {
+        if (_this.circle) {
+          _this.circle.setMap(null);
+        }
+      }, _temp), _possibleConstructorReturn(_this, _ret);
+    }
+
+    _createClass(Circle, [{
+      key: 'componentDidMount',
+      value: function componentDidMount() {
+        this.circlePromise = wrappedPromise();
+        this.renderCircle();
+      }
+    }, {
+      key: 'componentDidUpdate',
+      value: function componentDidUpdate(prevProps) {
+        var _props = this.props,
+            path = _props.path,
+            map = _props.map;
+
+
+        if (this.propsChanged(prevProps) || map !== prevProps.map || !(0, _arePathsEqual.arePathsEqual)(path, prevProps.path)) {
+          this.destroyCircle();
+          this.renderCircle();
+        }
+      }
+    }, {
+      key: 'componentWillUnmount',
+      value: function componentWillUnmount() {
+        this.destroyCircle();
+      }
+    }, {
+      key: 'renderCircle',
+      value: function renderCircle() {
+        var _this2 = this;
+
+        var _props2 = this.props,
+            map = _props2.map,
+            google = _props2.google,
+            center = _props2.center,
+            radius = _props2.radius,
+            strokeColor = _props2.strokeColor,
+            strokeOpacity = _props2.strokeOpacity,
+            strokeWeight = _props2.strokeWeight,
+            fillColor = _props2.fillColor,
+            fillOpacity = _props2.fillOpacity,
+            draggable = _props2.draggable,
+            visible = _props2.visible,
+            props = _objectWithoutProperties(_props2, ['map', 'google', 'center', 'radius', 'strokeColor', 'strokeOpacity', 'strokeWeight', 'fillColor', 'fillOpacity', 'draggable', 'visible']);
+
+        if (!google) {
+          return null;
+        }
+
+        var params = _extends({}, props, {
+          map: map,
+          center: center,
+          radius: radius,
+          draggable: draggable,
+          visible: visible,
+          options: {
+            strokeColor: strokeColor,
+            strokeOpacity: strokeOpacity,
+            strokeWeight: strokeWeight,
+            fillColor: fillColor,
+            fillOpacity: fillOpacity
+          }
+        });
+
+        this.circle = new google.maps.Circle(params);
+
+        evtNames.forEach(function (e) {
+          _this2.circle.addListener(e, _this2.handleEvent(e));
+        });
+
+        this.circlePromise.resolve(this.circle);
+      }
+    }, {
+      key: 'getCircle',
+      value: function getCircle() {
+        return this.circlePromise;
+      }
+    }, {
+      key: 'handleEvent',
+      value: function handleEvent(evt) {
+        var _this3 = this;
+
+        return function (e) {
+          var evtName = 'on' + (0, _String.camelize)(evt);
+          if (_this3.props[evtName]) {
+            _this3.props[evtName](_this3.props, _this3.circle, e);
+          }
+        };
+      }
+    }, {
+      key: 'render',
+      value: function render() {
+        return null;
+      }
+    }]);
+
+    return Circle;
+  }(_react2.default.Component);
+
+  Circle.propTypes = {
+    center: _propTypes2.default.object,
+    radius: _propTypes2.default.number,
+    strokeColor: _propTypes2.default.string,
+    strokeOpacity: _propTypes2.default.number,
+    strokeWeight: _propTypes2.default.number,
+    fillColor: _propTypes2.default.string,
+    fillOpacity: _propTypes2.default.number,
+    draggable: _propTypes2.default.bool,
+    visible: _propTypes2.default.bool
+  };
+
+  evtNames.forEach(function (e) {
+    return Circle.propTypes[e] = _propTypes2.default.func;
+  });
+
+  Circle.defaultProps = {
+    name: 'Circle'
+  };
+
+  exports.default = Circle;
+});
+
+/***/ }),
+
+/***/ "./node_modules/google-maps-react/dist/components/HeatMap.js":
+/*!*******************************************************************!*\
+  !*** ./node_modules/google-maps-react/dist/components/HeatMap.js ***!
+  \*******************************************************************/
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports, __webpack_require__(/*! react */ "./node_modules/react/index.js"), __webpack_require__(/*! prop-types */ "./node_modules/prop-types/index.js"), __webpack_require__(/*! ../lib/String */ "./node_modules/google-maps-react/dist/lib/String.js")], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+		__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+		(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else { var mod; }
+})(this, function (exports, _react, _propTypes, _String) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.HeatMap = undefined;
+
+  var _react2 = _interopRequireDefault(_react);
+
+  var _propTypes2 = _interopRequireDefault(_propTypes);
+
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {
+      default: obj
+    };
+  }
+
+  var _extends = Object.assign || function (target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+
+      for (var key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          target[key] = source[key];
+        }
+      }
+    }
+
+    return target;
+  };
+
+  function _objectWithoutProperties(obj, keys) {
+    var target = {};
+
+    for (var i in obj) {
+      if (keys.indexOf(i) >= 0) continue;
+      if (!Object.prototype.hasOwnProperty.call(obj, i)) continue;
+      target[i] = obj[i];
+    }
+
+    return target;
+  }
+
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
+    }
+  }
+
+  var _createClass = function () {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ("value" in descriptor) descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }
+
+    return function (Constructor, protoProps, staticProps) {
+      if (protoProps) defineProperties(Constructor.prototype, protoProps);
+      if (staticProps) defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  }();
+
+  function _possibleConstructorReturn(self, call) {
+    if (!self) {
+      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    }
+
+    return call && (typeof call === "object" || typeof call === "function") ? call : self;
+  }
+
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== "function" && superClass !== null) {
+      throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+    }
+
+    subClass.prototype = Object.create(superClass && superClass.prototype, {
+      constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+    if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+
+  var evtNames = ['click', 'mouseover', 'recenter'];
+
+  var wrappedPromise = function wrappedPromise() {
+    var wrappedPromise = {},
+        promise = new Promise(function (resolve, reject) {
+      wrappedPromise.resolve = resolve;
+      wrappedPromise.reject = reject;
+    });
+    wrappedPromise.then = promise.then.bind(promise);
+    wrappedPromise.catch = promise.catch.bind(promise);
+    wrappedPromise.promise = promise;
+
+    return wrappedPromise;
+  };
+
+  var HeatMap = exports.HeatMap = function (_React$Component) {
+    _inherits(HeatMap, _React$Component);
+
+    function HeatMap() {
+      _classCallCheck(this, HeatMap);
+
+      return _possibleConstructorReturn(this, (HeatMap.__proto__ || Object.getPrototypeOf(HeatMap)).apply(this, arguments));
+    }
+
+    _createClass(HeatMap, [{
+      key: 'componentDidMount',
+      value: function componentDidMount() {
+        this.heatMapPromise = wrappedPromise();
+        this.renderHeatMap();
+      }
+    }, {
+      key: 'componentDidUpdate',
+      value: function componentDidUpdate(prevProps) {
+        if (this.props.map !== prevProps.map || this.props.position !== prevProps.position) {
+          if (this.heatMap) {
+            this.heatMap.setMap(null);
+            this.renderHeatMap();
+          }
+        }
+      }
+    }, {
+      key: 'componentWillUnmount',
+      value: function componentWillUnmount() {
+        if (this.heatMap) {
+          this.heatMap.setMap(null);
+        }
+      }
+    }, {
+      key: 'renderHeatMap',
+      value: function renderHeatMap() {
+        var _this2 = this;
+
+        var _props = this.props,
+            map = _props.map,
+            google = _props.google,
+            positions = _props.positions,
+            mapCenter = _props.mapCenter,
+            icon = _props.icon,
+            gradient = _props.gradient,
+            _props$radius = _props.radius,
+            radius = _props$radius === undefined ? 20 : _props$radius,
+            _props$opacity = _props.opacity,
+            opacity = _props$opacity === undefined ? 0.2 : _props$opacity,
+            props = _objectWithoutProperties(_props, ['map', 'google', 'positions', 'mapCenter', 'icon', 'gradient', 'radius', 'opacity']);
+
+        if (!google) {
+          return null;
+        }
+
+        var data = positions.map(function (pos) {
+          return { location: new google.maps.LatLng(pos.lat, pos.lng), weight: pos.weight };
+        });
+
+        var pref = _extends({
+          map: map,
+          gradient: gradient,
+          radius: radius,
+          opacity: opacity,
+          data: data
+        }, props);
+
+        this.heatMap = new google.maps.visualization.HeatmapLayer(pref);
+
+        this.heatMap.set('radius', radius === undefined ? 20 : radius);
+
+        this.heatMap.set('opacity', opacity === undefined ? 0.2 : opacity);
+
+        evtNames.forEach(function (e) {
+          _this2.heatMap.addListener(e, _this2.handleEvent(e));
+        });
+
+        this.heatMapPromise.resolve(this.heatMap);
+      }
+    }, {
+      key: 'getHeatMap',
+      value: function getHeatMap() {
+        return this.heatMapPromise;
+      }
+    }, {
+      key: 'handleEvent',
+      value: function handleEvent(evt) {
+        var _this3 = this;
+
+        return function (e) {
+          var evtName = 'on' + (0, _String.camelize)(evt);
+          if (_this3.props[evtName]) {
+            _this3.props[evtName](_this3.props, _this3.heatMap, e);
+          }
+        };
+      }
+    }, {
+      key: 'render',
+      value: function render() {
+        return null;
+      }
+    }]);
+
+    return HeatMap;
+  }(_react2.default.Component);
+
+  HeatMap.propTypes = {
+    position: _propTypes2.default.object,
+    map: _propTypes2.default.object,
+    icon: _propTypes2.default.string
+  };
+
+  evtNames.forEach(function (e) {
+    return HeatMap.propTypes[e] = _propTypes2.default.func;
+  });
+
+  HeatMap.defaultProps = {
+    name: 'HeatMap'
+  };
+
+  exports.default = HeatMap;
+});
+
+/***/ }),
+
+/***/ "./node_modules/google-maps-react/dist/components/InfoWindow.js":
+/*!**********************************************************************!*\
+  !*** ./node_modules/google-maps-react/dist/components/InfoWindow.js ***!
+  \**********************************************************************/
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports, __webpack_require__(/*! react */ "./node_modules/react/index.js"), __webpack_require__(/*! prop-types */ "./node_modules/prop-types/index.js"), __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js"), __webpack_require__(/*! react-dom/server */ "./node_modules/react-dom/server.browser.js")], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+		__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+		(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else { var mod; }
+})(this, function (exports, _react, _propTypes, _reactDom, _server) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.InfoWindow = undefined;
+
+  var _react2 = _interopRequireDefault(_react);
+
+  var _propTypes2 = _interopRequireDefault(_propTypes);
+
+  var _reactDom2 = _interopRequireDefault(_reactDom);
+
+  var _server2 = _interopRequireDefault(_server);
+
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {
+      default: obj
+    };
+  }
+
+  var _extends = Object.assign || function (target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+
+      for (var key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          target[key] = source[key];
+        }
+      }
+    }
+
+    return target;
+  };
+
+  function _objectWithoutProperties(obj, keys) {
+    var target = {};
+
+    for (var i in obj) {
+      if (keys.indexOf(i) >= 0) continue;
+      if (!Object.prototype.hasOwnProperty.call(obj, i)) continue;
+      target[i] = obj[i];
+    }
+
+    return target;
+  }
+
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
+    }
+  }
+
+  var _createClass = function () {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ("value" in descriptor) descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }
+
+    return function (Constructor, protoProps, staticProps) {
+      if (protoProps) defineProperties(Constructor.prototype, protoProps);
+      if (staticProps) defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  }();
+
+  function _possibleConstructorReturn(self, call) {
+    if (!self) {
+      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    }
+
+    return call && (typeof call === "object" || typeof call === "function") ? call : self;
+  }
+
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== "function" && superClass !== null) {
+      throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+    }
+
+    subClass.prototype = Object.create(superClass && superClass.prototype, {
+      constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+    if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+
+  var InfoWindow = exports.InfoWindow = function (_React$Component) {
+    _inherits(InfoWindow, _React$Component);
+
+    function InfoWindow() {
+      _classCallCheck(this, InfoWindow);
+
+      return _possibleConstructorReturn(this, (InfoWindow.__proto__ || Object.getPrototypeOf(InfoWindow)).apply(this, arguments));
+    }
+
+    _createClass(InfoWindow, [{
+      key: 'componentDidMount',
+      value: function componentDidMount() {
+        this.renderInfoWindow();
+      }
+    }, {
+      key: 'componentDidUpdate',
+      value: function componentDidUpdate(prevProps) {
+        var _props = this.props,
+            google = _props.google,
+            map = _props.map;
+
+
+        if (!google || !map) {
+          return;
+        }
+
+        if (map !== prevProps.map) {
+          this.renderInfoWindow();
+        }
+
+        if (this.props.position !== prevProps.position) {
+          this.updatePosition();
+        }
+
+        if (this.props.children !== prevProps.children) {
+          this.updateContent();
+        }
+
+        if (this.props.visible !== prevProps.visible || this.props.marker !== prevProps.marker || this.props.position !== prevProps.position) {
+          this.props.visible ? this.openWindow() : this.closeWindow();
+        }
+      }
+    }, {
+      key: 'renderInfoWindow',
+      value: function renderInfoWindow() {
+        var _props2 = this.props,
+            map = _props2.map,
+            google = _props2.google,
+            mapCenter = _props2.mapCenter,
+            props = _objectWithoutProperties(_props2, ['map', 'google', 'mapCenter']);
+
+        if (!google || !google.maps) {
+          return;
+        }
+
+        var iw = this.infowindow = new google.maps.InfoWindow(_extends({
+          content: ''
+        }, props));
+
+        google.maps.event.addListener(iw, 'closeclick', this.onClose.bind(this));
+        google.maps.event.addListener(iw, 'domready', this.onOpen.bind(this));
+      }
+    }, {
+      key: 'onOpen',
+      value: function onOpen() {
+        if (this.props.onOpen) {
+          this.props.onOpen();
+        }
+      }
+    }, {
+      key: 'onClose',
+      value: function onClose() {
+        if (this.props.onClose) {
+          this.props.onClose();
+        }
+      }
+    }, {
+      key: 'openWindow',
+      value: function openWindow() {
+        this.infowindow.open(this.props.map, this.props.marker);
+      }
+    }, {
+      key: 'updatePosition',
+      value: function updatePosition() {
+        var pos = this.props.position;
+        if (!(pos instanceof google.maps.LatLng)) {
+          pos = pos && new google.maps.LatLng(pos.lat, pos.lng);
+        }
+        this.infowindow.setPosition(pos);
+      }
+    }, {
+      key: 'updateContent',
+      value: function updateContent() {
+        var content = this.renderChildren();
+        this.infowindow.setContent(content);
+      }
+    }, {
+      key: 'closeWindow',
+      value: function closeWindow() {
+        this.infowindow.close();
+      }
+    }, {
+      key: 'renderChildren',
+      value: function renderChildren() {
+        var children = this.props.children;
+
+        return _server2.default.renderToString(children);
+      }
+    }, {
+      key: 'render',
+      value: function render() {
+        return null;
+      }
+    }]);
+
+    return InfoWindow;
+  }(_react2.default.Component);
+
+  InfoWindow.propTypes = {
+    children: _propTypes2.default.element.isRequired,
+    map: _propTypes2.default.object,
+    marker: _propTypes2.default.object,
+    position: _propTypes2.default.object,
+    visible: _propTypes2.default.bool,
+
+    // callbacks
+    onClose: _propTypes2.default.func,
+    onOpen: _propTypes2.default.func
+  };
+
+  InfoWindow.defaultProps = {
+    visible: false
+  };
+
+  exports.default = InfoWindow;
+});
+
+/***/ }),
+
+/***/ "./node_modules/google-maps-react/dist/components/Marker.js":
+/*!******************************************************************!*\
+  !*** ./node_modules/google-maps-react/dist/components/Marker.js ***!
+  \******************************************************************/
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports, __webpack_require__(/*! react */ "./node_modules/react/index.js"), __webpack_require__(/*! prop-types */ "./node_modules/prop-types/index.js"), __webpack_require__(/*! ../lib/String */ "./node_modules/google-maps-react/dist/lib/String.js")], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+		__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+		(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else { var mod; }
+})(this, function (exports, _react, _propTypes, _String) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.Marker = undefined;
+
+  var _react2 = _interopRequireDefault(_react);
+
+  var _propTypes2 = _interopRequireDefault(_propTypes);
+
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {
+      default: obj
+    };
+  }
+
+  var _extends = Object.assign || function (target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+
+      for (var key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          target[key] = source[key];
+        }
+      }
+    }
+
+    return target;
+  };
+
+  function _objectWithoutProperties(obj, keys) {
+    var target = {};
+
+    for (var i in obj) {
+      if (keys.indexOf(i) >= 0) continue;
+      if (!Object.prototype.hasOwnProperty.call(obj, i)) continue;
+      target[i] = obj[i];
+    }
+
+    return target;
+  }
+
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
+    }
+  }
+
+  var _createClass = function () {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ("value" in descriptor) descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }
+
+    return function (Constructor, protoProps, staticProps) {
+      if (protoProps) defineProperties(Constructor.prototype, protoProps);
+      if (staticProps) defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  }();
+
+  function _possibleConstructorReturn(self, call) {
+    if (!self) {
+      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    }
+
+    return call && (typeof call === "object" || typeof call === "function") ? call : self;
+  }
+
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== "function" && superClass !== null) {
+      throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+    }
+
+    subClass.prototype = Object.create(superClass && superClass.prototype, {
+      constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+    if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+
+  var evtNames = ['click', 'dblclick', 'dragend', 'mousedown', 'mouseout', 'mouseover', 'mouseup', 'recenter'];
+
+  var wrappedPromise = function wrappedPromise() {
+    var wrappedPromise = {},
+        promise = new Promise(function (resolve, reject) {
+      wrappedPromise.resolve = resolve;
+      wrappedPromise.reject = reject;
+    });
+    wrappedPromise.then = promise.then.bind(promise);
+    wrappedPromise.catch = promise.catch.bind(promise);
+    wrappedPromise.promise = promise;
+
+    return wrappedPromise;
+  };
+
+  var Marker = exports.Marker = function (_React$Component) {
+    _inherits(Marker, _React$Component);
+
+    function Marker() {
+      _classCallCheck(this, Marker);
+
+      return _possibleConstructorReturn(this, (Marker.__proto__ || Object.getPrototypeOf(Marker)).apply(this, arguments));
+    }
+
+    _createClass(Marker, [{
+      key: 'componentDidMount',
+      value: function componentDidMount() {
+        this.markerPromise = wrappedPromise();
+        this.renderMarker();
+      }
+    }, {
+      key: 'componentDidUpdate',
+      value: function componentDidUpdate(prevProps) {
+        if (this.props.map !== prevProps.map || this.props.position !== prevProps.position || this.props.icon !== prevProps.icon) {
+          if (this.marker) {
+            this.marker.setMap(null);
+          }
+          this.renderMarker();
+        }
+      }
+    }, {
+      key: 'componentWillUnmount',
+      value: function componentWillUnmount() {
+        if (this.marker) {
+          this.marker.setMap(null);
+        }
+      }
+    }, {
+      key: 'renderMarker',
+      value: function renderMarker() {
+        var _this2 = this;
+
+        var _props = this.props,
+            map = _props.map,
+            google = _props.google,
+            position = _props.position,
+            mapCenter = _props.mapCenter,
+            icon = _props.icon,
+            label = _props.label,
+            draggable = _props.draggable,
+            title = _props.title,
+            props = _objectWithoutProperties(_props, ['map', 'google', 'position', 'mapCenter', 'icon', 'label', 'draggable', 'title']);
+
+        if (!google) {
+          return null;
+        }
+
+        var pos = position || mapCenter;
+        if (!(pos instanceof google.maps.LatLng)) {
+          pos = new google.maps.LatLng(pos.lat, pos.lng);
+        }
+
+        var pref = _extends({
+          map: map,
+          position: pos,
+          icon: icon,
+          label: label,
+          title: title,
+          draggable: draggable
+        }, props);
+        this.marker = new google.maps.Marker(pref);
+
+        evtNames.forEach(function (e) {
+          _this2.marker.addListener(e, _this2.handleEvent(e));
+        });
+
+        this.markerPromise.resolve(this.marker);
+      }
+    }, {
+      key: 'getMarker',
+      value: function getMarker() {
+        return this.markerPromise;
+      }
+    }, {
+      key: 'handleEvent',
+      value: function handleEvent(evt) {
+        var _this3 = this;
+
+        return function (e) {
+          var evtName = 'on' + (0, _String.camelize)(evt);
+          if (_this3.props[evtName]) {
+            _this3.props[evtName](_this3.props, _this3.marker, e);
+          }
+        };
+      }
+    }, {
+      key: 'render',
+      value: function render() {
+        return null;
+      }
+    }]);
+
+    return Marker;
+  }(_react2.default.Component);
+
+  Marker.propTypes = {
+    position: _propTypes2.default.object,
+    map: _propTypes2.default.object
+  };
+
+  evtNames.forEach(function (e) {
+    return Marker.propTypes[e] = _propTypes2.default.func;
+  });
+
+  Marker.defaultProps = {
+    name: 'Marker'
+  };
+
+  exports.default = Marker;
+});
+
+/***/ }),
+
+/***/ "./node_modules/google-maps-react/dist/components/Polygon.js":
+/*!*******************************************************************!*\
+  !*** ./node_modules/google-maps-react/dist/components/Polygon.js ***!
+  \*******************************************************************/
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports, __webpack_require__(/*! react */ "./node_modules/react/index.js"), __webpack_require__(/*! prop-types */ "./node_modules/prop-types/index.js"), __webpack_require__(/*! ../lib/arePathsEqual */ "./node_modules/google-maps-react/dist/lib/arePathsEqual.js"), __webpack_require__(/*! ../lib/String */ "./node_modules/google-maps-react/dist/lib/String.js")], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+		__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+		(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else { var mod; }
+})(this, function (exports, _react, _propTypes, _arePathsEqual, _String) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.Polygon = undefined;
+
+  var _react2 = _interopRequireDefault(_react);
+
+  var _propTypes2 = _interopRequireDefault(_propTypes);
+
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {
+      default: obj
+    };
+  }
+
+  var _extends = Object.assign || function (target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+
+      for (var key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          target[key] = source[key];
+        }
+      }
+    }
+
+    return target;
+  };
+
+  function _objectWithoutProperties(obj, keys) {
+    var target = {};
+
+    for (var i in obj) {
+      if (keys.indexOf(i) >= 0) continue;
+      if (!Object.prototype.hasOwnProperty.call(obj, i)) continue;
+      target[i] = obj[i];
+    }
+
+    return target;
+  }
+
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
+    }
+  }
+
+  var _createClass = function () {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ("value" in descriptor) descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }
+
+    return function (Constructor, protoProps, staticProps) {
+      if (protoProps) defineProperties(Constructor.prototype, protoProps);
+      if (staticProps) defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  }();
+
+  function _possibleConstructorReturn(self, call) {
+    if (!self) {
+      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    }
+
+    return call && (typeof call === "object" || typeof call === "function") ? call : self;
+  }
+
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== "function" && superClass !== null) {
+      throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+    }
+
+    subClass.prototype = Object.create(superClass && superClass.prototype, {
+      constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+    if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+
+  var evtNames = ['click', 'mouseout', 'mouseover'];
+
+  var wrappedPromise = function wrappedPromise() {
+    var wrappedPromise = {},
+        promise = new Promise(function (resolve, reject) {
+      wrappedPromise.resolve = resolve;
+      wrappedPromise.reject = reject;
+    });
+    wrappedPromise.then = promise.then.bind(promise);
+    wrappedPromise.catch = promise.catch.bind(promise);
+    wrappedPromise.promise = promise;
+
+    return wrappedPromise;
+  };
+
+  var Polygon = exports.Polygon = function (_React$Component) {
+    _inherits(Polygon, _React$Component);
+
+    function Polygon() {
+      _classCallCheck(this, Polygon);
+
+      return _possibleConstructorReturn(this, (Polygon.__proto__ || Object.getPrototypeOf(Polygon)).apply(this, arguments));
+    }
+
+    _createClass(Polygon, [{
+      key: 'componentDidMount',
+      value: function componentDidMount() {
+        this.polygonPromise = wrappedPromise();
+        this.renderPolygon();
+      }
+    }, {
+      key: 'componentDidUpdate',
+      value: function componentDidUpdate(prevProps) {
+        if (this.props.map !== prevProps.map || !(0, _arePathsEqual.arePathsEqual)(this.props.paths, prevProps.paths)) {
+          if (this.polygon) {
+            this.polygon.setMap(null);
+          }
+          this.renderPolygon();
+        }
+      }
+    }, {
+      key: 'componentWillUnmount',
+      value: function componentWillUnmount() {
+        if (this.polygon) {
+          this.polygon.setMap(null);
+        }
+      }
+    }, {
+      key: 'renderPolygon',
+      value: function renderPolygon() {
+        var _this2 = this;
+
+        var _props = this.props,
+            map = _props.map,
+            google = _props.google,
+            paths = _props.paths,
+            strokeColor = _props.strokeColor,
+            strokeOpacity = _props.strokeOpacity,
+            strokeWeight = _props.strokeWeight,
+            fillColor = _props.fillColor,
+            fillOpacity = _props.fillOpacity,
+            props = _objectWithoutProperties(_props, ['map', 'google', 'paths', 'strokeColor', 'strokeOpacity', 'strokeWeight', 'fillColor', 'fillOpacity']);
+
+        if (!google) {
+          return null;
+        }
+
+        var params = _extends({
+          map: map,
+          paths: paths,
+          strokeColor: strokeColor,
+          strokeOpacity: strokeOpacity,
+          strokeWeight: strokeWeight,
+          fillColor: fillColor,
+          fillOpacity: fillOpacity
+        }, props);
+
+        this.polygon = new google.maps.Polygon(params);
+
+        evtNames.forEach(function (e) {
+          _this2.polygon.addListener(e, _this2.handleEvent(e));
+        });
+
+        this.polygonPromise.resolve(this.polygon);
+      }
+    }, {
+      key: 'getPolygon',
+      value: function getPolygon() {
+        return this.polygonPromise;
+      }
+    }, {
+      key: 'handleEvent',
+      value: function handleEvent(evt) {
+        var _this3 = this;
+
+        return function (e) {
+          var evtName = 'on' + (0, _String.camelize)(evt);
+          if (_this3.props[evtName]) {
+            _this3.props[evtName](_this3.props, _this3.polygon, e);
+          }
+        };
+      }
+    }, {
+      key: 'render',
+      value: function render() {
+        return null;
+      }
+    }]);
+
+    return Polygon;
+  }(_react2.default.Component);
+
+  Polygon.propTypes = {
+    paths: _propTypes2.default.array,
+    strokeColor: _propTypes2.default.string,
+    strokeOpacity: _propTypes2.default.number,
+    strokeWeight: _propTypes2.default.number,
+    fillColor: _propTypes2.default.string,
+    fillOpacity: _propTypes2.default.number
+  };
+
+  evtNames.forEach(function (e) {
+    return Polygon.propTypes[e] = _propTypes2.default.func;
+  });
+
+  Polygon.defaultProps = {
+    name: 'Polygon'
+  };
+
+  exports.default = Polygon;
+});
+
+/***/ }),
+
+/***/ "./node_modules/google-maps-react/dist/components/Polyline.js":
+/*!********************************************************************!*\
+  !*** ./node_modules/google-maps-react/dist/components/Polyline.js ***!
+  \********************************************************************/
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports, __webpack_require__(/*! react */ "./node_modules/react/index.js"), __webpack_require__(/*! prop-types */ "./node_modules/prop-types/index.js"), __webpack_require__(/*! ../lib/arePathsEqual */ "./node_modules/google-maps-react/dist/lib/arePathsEqual.js"), __webpack_require__(/*! ../lib/String */ "./node_modules/google-maps-react/dist/lib/String.js")], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+		__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+		(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else { var mod; }
+})(this, function (exports, _react, _propTypes, _arePathsEqual, _String) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.Polyline = undefined;
+
+  var _react2 = _interopRequireDefault(_react);
+
+  var _propTypes2 = _interopRequireDefault(_propTypes);
+
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {
+      default: obj
+    };
+  }
+
+  var _extends = Object.assign || function (target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+
+      for (var key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          target[key] = source[key];
+        }
+      }
+    }
+
+    return target;
+  };
+
+  function _objectWithoutProperties(obj, keys) {
+    var target = {};
+
+    for (var i in obj) {
+      if (keys.indexOf(i) >= 0) continue;
+      if (!Object.prototype.hasOwnProperty.call(obj, i)) continue;
+      target[i] = obj[i];
+    }
+
+    return target;
+  }
+
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
+    }
+  }
+
+  var _createClass = function () {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ("value" in descriptor) descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }
+
+    return function (Constructor, protoProps, staticProps) {
+      if (protoProps) defineProperties(Constructor.prototype, protoProps);
+      if (staticProps) defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  }();
+
+  function _possibleConstructorReturn(self, call) {
+    if (!self) {
+      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    }
+
+    return call && (typeof call === "object" || typeof call === "function") ? call : self;
+  }
+
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== "function" && superClass !== null) {
+      throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+    }
+
+    subClass.prototype = Object.create(superClass && superClass.prototype, {
+      constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+    if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+
+  var evtNames = ['click', 'mouseout', 'mouseover'];
+
+  var wrappedPromise = function wrappedPromise() {
+    var wrappedPromise = {},
+        promise = new Promise(function (resolve, reject) {
+      wrappedPromise.resolve = resolve;
+      wrappedPromise.reject = reject;
+    });
+    wrappedPromise.then = promise.then.bind(promise);
+    wrappedPromise.catch = promise.catch.bind(promise);
+    wrappedPromise.promise = promise;
+
+    return wrappedPromise;
+  };
+
+  var Polyline = exports.Polyline = function (_React$Component) {
+    _inherits(Polyline, _React$Component);
+
+    function Polyline() {
+      _classCallCheck(this, Polyline);
+
+      return _possibleConstructorReturn(this, (Polyline.__proto__ || Object.getPrototypeOf(Polyline)).apply(this, arguments));
+    }
+
+    _createClass(Polyline, [{
+      key: 'componentDidMount',
+      value: function componentDidMount() {
+        this.polylinePromise = wrappedPromise();
+        this.renderPolyline();
+      }
+    }, {
+      key: 'componentDidUpdate',
+      value: function componentDidUpdate(prevProps) {
+        if (this.props.map !== prevProps.map || !(0, _arePathsEqual.arePathsEqual)(this.props.path, prevProps.path)) {
+          if (this.polyline) {
+            this.polyline.setMap(null);
+          }
+          this.renderPolyline();
+        }
+      }
+    }, {
+      key: 'componentWillUnmount',
+      value: function componentWillUnmount() {
+        if (this.polyline) {
+          this.polyline.setMap(null);
+        }
+      }
+    }, {
+      key: 'renderPolyline',
+      value: function renderPolyline() {
+        var _this2 = this;
+
+        var _props = this.props,
+            map = _props.map,
+            google = _props.google,
+            path = _props.path,
+            strokeColor = _props.strokeColor,
+            strokeOpacity = _props.strokeOpacity,
+            strokeWeight = _props.strokeWeight,
+            props = _objectWithoutProperties(_props, ['map', 'google', 'path', 'strokeColor', 'strokeOpacity', 'strokeWeight']);
+
+        if (!google) {
+          return null;
+        }
+
+        var params = _extends({
+          map: map,
+          path: path,
+          strokeColor: strokeColor,
+          strokeOpacity: strokeOpacity,
+          strokeWeight: strokeWeight
+        }, props);
+
+        this.polyline = new google.maps.Polyline(params);
+
+        evtNames.forEach(function (e) {
+          _this2.polyline.addListener(e, _this2.handleEvent(e));
+        });
+
+        this.polylinePromise.resolve(this.polyline);
+      }
+    }, {
+      key: 'getPolyline',
+      value: function getPolyline() {
+        return this.polylinePromise;
+      }
+    }, {
+      key: 'handleEvent',
+      value: function handleEvent(evt) {
+        var _this3 = this;
+
+        return function (e) {
+          var evtName = 'on' + (0, _String.camelize)(evt);
+          if (_this3.props[evtName]) {
+            _this3.props[evtName](_this3.props, _this3.polyline, e);
+          }
+        };
+      }
+    }, {
+      key: 'render',
+      value: function render() {
+        return null;
+      }
+    }]);
+
+    return Polyline;
+  }(_react2.default.Component);
+
+  Polyline.propTypes = {
+    path: _propTypes2.default.array,
+    strokeColor: _propTypes2.default.string,
+    strokeOpacity: _propTypes2.default.number,
+    strokeWeight: _propTypes2.default.number
+  };
+
+  evtNames.forEach(function (e) {
+    return Polyline.propTypes[e] = _propTypes2.default.func;
+  });
+
+  Polyline.defaultProps = {
+    name: 'Polyline'
+  };
+
+  exports.default = Polyline;
+});
+
+/***/ }),
+
+/***/ "./node_modules/google-maps-react/dist/components/Rectangle.js":
+/*!*********************************************************************!*\
+  !*** ./node_modules/google-maps-react/dist/components/Rectangle.js ***!
+  \*********************************************************************/
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports, __webpack_require__(/*! react */ "./node_modules/react/index.js"), __webpack_require__(/*! prop-types */ "./node_modules/prop-types/index.js"), __webpack_require__(/*! ../lib/areBoundsEqual */ "./node_modules/google-maps-react/dist/lib/areBoundsEqual.js"), __webpack_require__(/*! ../lib/String */ "./node_modules/google-maps-react/dist/lib/String.js")], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+		__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+		(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else { var mod; }
+})(this, function (exports, _react, _propTypes, _areBoundsEqual, _String) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.Rectangle = undefined;
+
+  var _react2 = _interopRequireDefault(_react);
+
+  var _propTypes2 = _interopRequireDefault(_propTypes);
+
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {
+      default: obj
+    };
+  }
+
+  var _extends = Object.assign || function (target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+
+      for (var key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          target[key] = source[key];
+        }
+      }
+    }
+
+    return target;
+  };
+
+  function _objectWithoutProperties(obj, keys) {
+    var target = {};
+
+    for (var i in obj) {
+      if (keys.indexOf(i) >= 0) continue;
+      if (!Object.prototype.hasOwnProperty.call(obj, i)) continue;
+      target[i] = obj[i];
+    }
+
+    return target;
+  }
+
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
+    }
+  }
+
+  var _createClass = function () {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ("value" in descriptor) descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }
+
+    return function (Constructor, protoProps, staticProps) {
+      if (protoProps) defineProperties(Constructor.prototype, protoProps);
+      if (staticProps) defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  }();
+
+  function _possibleConstructorReturn(self, call) {
+    if (!self) {
+      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    }
+
+    return call && (typeof call === "object" || typeof call === "function") ? call : self;
+  }
+
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== "function" && superClass !== null) {
+      throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+    }
+
+    subClass.prototype = Object.create(superClass && superClass.prototype, {
+      constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+    if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+
+  var evtNames = ['click', 'mouseout', 'mouseover'];
+
+  var wrappedPromise = function wrappedPromise() {
+    var wrappedPromise = {},
+        promise = new Promise(function (resolve, reject) {
+      wrappedPromise.resolve = resolve;
+      wrappedPromise.reject = reject;
+    });
+    wrappedPromise.then = promise.then.bind(promise);
+    wrappedPromise.catch = promise.catch.bind(promise);
+    wrappedPromise.promise = promise;
+
+    return wrappedPromise;
+  };
+
+  var Rectangle = exports.Rectangle = function (_React$Component) {
+    _inherits(Rectangle, _React$Component);
+
+    function Rectangle() {
+      _classCallCheck(this, Rectangle);
+
+      return _possibleConstructorReturn(this, (Rectangle.__proto__ || Object.getPrototypeOf(Rectangle)).apply(this, arguments));
+    }
+
+    _createClass(Rectangle, [{
+      key: 'componentDidMount',
+      value: function componentDidMount() {
+        this.rectanglePromise = wrappedPromise();
+        this.renderRectangle();
+      }
+    }, {
+      key: 'componentDidUpdate',
+      value: function componentDidUpdate(prevProps) {
+        if (this.props.map !== prevProps.map || !(0, _areBoundsEqual.areBoundsEqual)(this.props.bounds, prevProps.bounds)) {
+          if (this.rectangle) {
+            this.rectangle.setMap(null);
+          }
+          this.renderRectangle();
+        }
+      }
+    }, {
+      key: 'componentWillUnmount',
+      value: function componentWillUnmount() {
+        if (this.rectangle) {
+          this.rectangle.setMap(null);
+        }
+      }
+    }, {
+      key: 'renderRectangle',
+      value: function renderRectangle() {
+        var _this2 = this;
+
+        var _props = this.props,
+            map = _props.map,
+            google = _props.google,
+            bounds = _props.bounds,
+            strokeColor = _props.strokeColor,
+            strokeOpacity = _props.strokeOpacity,
+            strokeWeight = _props.strokeWeight,
+            fillColor = _props.fillColor,
+            fillOpacity = _props.fillOpacity,
+            props = _objectWithoutProperties(_props, ['map', 'google', 'bounds', 'strokeColor', 'strokeOpacity', 'strokeWeight', 'fillColor', 'fillOpacity']);
+
+        if (!google) {
+          return null;
+        }
+
+        var params = _extends({
+          map: map,
+          bounds: bounds,
+          strokeColor: strokeColor,
+          strokeOpacity: strokeOpacity,
+          strokeWeight: strokeWeight,
+          fillColor: fillColor,
+          fillOpacity: fillOpacity
+        }, props);
+
+        this.rectangle = new google.maps.Rectangle(params);
+
+        evtNames.forEach(function (e) {
+          _this2.rectangle.addListener(e, _this2.handleEvent(e));
+        });
+
+        this.rectanglePromise.resolve(this.rectangle);
+      }
+    }, {
+      key: 'getRectangle',
+      value: function getRectangle() {
+        return this.rectanglePromise;
+      }
+    }, {
+      key: 'handleEvent',
+      value: function handleEvent(evt) {
+        var _this3 = this;
+
+        return function (e) {
+          var evtName = 'on' + (0, _String.camelize)(evt);
+          if (_this3.props[evtName]) {
+            _this3.props[evtName](_this3.props, _this3.rectangle, e);
+          }
+        };
+      }
+    }, {
+      key: 'render',
+      value: function render() {
+        console.log('hii, ', this.props.bounds);
+        return null;
+      }
+    }]);
+
+    return Rectangle;
+  }(_react2.default.Component);
+
+  Rectangle.propTypes = {
+    bounds: _propTypes2.default.object,
+    strokeColor: _propTypes2.default.string,
+    strokeOpacity: _propTypes2.default.number,
+    strokeWeight: _propTypes2.default.number,
+    fillColor: _propTypes2.default.string,
+    fillOpacity: _propTypes2.default.number
+  };
+
+  evtNames.forEach(function (e) {
+    return Rectangle.propTypes[e] = _propTypes2.default.func;
+  });
+
+  Rectangle.defaultProps = {
+    name: 'Rectangle'
+  };
+
+  exports.default = Rectangle;
+});
+
+/***/ }),
+
+/***/ "./node_modules/google-maps-react/dist/index.js":
+/*!******************************************************!*\
+  !*** ./node_modules/google-maps-react/dist/index.js ***!
+  \******************************************************/
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports, __webpack_require__(/*! ./GoogleApiComponent */ "./node_modules/google-maps-react/dist/GoogleApiComponent.js"), __webpack_require__(/*! ./components/Marker */ "./node_modules/google-maps-react/dist/components/Marker.js"), __webpack_require__(/*! ./components/InfoWindow */ "./node_modules/google-maps-react/dist/components/InfoWindow.js"), __webpack_require__(/*! ./components/HeatMap */ "./node_modules/google-maps-react/dist/components/HeatMap.js"), __webpack_require__(/*! ./components/Polygon */ "./node_modules/google-maps-react/dist/components/Polygon.js"), __webpack_require__(/*! ./components/Polyline */ "./node_modules/google-maps-react/dist/components/Polyline.js"), __webpack_require__(/*! ./components/Circle */ "./node_modules/google-maps-react/dist/components/Circle.js"), __webpack_require__(/*! ./components/Rectangle */ "./node_modules/google-maps-react/dist/components/Rectangle.js"), __webpack_require__(/*! react */ "./node_modules/react/index.js"), __webpack_require__(/*! prop-types */ "./node_modules/prop-types/index.js"), __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js"), __webpack_require__(/*! ./lib/String */ "./node_modules/google-maps-react/dist/lib/String.js"), __webpack_require__(/*! ./lib/cancelablePromise */ "./node_modules/google-maps-react/dist/lib/cancelablePromise.js")], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+		__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+		(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else { var mod; }
+})(this, function (exports, _GoogleApiComponent, _Marker, _InfoWindow, _HeatMap, _Polygon, _Polyline, _Circle, _Rectangle, _react, _propTypes, _reactDom, _String, _cancelablePromise) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.Map = exports.Rectangle = exports.Circle = exports.Polyline = exports.Polygon = exports.HeatMap = exports.InfoWindow = exports.Marker = exports.GoogleApiWrapper = undefined;
+  Object.defineProperty(exports, 'GoogleApiWrapper', {
+    enumerable: true,
+    get: function () {
+      return _GoogleApiComponent.wrapper;
+    }
+  });
+  Object.defineProperty(exports, 'Marker', {
+    enumerable: true,
+    get: function () {
+      return _Marker.Marker;
+    }
+  });
+  Object.defineProperty(exports, 'InfoWindow', {
+    enumerable: true,
+    get: function () {
+      return _InfoWindow.InfoWindow;
+    }
+  });
+  Object.defineProperty(exports, 'HeatMap', {
+    enumerable: true,
+    get: function () {
+      return _HeatMap.HeatMap;
+    }
+  });
+  Object.defineProperty(exports, 'Polygon', {
+    enumerable: true,
+    get: function () {
+      return _Polygon.Polygon;
+    }
+  });
+  Object.defineProperty(exports, 'Polyline', {
+    enumerable: true,
+    get: function () {
+      return _Polyline.Polyline;
+    }
+  });
+  Object.defineProperty(exports, 'Circle', {
+    enumerable: true,
+    get: function () {
+      return _Circle.Circle;
+    }
+  });
+  Object.defineProperty(exports, 'Rectangle', {
+    enumerable: true,
+    get: function () {
+      return _Rectangle.Rectangle;
+    }
+  });
+
+  var _react2 = _interopRequireDefault(_react);
+
+  var _propTypes2 = _interopRequireDefault(_propTypes);
+
+  var _reactDom2 = _interopRequireDefault(_reactDom);
+
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {
+      default: obj
+    };
+  }
+
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
+    }
+  }
+
+  var _createClass = function () {
+    function defineProperties(target, props) {
+      for (var i = 0; i < props.length; i++) {
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ("value" in descriptor) descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+      }
+    }
+
+    return function (Constructor, protoProps, staticProps) {
+      if (protoProps) defineProperties(Constructor.prototype, protoProps);
+      if (staticProps) defineProperties(Constructor, staticProps);
+      return Constructor;
+    };
+  }();
+
+  function _possibleConstructorReturn(self, call) {
+    if (!self) {
+      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    }
+
+    return call && (typeof call === "object" || typeof call === "function") ? call : self;
+  }
+
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== "function" && superClass !== null) {
+      throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+    }
+
+    subClass.prototype = Object.create(superClass && superClass.prototype, {
+      constructor: {
+        value: subClass,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+    if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+  }
+
+  var mapStyles = {
+    container: {
+      position: 'absolute',
+      width: '100%',
+      height: '100%'
+    },
+    map: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      top: 0
+    }
+  };
+
+  var evtNames = ['ready', 'click', 'dragend', 'recenter', 'bounds_changed', 'center_changed', 'dblclick', 'dragstart', 'heading_change', 'idle', 'maptypeid_changed', 'mousemove', 'mouseout', 'mouseover', 'projection_changed', 'resize', 'rightclick', 'tilesloaded', 'tilt_changed', 'zoom_changed'];
+
+  var Map = exports.Map = function (_React$Component) {
+    _inherits(Map, _React$Component);
+
+    function Map(props) {
+      _classCallCheck(this, Map);
+
+      var _this = _possibleConstructorReturn(this, (Map.__proto__ || Object.getPrototypeOf(Map)).call(this, props));
+
+      if (!props.hasOwnProperty('google')) {
+        throw new Error('You must include a `google` prop');
+      }
+
+      _this.listeners = {};
+      _this.state = {
+        currentLocation: {
+          lat: _this.props.initialCenter.lat,
+          lng: _this.props.initialCenter.lng
+        }
+      };
+
+      _this.mapRef = _react2.default.createRef();
+      return _this;
+    }
+
+    _createClass(Map, [{
+      key: 'componentDidMount',
+      value: function componentDidMount() {
+        var _this2 = this;
+
+        if (this.props.centerAroundCurrentLocation) {
+          if (navigator && navigator.geolocation) {
+            this.geoPromise = (0, _cancelablePromise.makeCancelable)(new Promise(function (resolve, reject) {
+              navigator.geolocation.getCurrentPosition(resolve, reject);
+            }));
+
+            this.geoPromise.promise.then(function (pos) {
+              var coords = pos.coords;
+              _this2.setState({
+                currentLocation: {
+                  lat: coords.latitude,
+                  lng: coords.longitude
+                }
+              });
+            }).catch(function (e) {
+              return e;
+            });
+          }
+        }
+        this.loadMap();
+      }
+    }, {
+      key: 'componentDidUpdate',
+      value: function componentDidUpdate(prevProps, prevState) {
+        if (prevProps.google !== this.props.google) {
+          this.loadMap();
+        }
+        if (this.props.visible !== prevProps.visible) {
+          this.restyleMap();
+        }
+        if (this.props.zoom !== prevProps.zoom) {
+          this.map.setZoom(this.props.zoom);
+        }
+        if (this.props.center !== prevProps.center) {
+          this.setState({
+            currentLocation: this.props.center
+          });
+        }
+        if (prevState.currentLocation !== this.state.currentLocation) {
+          this.recenterMap();
+        }
+        if (this.props.bounds && this.props.bounds !== prevProps.bounds) {
+          this.map.fitBounds(this.props.bounds);
+        }
+      }
+    }, {
+      key: 'componentWillUnmount',
+      value: function componentWillUnmount() {
+        var _this3 = this;
+
+        var google = this.props.google;
+
+        if (this.geoPromise) {
+          this.geoPromise.cancel();
+        }
+        Object.keys(this.listeners).forEach(function (e) {
+          google.maps.event.removeListener(_this3.listeners[e]);
+        });
+      }
+    }, {
+      key: 'loadMap',
+      value: function loadMap() {
+        var _this4 = this;
+
+        if (this.props && this.props.google) {
+          var google = this.props.google;
+
+          var maps = google.maps;
+
+          var mapRef = this.mapRef.current;
+          var node = _reactDom2.default.findDOMNode(mapRef);
+          var curr = this.state.currentLocation;
+          var center = new maps.LatLng(curr.lat, curr.lng);
+
+          var mapTypeIds = this.props.google.maps.MapTypeId || {};
+          var mapTypeFromProps = String(this.props.mapType).toUpperCase();
+
+          var mapConfig = Object.assign({}, {
+            mapTypeId: mapTypeIds[mapTypeFromProps],
+            center: center,
+            zoom: this.props.zoom,
+            maxZoom: this.props.maxZoom,
+            minZoom: this.props.minZoom,
+            clickableIcons: !!this.props.clickableIcons,
+            disableDefaultUI: this.props.disableDefaultUI,
+            zoomControl: this.props.zoomControl,
+            zoomControlOptions: this.props.zoomControlOptions,
+            mapTypeControl: this.props.mapTypeControl,
+            mapTypeControlOptions: this.props.mapTypeControlOptions,
+            scaleControl: this.props.scaleControl,
+            streetViewControl: this.props.streetViewControl,
+            streetViewControlOptions: this.props.streetViewControlOptions,
+            panControl: this.props.panControl,
+            rotateControl: this.props.rotateControl,
+            fullscreenControl: this.props.fullscreenControl,
+            scrollwheel: this.props.scrollwheel,
+            draggable: this.props.draggable,
+            draggableCursor: this.props.draggableCursor,
+            keyboardShortcuts: this.props.keyboardShortcuts,
+            disableDoubleClickZoom: this.props.disableDoubleClickZoom,
+            noClear: this.props.noClear,
+            styles: this.props.styles,
+            gestureHandling: this.props.gestureHandling
+          });
+
+          Object.keys(mapConfig).forEach(function (key) {
+            // Allow to configure mapConfig with 'false'
+            if (mapConfig[key] === null) {
+              delete mapConfig[key];
+            }
+          });
+
+          this.map = new maps.Map(node, mapConfig);
+
+          evtNames.forEach(function (e) {
+            _this4.listeners[e] = _this4.map.addListener(e, _this4.handleEvent(e));
+          });
+          maps.event.trigger(this.map, 'ready');
+          this.forceUpdate();
+        }
+      }
+    }, {
+      key: 'handleEvent',
+      value: function handleEvent(evtName) {
+        var _this5 = this;
+
+        var timeout = void 0;
+        var handlerName = 'on' + (0, _String.camelize)(evtName);
+
+        return function (e) {
+          if (timeout) {
+            clearTimeout(timeout);
+            timeout = null;
+          }
+          timeout = setTimeout(function () {
+            if (_this5.props[handlerName]) {
+              _this5.props[handlerName](_this5.props, _this5.map, e);
+            }
+          }, 0);
+        };
+      }
+    }, {
+      key: 'recenterMap',
+      value: function recenterMap() {
+        var map = this.map;
+
+        var google = this.props.google;
+
+
+        if (!google) return;
+        var maps = google.maps;
+
+        if (map) {
+          var center = this.state.currentLocation;
+          if (!(center instanceof google.maps.LatLng)) {
+            center = new google.maps.LatLng(center.lat, center.lng);
+          }
+          // map.panTo(center)
+          map.setCenter(center);
+          maps.event.trigger(map, 'recenter');
+        }
+      }
+    }, {
+      key: 'restyleMap',
+      value: function restyleMap() {
+        if (this.map) {
+          var google = this.props.google;
+
+          google.maps.event.trigger(this.map, 'resize');
+        }
+      }
+    }, {
+      key: 'renderChildren',
+      value: function renderChildren() {
+        var _this6 = this;
+
+        var children = this.props.children;
+
+
+        if (!children) return;
+
+        return _react2.default.Children.map(children, function (c) {
+          if (!c) return;
+          return _react2.default.cloneElement(c, {
+            map: _this6.map,
+            google: _this6.props.google,
+            mapCenter: _this6.state.currentLocation
+          });
+        });
+      }
+    }, {
+      key: 'render',
+      value: function render() {
+        var style = Object.assign({}, mapStyles.map, this.props.style, {
+          display: this.props.visible ? 'inherit' : 'none'
+        });
+
+        var containerStyles = Object.assign({}, mapStyles.container, this.props.containerStyle);
+
+        return _react2.default.createElement(
+          'div',
+          { style: containerStyles, className: this.props.className },
+          _react2.default.createElement(
+            'div',
+            { style: style, ref: this.mapRef },
+            'Loading map...'
+          ),
+          this.renderChildren()
+        );
+      }
+    }]);
+
+    return Map;
+  }(_react2.default.Component);
+
+  Map.propTypes = {
+    google: _propTypes2.default.object,
+    zoom: _propTypes2.default.number,
+    centerAroundCurrentLocation: _propTypes2.default.bool,
+    center: _propTypes2.default.object,
+    initialCenter: _propTypes2.default.object,
+    className: _propTypes2.default.string,
+    style: _propTypes2.default.object,
+    containerStyle: _propTypes2.default.object,
+    visible: _propTypes2.default.bool,
+    mapType: _propTypes2.default.string,
+    maxZoom: _propTypes2.default.number,
+    minZoom: _propTypes2.default.number,
+    clickableIcons: _propTypes2.default.bool,
+    disableDefaultUI: _propTypes2.default.bool,
+    zoomControl: _propTypes2.default.bool,
+    zoomControlOptions: _propTypes2.default.object,
+    mapTypeControl: _propTypes2.default.bool,
+    mapTypeControlOptions: _propTypes2.default.bool,
+    scaleControl: _propTypes2.default.bool,
+    streetViewControl: _propTypes2.default.bool,
+    streetViewControlOptions: _propTypes2.default.object,
+    panControl: _propTypes2.default.bool,
+    rotateControl: _propTypes2.default.bool,
+    fullscreenControl: _propTypes2.default.bool,
+    scrollwheel: _propTypes2.default.bool,
+    draggable: _propTypes2.default.bool,
+    draggableCursor: _propTypes2.default.string,
+    keyboardShortcuts: _propTypes2.default.bool,
+    disableDoubleClickZoom: _propTypes2.default.bool,
+    noClear: _propTypes2.default.bool,
+    styles: _propTypes2.default.array,
+    gestureHandling: _propTypes2.default.string,
+    bounds: _propTypes2.default.object
+  };
+
+  evtNames.forEach(function (e) {
+    return Map.propTypes[(0, _String.camelize)(e)] = _propTypes2.default.func;
+  });
+
+  Map.defaultProps = {
+    zoom: 14,
+    initialCenter: {
+      lat: 37.774929,
+      lng: -122.419416
+    },
+    center: {},
+    centerAroundCurrentLocation: false,
+    style: {},
+    containerStyle: {},
+    visible: true
+  };
+
+  exports.default = Map;
+});
+
+/***/ }),
+
+/***/ "./node_modules/google-maps-react/dist/lib/GoogleApi.js":
+/*!**************************************************************!*\
+  !*** ./node_modules/google-maps-react/dist/lib/GoogleApi.js ***!
+  \**************************************************************/
+/***/ (function(module, exports) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+		__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+		(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else { var mod; }
+})(this, function (exports) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  var GoogleApi = exports.GoogleApi = function GoogleApi(opts) {
+    opts = opts || {};
+
+    if (!opts.hasOwnProperty('apiKey')) {
+      throw new Error('You must pass an apiKey to use GoogleApi');
+    }
+
+    var apiKey = opts.apiKey;
+    var libraries = opts.libraries || ['places'];
+    var client = opts.client;
+    var URL = opts.url || 'https://maps.googleapis.com/maps/api/js';
+
+    var googleVersion = opts.version || '3.31';
+
+    var script = null;
+    var google = typeof window !== 'undefined' && window.google || null;
+    var loading = false;
+    var channel = null;
+    var language = opts.language;
+    var region = opts.region || null;
+
+    var onLoadEvents = [];
+
+    var url = function url() {
+      var url = URL;
+      var params = {
+        key: apiKey,
+        callback: 'CALLBACK_NAME',
+        libraries: libraries.join(','),
+        client: client,
+        v: googleVersion,
+        channel: channel,
+        language: language,
+        region: region,
+        onerror: 'ERROR_FUNCTION'
+      };
+
+      var paramStr = Object.keys(params).filter(function (k) {
+        return !!params[k];
+      }).map(function (k) {
+        return k + '=' + params[k];
+      }).join('&');
+
+      return url + '?' + paramStr;
+    };
+
+    return url();
+  };
+
+  exports.default = GoogleApi;
+});
+
+/***/ }),
+
+/***/ "./node_modules/google-maps-react/dist/lib/ScriptCache.js":
+/*!****************************************************************!*\
+  !*** ./node_modules/google-maps-react/dist/lib/ScriptCache.js ***!
+  \****************************************************************/
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+    if (true) {
+        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports, __webpack_require__(/*! ./windowOrGlobal */ "./node_modules/google-maps-react/dist/lib/windowOrGlobal.js")], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+		__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+		(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+    } else { var mod; }
+})(this, function (exports, window) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    var counter = 0;
+    var scriptMap = typeof window !== 'undefined' && window._scriptMap || new Map();
+    var ScriptCache = exports.ScriptCache = function (global) {
+        global._scriptMap = global._scriptMap || scriptMap;
+        return function ScriptCache(scripts) {
+            var Cache = {};
+
+            Cache._onLoad = function (key) {
+                return function (cb) {
+                    var registered = true;
+
+                    function unregister() {
+                        registered = false;
+                    }
+
+                    var stored = scriptMap.get(key);
+
+                    if (stored) {
+                        stored.promise.then(function () {
+                            if (registered) {
+                                stored.error ? cb(stored.error) : cb(null, stored);
+                            }
+
+                            return stored;
+                        }).catch(function (error) {
+                            return cb(error);
+                        });
+                    } else {
+                        // TODO:
+                    }
+
+                    return unregister;
+                };
+            };
+
+            Cache._scriptTag = function (key, src) {
+                if (!scriptMap.has(key)) {
+                    // Server side rendering environments don't always have access to the `document` global.
+                    // In these cases, we're not going to be able to return a script tag, so just return null.
+                    if (typeof document === 'undefined') return null;
+
+                    var tag = document.createElement('script');
+                    var promise = new Promise(function (resolve, reject) {
+                        var body = document.getElementsByTagName('body')[0];
+
+                        tag.type = 'text/javascript';
+                        tag.async = false; // Load in order
+
+                        var cbName = 'loaderCB' + counter++ + Date.now();
+                        var cb = void 0;
+
+                        var handleResult = function handleResult(state) {
+                            return function (evt) {
+                                var stored = scriptMap.get(key);
+                                if (state === 'loaded') {
+                                    stored.resolved = true;
+                                    resolve(src);
+                                    // stored.handlers.forEach(h => h.call(null, stored))
+                                    // stored.handlers = []
+                                } else if (state === 'error') {
+                                    stored.errored = true;
+                                    // stored.handlers.forEach(h => h.call(null, stored))
+                                    // stored.handlers = [];
+                                    reject(evt);
+                                }
+                                stored.loaded = true;
+
+                                cleanup();
+                            };
+                        };
+
+                        var cleanup = function cleanup() {
+                            if (global[cbName] && typeof global[cbName] === 'function') {
+                                global[cbName] = null;
+                                delete global[cbName];
+                            }
+                        };
+
+                        tag.onload = handleResult('loaded');
+                        tag.onerror = handleResult('error');
+                        tag.onreadystatechange = function () {
+                            handleResult(tag.readyState);
+                        };
+
+                        // Pick off callback, if there is one
+                        if (src.match(/callback=CALLBACK_NAME/)) {
+                            src = src.replace(/(callback=)[^\&]+/, '$1' + cbName);
+                            cb = window[cbName] = tag.onload;
+                        } else {
+                            tag.addEventListener('load', tag.onload);
+                        }
+                        tag.addEventListener('error', tag.onerror);
+
+                        tag.src = src;
+                        body.appendChild(tag);
+
+                        return tag;
+                    });
+                    var initialState = {
+                        loaded: false,
+                        error: false,
+                        promise: promise,
+                        tag: tag
+                    };
+                    scriptMap.set(key, initialState);
+                }
+                return scriptMap.get(key).tag;
+            };
+
+            // let scriptTags = document.querySelectorAll('script')
+            //
+            // NodeList.prototype.filter = Array.prototype.filter;
+            // NodeList.prototype.map = Array.prototype.map;
+            // const initialScripts = scriptTags
+            //   .filter(s => !!s.src)
+            //   .map(s => s.src.split('?')[0])
+            //   .reduce((memo, script) => {
+            //     memo[script] = script;
+            //     return memo;
+            //   }, {});
+
+            Object.keys(scripts).forEach(function (key) {
+                var script = scripts[key];
+
+                var tag = window._scriptMap.has(key) ? window._scriptMap.get(key).tag : Cache._scriptTag(key, script);
+
+                Cache[key] = {
+                    tag: tag,
+                    onLoad: Cache._onLoad(key)
+                };
+            });
+
+            return Cache;
+        };
+    }(window);
+
+    exports.default = ScriptCache;
+});
+
+/***/ }),
+
+/***/ "./node_modules/google-maps-react/dist/lib/String.js":
+/*!***********************************************************!*\
+  !*** ./node_modules/google-maps-react/dist/lib/String.js ***!
+  \***********************************************************/
+/***/ (function(module, exports) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+		__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+		(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else { var mod; }
+})(this, function (exports) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  var camelize = exports.camelize = function camelize(str) {
+    return str.split('_').map(function (word) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    }).join('');
+  };
+});
+
+/***/ }),
+
+/***/ "./node_modules/google-maps-react/dist/lib/areBoundsEqual.js":
+/*!*******************************************************************!*\
+  !*** ./node_modules/google-maps-react/dist/lib/areBoundsEqual.js ***!
+  \*******************************************************************/
+/***/ (function(module, exports) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+		__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+		(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else { var mod; }
+})(this, function (exports) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+
+  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+    return typeof obj;
+  } : function (obj) {
+    return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+  };
+
+  /**
+   * Compares two bound objects.
+   */
+
+  var areBoundsEqual = exports.areBoundsEqual = function areBoundsEqual(boundA, boundB) {
+    if (boundA === boundB) {
+      return true;
+    }
+    if (!(boundA instanceof Object) || !(boundB instanceof Object)) {
+      return false;
+    }
+    if (Object.keys(boundA).length !== Object.keys(boundB).length) {
+      return false;
+    }
+    if (!areValidBounds(boundA) || !areValidBounds(boundB)) {
+      return false;
+    }
+    var _iteratorNormalCompletion = true;
+    var _didIteratorError = false;
+    var _iteratorError = undefined;
+
+    try {
+      for (var _iterator = Object.keys(boundA)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+        var key = _step.value;
+
+        if (boundA[key] !== boundB[key]) {
+          return false;
+        }
+      }
+    } catch (err) {
+      _didIteratorError = true;
+      _iteratorError = err;
+    } finally {
+      try {
+        if (!_iteratorNormalCompletion && _iterator.return) {
+          _iterator.return();
+        }
+      } finally {
+        if (_didIteratorError) {
+          throw _iteratorError;
+        }
+      }
+    }
+
+    return true;
+  };
+
+  /**
+   * Helper that checks whether an array consists of objects
+   * with lat and lng properties
+   * @param {object} elem the element to check
+   * @returns {boolean} whether or not it's valid
+   */
+  var areValidBounds = function areValidBounds(elem) {
+    return elem !== null && (typeof elem === 'undefined' ? 'undefined' : _typeof(elem)) === 'object' && elem.hasOwnProperty('north') && elem.hasOwnProperty('south') && elem.hasOwnProperty('east') && elem.hasOwnProperty('west');
+  };
+});
+
+/***/ }),
+
+/***/ "./node_modules/google-maps-react/dist/lib/arePathsEqual.js":
+/*!******************************************************************!*\
+  !*** ./node_modules/google-maps-react/dist/lib/arePathsEqual.js ***!
+  \******************************************************************/
+/***/ (function(module, exports) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+		__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+		(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else { var mod; }
+})(this, function (exports) {
+  'use strict';
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+
+  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+    return typeof obj;
+  } : function (obj) {
+    return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+  };
+
+  /**
+   * Compares two path arrays of LatLng objects.
+   */
+
+  var arePathsEqual = exports.arePathsEqual = function arePathsEqual(pathA, pathB) {
+    if (pathA === pathB) {
+      return true;
+    }
+    if (!Array.isArray(pathA) || !Array.isArray(pathB)) {
+      return false;
+    }
+    if (pathA.length !== pathB.length) {
+      return false;
+    }
+    for (var i = 0; i < pathA.length; ++i) {
+      if (pathA[i] === pathB[i]) {
+        continue;
+      }
+      if (!isValidLatLng(pathA[i]) || !isValidLatLng(pathB[i])) {
+        return false;
+      }
+      if (pathB[i].lat !== pathA[i].lat || pathB[i].lng !== pathA[i].lng) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  /**
+   * Helper that checks whether an array consists of objects
+   * with lat and lng properties
+   * @param {object} elem the element to check
+   * @returns {boolean} whether or not it's valid
+   */
+  var isValidLatLng = function isValidLatLng(elem) {
+    return elem !== null && (typeof elem === 'undefined' ? 'undefined' : _typeof(elem)) === 'object' && elem.hasOwnProperty('lat') && elem.hasOwnProperty('lng');
+  };
+});
+
+/***/ }),
+
+/***/ "./node_modules/google-maps-react/dist/lib/cancelablePromise.js":
+/*!**********************************************************************!*\
+  !*** ./node_modules/google-maps-react/dist/lib/cancelablePromise.js ***!
+  \**********************************************************************/
+/***/ (function(module, exports) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [exports], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+		__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+		(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else { var mod; }
+})(this, function (exports) {
+  "use strict";
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  // https://facebook.github.io/react/blog/2015/12/16/ismounted-antipattern.html
+
+  var makeCancelable = exports.makeCancelable = function makeCancelable(promise) {
+    var hasCanceled_ = false;
+
+    var wrappedPromise = new Promise(function (resolve, reject) {
+      promise.then(function (val) {
+        return hasCanceled_ ? reject({ isCanceled: true }) : resolve(val);
+      });
+      promise.catch(function (error) {
+        return hasCanceled_ ? reject({ isCanceled: true }) : reject(error);
+      });
+    });
+
+    return {
+      promise: wrappedPromise,
+      cancel: function cancel() {
+        hasCanceled_ = true;
+      }
+    };
+  };
+});
+
+/***/ }),
+
+/***/ "./node_modules/google-maps-react/dist/lib/windowOrGlobal.js":
+/*!*******************************************************************!*\
+  !*** ./node_modules/google-maps-react/dist/lib/windowOrGlobal.js ***!
+  \*******************************************************************/
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;(function (global, factory) {
+  if (true) {
+    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [module], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+		__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+		(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else { var mod; }
+})(this, function (module) {
+  'use strict';
+
+  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+    return typeof obj;
+  } : function (obj) {
+    return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+  };
+
+  module.exports = (typeof self === 'undefined' ? 'undefined' : _typeof(self)) === 'object' && self.self === self && self || (typeof __webpack_require__.g === 'undefined' ? 'undefined' : _typeof(__webpack_require__.g)) === 'object' && __webpack_require__.g.global === __webpack_require__.g && __webpack_require__.g || undefined;
+});
 
 /***/ }),
 
@@ -40908,6 +51652,4060 @@ module.exports = ReactPropTypesSecret;
 
 /***/ }),
 
+/***/ "./node_modules/react-dom/cjs/react-dom-server.browser.development.js":
+/*!****************************************************************************!*\
+  !*** ./node_modules/react-dom/cjs/react-dom-server.browser.development.js ***!
+  \****************************************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+/** @license React v16.14.0
+ * react-dom-server.browser.development.js
+ *
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+
+
+
+
+if (true) {
+  (function() {
+'use strict';
+
+var React = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+var _assign = __webpack_require__(/*! object-assign */ "./node_modules/object-assign/index.js");
+var checkPropTypes = __webpack_require__(/*! prop-types/checkPropTypes */ "./node_modules/prop-types/checkPropTypes.js");
+
+// Do not require this module directly! Use normal `invariant` calls with
+// template literal strings. The messages will be replaced with error codes
+// during build.
+function formatProdErrorMessage(code) {
+  var url = 'https://reactjs.org/docs/error-decoder.html?invariant=' + code;
+
+  for (var i = 1; i < arguments.length; i++) {
+    url += '&args[]=' + encodeURIComponent(arguments[i]);
+  }
+
+  return "Minified React error #" + code + "; visit " + url + " for the full message or " + 'use the non-minified dev environment for full errors and additional ' + 'helpful warnings.';
+}
+
+var ReactVersion = '16.14.0';
+
+var ReactSharedInternals = React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED; // Prevent newer renderers from RTE when used with older react package versions.
+// Current owner and dispatcher used to share the same ref,
+// but PR #14548 split them out to better support the react-debug-tools package.
+
+if (!ReactSharedInternals.hasOwnProperty('ReactCurrentDispatcher')) {
+  ReactSharedInternals.ReactCurrentDispatcher = {
+    current: null
+  };
+}
+
+if (!ReactSharedInternals.hasOwnProperty('ReactCurrentBatchConfig')) {
+  ReactSharedInternals.ReactCurrentBatchConfig = {
+    suspense: null
+  };
+}
+
+// by calls to these methods by a Babel plugin.
+//
+// In PROD (or in packages without access to React internals),
+// they are left as they are instead.
+
+function warn(format) {
+  {
+    for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+      args[_key - 1] = arguments[_key];
+    }
+
+    printWarning('warn', format, args);
+  }
+}
+function error(format) {
+  {
+    for (var _len2 = arguments.length, args = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+      args[_key2 - 1] = arguments[_key2];
+    }
+
+    printWarning('error', format, args);
+  }
+}
+
+function printWarning(level, format, args) {
+  // When changing this logic, you might want to also
+  // update consoleWithStackDev.www.js as well.
+  {
+    var hasExistingStack = args.length > 0 && typeof args[args.length - 1] === 'string' && args[args.length - 1].indexOf('\n    in') === 0;
+
+    if (!hasExistingStack) {
+      var ReactDebugCurrentFrame = ReactSharedInternals.ReactDebugCurrentFrame;
+      var stack = ReactDebugCurrentFrame.getStackAddendum();
+
+      if (stack !== '') {
+        format += '%s';
+        args = args.concat([stack]);
+      }
+    }
+
+    var argsWithFormat = args.map(function (item) {
+      return '' + item;
+    }); // Careful: RN currently depends on this prefix
+
+    argsWithFormat.unshift('Warning: ' + format); // We intentionally don't use spread (or .apply) directly because it
+    // breaks IE9: https://github.com/facebook/react/issues/13610
+    // eslint-disable-next-line react-internal/no-production-logging
+
+    Function.prototype.apply.call(console[level], console, argsWithFormat);
+
+    try {
+      // --- Welcome to debugging React ---
+      // This error was thrown as a convenience so that you can use this stack
+      // to find the callsite that caused this warning to fire.
+      var argIndex = 0;
+      var message = 'Warning: ' + format.replace(/%s/g, function () {
+        return args[argIndex++];
+      });
+      throw new Error(message);
+    } catch (x) {}
+  }
+}
+
+// The Symbol used to tag the ReactElement-like types. If there is no native Symbol
+// nor polyfill, then a plain number is used for performance.
+var hasSymbol = typeof Symbol === 'function' && Symbol.for;
+var REACT_PORTAL_TYPE = hasSymbol ? Symbol.for('react.portal') : 0xeaca;
+var REACT_FRAGMENT_TYPE = hasSymbol ? Symbol.for('react.fragment') : 0xeacb;
+var REACT_STRICT_MODE_TYPE = hasSymbol ? Symbol.for('react.strict_mode') : 0xeacc;
+var REACT_PROFILER_TYPE = hasSymbol ? Symbol.for('react.profiler') : 0xead2;
+var REACT_PROVIDER_TYPE = hasSymbol ? Symbol.for('react.provider') : 0xeacd;
+var REACT_CONTEXT_TYPE = hasSymbol ? Symbol.for('react.context') : 0xeace; // TODO: We don't use AsyncMode or ConcurrentMode anymore. They were temporary
+var REACT_CONCURRENT_MODE_TYPE = hasSymbol ? Symbol.for('react.concurrent_mode') : 0xeacf;
+var REACT_FORWARD_REF_TYPE = hasSymbol ? Symbol.for('react.forward_ref') : 0xead0;
+var REACT_SUSPENSE_TYPE = hasSymbol ? Symbol.for('react.suspense') : 0xead1;
+var REACT_SUSPENSE_LIST_TYPE = hasSymbol ? Symbol.for('react.suspense_list') : 0xead8;
+var REACT_MEMO_TYPE = hasSymbol ? Symbol.for('react.memo') : 0xead3;
+var REACT_LAZY_TYPE = hasSymbol ? Symbol.for('react.lazy') : 0xead4;
+var REACT_BLOCK_TYPE = hasSymbol ? Symbol.for('react.block') : 0xead9;
+var REACT_FUNDAMENTAL_TYPE = hasSymbol ? Symbol.for('react.fundamental') : 0xead5;
+var REACT_SCOPE_TYPE = hasSymbol ? Symbol.for('react.scope') : 0xead7;
+
+var Uninitialized = -1;
+var Pending = 0;
+var Resolved = 1;
+var Rejected = 2;
+function refineResolvedLazyComponent(lazyComponent) {
+  return lazyComponent._status === Resolved ? lazyComponent._result : null;
+}
+function initializeLazyComponentType(lazyComponent) {
+  if (lazyComponent._status === Uninitialized) {
+    lazyComponent._status = Pending;
+    var ctor = lazyComponent._ctor;
+    var thenable = ctor();
+    lazyComponent._result = thenable;
+    thenable.then(function (moduleObject) {
+      if (lazyComponent._status === Pending) {
+        var defaultExport = moduleObject.default;
+
+        {
+          if (defaultExport === undefined) {
+            error('lazy: Expected the result of a dynamic import() call. ' + 'Instead received: %s\n\nYour code should look like: \n  ' + "const MyComponent = lazy(() => import('./MyComponent'))", moduleObject);
+          }
+        }
+
+        lazyComponent._status = Resolved;
+        lazyComponent._result = defaultExport;
+      }
+    }, function (error) {
+      if (lazyComponent._status === Pending) {
+        lazyComponent._status = Rejected;
+        lazyComponent._result = error;
+      }
+    });
+  }
+}
+
+function getWrappedName(outerType, innerType, wrapperName) {
+  var functionName = innerType.displayName || innerType.name || '';
+  return outerType.displayName || (functionName !== '' ? wrapperName + "(" + functionName + ")" : wrapperName);
+}
+
+function getComponentName(type) {
+  if (type == null) {
+    // Host root, text node or just invalid type.
+    return null;
+  }
+
+  {
+    if (typeof type.tag === 'number') {
+      error('Received an unexpected object in getComponentName(). ' + 'This is likely a bug in React. Please file an issue.');
+    }
+  }
+
+  if (typeof type === 'function') {
+    return type.displayName || type.name || null;
+  }
+
+  if (typeof type === 'string') {
+    return type;
+  }
+
+  switch (type) {
+    case REACT_FRAGMENT_TYPE:
+      return 'Fragment';
+
+    case REACT_PORTAL_TYPE:
+      return 'Portal';
+
+    case REACT_PROFILER_TYPE:
+      return "Profiler";
+
+    case REACT_STRICT_MODE_TYPE:
+      return 'StrictMode';
+
+    case REACT_SUSPENSE_TYPE:
+      return 'Suspense';
+
+    case REACT_SUSPENSE_LIST_TYPE:
+      return 'SuspenseList';
+  }
+
+  if (typeof type === 'object') {
+    switch (type.$$typeof) {
+      case REACT_CONTEXT_TYPE:
+        return 'Context.Consumer';
+
+      case REACT_PROVIDER_TYPE:
+        return 'Context.Provider';
+
+      case REACT_FORWARD_REF_TYPE:
+        return getWrappedName(type, type.render, 'ForwardRef');
+
+      case REACT_MEMO_TYPE:
+        return getComponentName(type.type);
+
+      case REACT_BLOCK_TYPE:
+        return getComponentName(type.render);
+
+      case REACT_LAZY_TYPE:
+        {
+          var thenable = type;
+          var resolvedThenable = refineResolvedLazyComponent(thenable);
+
+          if (resolvedThenable) {
+            return getComponentName(resolvedThenable);
+          }
+
+          break;
+        }
+    }
+  }
+
+  return null;
+}
+
+var BEFORE_SLASH_RE = /^(.*)[\\\/]/;
+function describeComponentFrame (name, source, ownerName) {
+  var sourceInfo = '';
+
+  if (source) {
+    var path = source.fileName;
+    var fileName = path.replace(BEFORE_SLASH_RE, '');
+
+    {
+      // In DEV, include code for a common special case:
+      // prefer "folder/index.js" instead of just "index.js".
+      if (/^index\./.test(fileName)) {
+        var match = path.match(BEFORE_SLASH_RE);
+
+        if (match) {
+          var pathBeforeSlash = match[1];
+
+          if (pathBeforeSlash) {
+            var folderName = pathBeforeSlash.replace(BEFORE_SLASH_RE, '');
+            fileName = folderName + '/' + fileName;
+          }
+        }
+      }
+    }
+
+    sourceInfo = ' (at ' + fileName + ':' + source.lineNumber + ')';
+  } else if (ownerName) {
+    sourceInfo = ' (created by ' + ownerName + ')';
+  }
+
+  return '\n    in ' + (name || 'Unknown') + sourceInfo;
+}
+
+var enableSuspenseServerRenderer = false;
+
+var enableDeprecatedFlareAPI = false; // Experimental Host Component support.
+
+var ReactDebugCurrentFrame;
+var didWarnAboutInvalidateContextType;
+
+{
+  ReactDebugCurrentFrame = ReactSharedInternals.ReactDebugCurrentFrame;
+  didWarnAboutInvalidateContextType = new Set();
+}
+
+var emptyObject = {};
+
+{
+  Object.freeze(emptyObject);
+}
+
+function maskContext(type, context) {
+  var contextTypes = type.contextTypes;
+
+  if (!contextTypes) {
+    return emptyObject;
+  }
+
+  var maskedContext = {};
+
+  for (var contextName in contextTypes) {
+    maskedContext[contextName] = context[contextName];
+  }
+
+  return maskedContext;
+}
+
+function checkContextTypes(typeSpecs, values, location) {
+  {
+    checkPropTypes(typeSpecs, values, location, 'Component', ReactDebugCurrentFrame.getCurrentStack);
+  }
+}
+
+function validateContextBounds(context, threadID) {
+  // If we don't have enough slots in this context to store this threadID,
+  // fill it in without leaving any holes to ensure that the VM optimizes
+  // this as non-holey index properties.
+  // (Note: If `react` package is < 16.6, _threadCount is undefined.)
+  for (var i = context._threadCount | 0; i <= threadID; i++) {
+    // We assume that this is the same as the defaultValue which might not be
+    // true if we're rendering inside a secondary renderer but they are
+    // secondary because these use cases are very rare.
+    context[i] = context._currentValue2;
+    context._threadCount = i + 1;
+  }
+}
+function processContext(type, context, threadID, isClass) {
+  if (isClass) {
+    var contextType = type.contextType;
+
+    {
+      if ('contextType' in type) {
+        var isValid = // Allow null for conditional declaration
+        contextType === null || contextType !== undefined && contextType.$$typeof === REACT_CONTEXT_TYPE && contextType._context === undefined; // Not a <Context.Consumer>
+
+        if (!isValid && !didWarnAboutInvalidateContextType.has(type)) {
+          didWarnAboutInvalidateContextType.add(type);
+          var addendum = '';
+
+          if (contextType === undefined) {
+            addendum = ' However, it is set to undefined. ' + 'This can be caused by a typo or by mixing up named and default imports. ' + 'This can also happen due to a circular dependency, so ' + 'try moving the createContext() call to a separate file.';
+          } else if (typeof contextType !== 'object') {
+            addendum = ' However, it is set to a ' + typeof contextType + '.';
+          } else if (contextType.$$typeof === REACT_PROVIDER_TYPE) {
+            addendum = ' Did you accidentally pass the Context.Provider instead?';
+          } else if (contextType._context !== undefined) {
+            // <Context.Consumer>
+            addendum = ' Did you accidentally pass the Context.Consumer instead?';
+          } else {
+            addendum = ' However, it is set to an object with keys {' + Object.keys(contextType).join(', ') + '}.';
+          }
+
+          error('%s defines an invalid contextType. ' + 'contextType should point to the Context object returned by React.createContext().%s', getComponentName(type) || 'Component', addendum);
+        }
+      }
+    }
+
+    if (typeof contextType === 'object' && contextType !== null) {
+      validateContextBounds(contextType, threadID);
+      return contextType[threadID];
+    }
+
+    {
+      var maskedContext = maskContext(type, context);
+
+      {
+        if (type.contextTypes) {
+          checkContextTypes(type.contextTypes, maskedContext, 'context');
+        }
+      }
+
+      return maskedContext;
+    }
+  } else {
+    {
+      var _maskedContext = maskContext(type, context);
+
+      {
+        if (type.contextTypes) {
+          checkContextTypes(type.contextTypes, _maskedContext, 'context');
+        }
+      }
+
+      return _maskedContext;
+    }
+  }
+}
+
+var nextAvailableThreadIDs = new Uint16Array(16);
+
+for (var i = 0; i < 15; i++) {
+  nextAvailableThreadIDs[i] = i + 1;
+}
+
+nextAvailableThreadIDs[15] = 0;
+
+function growThreadCountAndReturnNextAvailable() {
+  var oldArray = nextAvailableThreadIDs;
+  var oldSize = oldArray.length;
+  var newSize = oldSize * 2;
+
+  if (!(newSize <= 0x10000)) {
+    {
+      throw Error( "Maximum number of concurrent React renderers exceeded. This can happen if you are not properly destroying the Readable provided by React. Ensure that you call .destroy() on it if you no longer want to read from it, and did not read to the end. If you use .pipe() this should be automatic." );
+    }
+  }
+
+  var newArray = new Uint16Array(newSize);
+  newArray.set(oldArray);
+  nextAvailableThreadIDs = newArray;
+  nextAvailableThreadIDs[0] = oldSize + 1;
+
+  for (var _i = oldSize; _i < newSize - 1; _i++) {
+    nextAvailableThreadIDs[_i] = _i + 1;
+  }
+
+  nextAvailableThreadIDs[newSize - 1] = 0;
+  return oldSize;
+}
+
+function allocThreadID() {
+  var nextID = nextAvailableThreadIDs[0];
+
+  if (nextID === 0) {
+    return growThreadCountAndReturnNextAvailable();
+  }
+
+  nextAvailableThreadIDs[0] = nextAvailableThreadIDs[nextID];
+  return nextID;
+}
+function freeThreadID(id) {
+  nextAvailableThreadIDs[id] = nextAvailableThreadIDs[0];
+  nextAvailableThreadIDs[0] = id;
+}
+
+// A reserved attribute.
+// It is handled by React separately and shouldn't be written to the DOM.
+var RESERVED = 0; // A simple string attribute.
+// Attributes that aren't in the whitelist are presumed to have this type.
+
+var STRING = 1; // A string attribute that accepts booleans in React. In HTML, these are called
+// "enumerated" attributes with "true" and "false" as possible values.
+// When true, it should be set to a "true" string.
+// When false, it should be set to a "false" string.
+
+var BOOLEANISH_STRING = 2; // A real boolean attribute.
+// When true, it should be present (set either to an empty string or its name).
+// When false, it should be omitted.
+
+var BOOLEAN = 3; // An attribute that can be used as a flag as well as with a value.
+// When true, it should be present (set either to an empty string or its name).
+// When false, it should be omitted.
+// For any other value, should be present with that value.
+
+var OVERLOADED_BOOLEAN = 4; // An attribute that must be numeric or parse as a numeric.
+// When falsy, it should be removed.
+
+var NUMERIC = 5; // An attribute that must be positive numeric or parse as a positive numeric.
+// When falsy, it should be removed.
+
+var POSITIVE_NUMERIC = 6;
+
+/* eslint-disable max-len */
+var ATTRIBUTE_NAME_START_CHAR = ":A-Z_a-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF\\u200C-\\u200D\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD";
+/* eslint-enable max-len */
+
+var ATTRIBUTE_NAME_CHAR = ATTRIBUTE_NAME_START_CHAR + "\\-.0-9\\u00B7\\u0300-\\u036F\\u203F-\\u2040";
+var ROOT_ATTRIBUTE_NAME = 'data-reactroot';
+var VALID_ATTRIBUTE_NAME_REGEX = new RegExp('^[' + ATTRIBUTE_NAME_START_CHAR + '][' + ATTRIBUTE_NAME_CHAR + ']*$');
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+var illegalAttributeNameCache = {};
+var validatedAttributeNameCache = {};
+function isAttributeNameSafe(attributeName) {
+  if (hasOwnProperty.call(validatedAttributeNameCache, attributeName)) {
+    return true;
+  }
+
+  if (hasOwnProperty.call(illegalAttributeNameCache, attributeName)) {
+    return false;
+  }
+
+  if (VALID_ATTRIBUTE_NAME_REGEX.test(attributeName)) {
+    validatedAttributeNameCache[attributeName] = true;
+    return true;
+  }
+
+  illegalAttributeNameCache[attributeName] = true;
+
+  {
+    error('Invalid attribute name: `%s`', attributeName);
+  }
+
+  return false;
+}
+function shouldIgnoreAttribute(name, propertyInfo, isCustomComponentTag) {
+  if (propertyInfo !== null) {
+    return propertyInfo.type === RESERVED;
+  }
+
+  if (isCustomComponentTag) {
+    return false;
+  }
+
+  if (name.length > 2 && (name[0] === 'o' || name[0] === 'O') && (name[1] === 'n' || name[1] === 'N')) {
+    return true;
+  }
+
+  return false;
+}
+function shouldRemoveAttributeWithWarning(name, value, propertyInfo, isCustomComponentTag) {
+  if (propertyInfo !== null && propertyInfo.type === RESERVED) {
+    return false;
+  }
+
+  switch (typeof value) {
+    case 'function': // $FlowIssue symbol is perfectly valid here
+
+    case 'symbol':
+      // eslint-disable-line
+      return true;
+
+    case 'boolean':
+      {
+        if (isCustomComponentTag) {
+          return false;
+        }
+
+        if (propertyInfo !== null) {
+          return !propertyInfo.acceptsBooleans;
+        } else {
+          var prefix = name.toLowerCase().slice(0, 5);
+          return prefix !== 'data-' && prefix !== 'aria-';
+        }
+      }
+
+    default:
+      return false;
+  }
+}
+function shouldRemoveAttribute(name, value, propertyInfo, isCustomComponentTag) {
+  if (value === null || typeof value === 'undefined') {
+    return true;
+  }
+
+  if (shouldRemoveAttributeWithWarning(name, value, propertyInfo, isCustomComponentTag)) {
+    return true;
+  }
+
+  if (isCustomComponentTag) {
+    return false;
+  }
+
+  if (propertyInfo !== null) {
+    switch (propertyInfo.type) {
+      case BOOLEAN:
+        return !value;
+
+      case OVERLOADED_BOOLEAN:
+        return value === false;
+
+      case NUMERIC:
+        return isNaN(value);
+
+      case POSITIVE_NUMERIC:
+        return isNaN(value) || value < 1;
+    }
+  }
+
+  return false;
+}
+function getPropertyInfo(name) {
+  return properties.hasOwnProperty(name) ? properties[name] : null;
+}
+
+function PropertyInfoRecord(name, type, mustUseProperty, attributeName, attributeNamespace, sanitizeURL) {
+  this.acceptsBooleans = type === BOOLEANISH_STRING || type === BOOLEAN || type === OVERLOADED_BOOLEAN;
+  this.attributeName = attributeName;
+  this.attributeNamespace = attributeNamespace;
+  this.mustUseProperty = mustUseProperty;
+  this.propertyName = name;
+  this.type = type;
+  this.sanitizeURL = sanitizeURL;
+} // When adding attributes to this list, be sure to also add them to
+// the `possibleStandardNames` module to ensure casing and incorrect
+// name warnings.
+
+
+var properties = {}; // These props are reserved by React. They shouldn't be written to the DOM.
+
+var reservedProps = ['children', 'dangerouslySetInnerHTML', // TODO: This prevents the assignment of defaultValue to regular
+// elements (not just inputs). Now that ReactDOMInput assigns to the
+// defaultValue property -- do we need this?
+'defaultValue', 'defaultChecked', 'innerHTML', 'suppressContentEditableWarning', 'suppressHydrationWarning', 'style'];
+
+reservedProps.forEach(function (name) {
+  properties[name] = new PropertyInfoRecord(name, RESERVED, false, // mustUseProperty
+  name, // attributeName
+  null, // attributeNamespace
+  false);
+}); // A few React string attributes have a different name.
+// This is a mapping from React prop names to the attribute names.
+
+[['acceptCharset', 'accept-charset'], ['className', 'class'], ['htmlFor', 'for'], ['httpEquiv', 'http-equiv']].forEach(function (_ref) {
+  var name = _ref[0],
+      attributeName = _ref[1];
+  properties[name] = new PropertyInfoRecord(name, STRING, false, // mustUseProperty
+  attributeName, // attributeName
+  null, // attributeNamespace
+  false);
+}); // These are "enumerated" HTML attributes that accept "true" and "false".
+// In React, we let users pass `true` and `false` even though technically
+// these aren't boolean attributes (they are coerced to strings).
+
+['contentEditable', 'draggable', 'spellCheck', 'value'].forEach(function (name) {
+  properties[name] = new PropertyInfoRecord(name, BOOLEANISH_STRING, false, // mustUseProperty
+  name.toLowerCase(), // attributeName
+  null, // attributeNamespace
+  false);
+}); // These are "enumerated" SVG attributes that accept "true" and "false".
+// In React, we let users pass `true` and `false` even though technically
+// these aren't boolean attributes (they are coerced to strings).
+// Since these are SVG attributes, their attribute names are case-sensitive.
+
+['autoReverse', 'externalResourcesRequired', 'focusable', 'preserveAlpha'].forEach(function (name) {
+  properties[name] = new PropertyInfoRecord(name, BOOLEANISH_STRING, false, // mustUseProperty
+  name, // attributeName
+  null, // attributeNamespace
+  false);
+}); // These are HTML boolean attributes.
+
+['allowFullScreen', 'async', // Note: there is a special case that prevents it from being written to the DOM
+// on the client side because the browsers are inconsistent. Instead we call focus().
+'autoFocus', 'autoPlay', 'controls', 'default', 'defer', 'disabled', 'disablePictureInPicture', 'formNoValidate', 'hidden', 'loop', 'noModule', 'noValidate', 'open', 'playsInline', 'readOnly', 'required', 'reversed', 'scoped', 'seamless', // Microdata
+'itemScope'].forEach(function (name) {
+  properties[name] = new PropertyInfoRecord(name, BOOLEAN, false, // mustUseProperty
+  name.toLowerCase(), // attributeName
+  null, // attributeNamespace
+  false);
+}); // These are the few React props that we set as DOM properties
+// rather than attributes. These are all booleans.
+
+['checked', // Note: `option.selected` is not updated if `select.multiple` is
+// disabled with `removeAttribute`. We have special logic for handling this.
+'multiple', 'muted', 'selected' // NOTE: if you add a camelCased prop to this list,
+// you'll need to set attributeName to name.toLowerCase()
+// instead in the assignment below.
+].forEach(function (name) {
+  properties[name] = new PropertyInfoRecord(name, BOOLEAN, true, // mustUseProperty
+  name, // attributeName
+  null, // attributeNamespace
+  false);
+}); // These are HTML attributes that are "overloaded booleans": they behave like
+// booleans, but can also accept a string value.
+
+['capture', 'download' // NOTE: if you add a camelCased prop to this list,
+// you'll need to set attributeName to name.toLowerCase()
+// instead in the assignment below.
+].forEach(function (name) {
+  properties[name] = new PropertyInfoRecord(name, OVERLOADED_BOOLEAN, false, // mustUseProperty
+  name, // attributeName
+  null, // attributeNamespace
+  false);
+}); // These are HTML attributes that must be positive numbers.
+
+['cols', 'rows', 'size', 'span' // NOTE: if you add a camelCased prop to this list,
+// you'll need to set attributeName to name.toLowerCase()
+// instead in the assignment below.
+].forEach(function (name) {
+  properties[name] = new PropertyInfoRecord(name, POSITIVE_NUMERIC, false, // mustUseProperty
+  name, // attributeName
+  null, // attributeNamespace
+  false);
+}); // These are HTML attributes that must be numbers.
+
+['rowSpan', 'start'].forEach(function (name) {
+  properties[name] = new PropertyInfoRecord(name, NUMERIC, false, // mustUseProperty
+  name.toLowerCase(), // attributeName
+  null, // attributeNamespace
+  false);
+});
+var CAMELIZE = /[\-\:]([a-z])/g;
+
+var capitalize = function (token) {
+  return token[1].toUpperCase();
+}; // This is a list of all SVG attributes that need special casing, namespacing,
+// or boolean value assignment. Regular attributes that just accept strings
+// and have the same names are omitted, just like in the HTML whitelist.
+// Some of these attributes can be hard to find. This list was created by
+// scraping the MDN documentation.
+
+
+['accent-height', 'alignment-baseline', 'arabic-form', 'baseline-shift', 'cap-height', 'clip-path', 'clip-rule', 'color-interpolation', 'color-interpolation-filters', 'color-profile', 'color-rendering', 'dominant-baseline', 'enable-background', 'fill-opacity', 'fill-rule', 'flood-color', 'flood-opacity', 'font-family', 'font-size', 'font-size-adjust', 'font-stretch', 'font-style', 'font-variant', 'font-weight', 'glyph-name', 'glyph-orientation-horizontal', 'glyph-orientation-vertical', 'horiz-adv-x', 'horiz-origin-x', 'image-rendering', 'letter-spacing', 'lighting-color', 'marker-end', 'marker-mid', 'marker-start', 'overline-position', 'overline-thickness', 'paint-order', 'panose-1', 'pointer-events', 'rendering-intent', 'shape-rendering', 'stop-color', 'stop-opacity', 'strikethrough-position', 'strikethrough-thickness', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit', 'stroke-opacity', 'stroke-width', 'text-anchor', 'text-decoration', 'text-rendering', 'underline-position', 'underline-thickness', 'unicode-bidi', 'unicode-range', 'units-per-em', 'v-alphabetic', 'v-hanging', 'v-ideographic', 'v-mathematical', 'vector-effect', 'vert-adv-y', 'vert-origin-x', 'vert-origin-y', 'word-spacing', 'writing-mode', 'xmlns:xlink', 'x-height' // NOTE: if you add a camelCased prop to this list,
+// you'll need to set attributeName to name.toLowerCase()
+// instead in the assignment below.
+].forEach(function (attributeName) {
+  var name = attributeName.replace(CAMELIZE, capitalize);
+  properties[name] = new PropertyInfoRecord(name, STRING, false, // mustUseProperty
+  attributeName, null, // attributeNamespace
+  false);
+}); // String SVG attributes with the xlink namespace.
+
+['xlink:actuate', 'xlink:arcrole', 'xlink:role', 'xlink:show', 'xlink:title', 'xlink:type' // NOTE: if you add a camelCased prop to this list,
+// you'll need to set attributeName to name.toLowerCase()
+// instead in the assignment below.
+].forEach(function (attributeName) {
+  var name = attributeName.replace(CAMELIZE, capitalize);
+  properties[name] = new PropertyInfoRecord(name, STRING, false, // mustUseProperty
+  attributeName, 'http://www.w3.org/1999/xlink', false);
+}); // String SVG attributes with the xml namespace.
+
+['xml:base', 'xml:lang', 'xml:space' // NOTE: if you add a camelCased prop to this list,
+// you'll need to set attributeName to name.toLowerCase()
+// instead in the assignment below.
+].forEach(function (attributeName) {
+  var name = attributeName.replace(CAMELIZE, capitalize);
+  properties[name] = new PropertyInfoRecord(name, STRING, false, // mustUseProperty
+  attributeName, 'http://www.w3.org/XML/1998/namespace', false);
+}); // These attribute exists both in HTML and SVG.
+// The attribute name is case-sensitive in SVG so we can't just use
+// the React name like we do for attributes that exist only in HTML.
+
+['tabIndex', 'crossOrigin'].forEach(function (attributeName) {
+  properties[attributeName] = new PropertyInfoRecord(attributeName, STRING, false, // mustUseProperty
+  attributeName.toLowerCase(), // attributeName
+  null, // attributeNamespace
+  false);
+}); // These attributes accept URLs. These must not allow javascript: URLS.
+// These will also need to accept Trusted Types object in the future.
+
+var xlinkHref = 'xlinkHref';
+properties[xlinkHref] = new PropertyInfoRecord('xlinkHref', STRING, false, // mustUseProperty
+'xlink:href', 'http://www.w3.org/1999/xlink', true);
+['src', 'href', 'action', 'formAction'].forEach(function (attributeName) {
+  properties[attributeName] = new PropertyInfoRecord(attributeName, STRING, false, // mustUseProperty
+  attributeName.toLowerCase(), // attributeName
+  null, // attributeNamespace
+  true);
+});
+
+var ReactDebugCurrentFrame$1 = null;
+
+{
+  ReactDebugCurrentFrame$1 = ReactSharedInternals.ReactDebugCurrentFrame;
+} // A javascript: URL can contain leading C0 control or \u0020 SPACE,
+// and any newline or tab are filtered out as if they're not part of the URL.
+// https://url.spec.whatwg.org/#url-parsing
+// Tab or newline are defined as \r\n\t:
+// https://infra.spec.whatwg.org/#ascii-tab-or-newline
+// A C0 control is a code point in the range \u0000 NULL to \u001F
+// INFORMATION SEPARATOR ONE, inclusive:
+// https://infra.spec.whatwg.org/#c0-control-or-space
+
+/* eslint-disable max-len */
+
+
+var isJavaScriptProtocol = /^[\u0000-\u001F ]*j[\r\n\t]*a[\r\n\t]*v[\r\n\t]*a[\r\n\t]*s[\r\n\t]*c[\r\n\t]*r[\r\n\t]*i[\r\n\t]*p[\r\n\t]*t[\r\n\t]*\:/i;
+var didWarn = false;
+
+function sanitizeURL(url) {
+  {
+    if (!didWarn && isJavaScriptProtocol.test(url)) {
+      didWarn = true;
+
+      error('A future version of React will block javascript: URLs as a security precaution. ' + 'Use event handlers instead if you can. If you need to generate unsafe HTML try ' + 'using dangerouslySetInnerHTML instead. React was passed %s.', JSON.stringify(url));
+    }
+  }
+}
+
+// code copied and modified from escape-html
+
+/**
+ * Module variables.
+ * @private
+ */
+var matchHtmlRegExp = /["'&<>]/;
+/**
+ * Escapes special characters and HTML entities in a given html string.
+ *
+ * @param  {string} string HTML string to escape for later insertion
+ * @return {string}
+ * @public
+ */
+
+function escapeHtml(string) {
+  var str = '' + string;
+  var match = matchHtmlRegExp.exec(str);
+
+  if (!match) {
+    return str;
+  }
+
+  var escape;
+  var html = '';
+  var index;
+  var lastIndex = 0;
+
+  for (index = match.index; index < str.length; index++) {
+    switch (str.charCodeAt(index)) {
+      case 34:
+        // "
+        escape = '&quot;';
+        break;
+
+      case 38:
+        // &
+        escape = '&amp;';
+        break;
+
+      case 39:
+        // '
+        escape = '&#x27;'; // modified from escape-html; used to be '&#39'
+
+        break;
+
+      case 60:
+        // <
+        escape = '&lt;';
+        break;
+
+      case 62:
+        // >
+        escape = '&gt;';
+        break;
+
+      default:
+        continue;
+    }
+
+    if (lastIndex !== index) {
+      html += str.substring(lastIndex, index);
+    }
+
+    lastIndex = index + 1;
+    html += escape;
+  }
+
+  return lastIndex !== index ? html + str.substring(lastIndex, index) : html;
+} // end code copied and modified from escape-html
+
+/**
+ * Escapes text to prevent scripting attacks.
+ *
+ * @param {*} text Text value to escape.
+ * @return {string} An escaped string.
+ */
+
+
+function escapeTextForBrowser(text) {
+  if (typeof text === 'boolean' || typeof text === 'number') {
+    // this shortcircuit helps perf for types that we know will never have
+    // special characters, especially given that this function is used often
+    // for numeric dom ids.
+    return '' + text;
+  }
+
+  return escapeHtml(text);
+}
+
+/**
+ * Escapes attribute value to prevent scripting attacks.
+ *
+ * @param {*} value Value to escape.
+ * @return {string} An escaped string.
+ */
+
+function quoteAttributeValueForBrowser(value) {
+  return '"' + escapeTextForBrowser(value) + '"';
+}
+
+function createMarkupForRoot() {
+  return ROOT_ATTRIBUTE_NAME + '=""';
+}
+/**
+ * Creates markup for a property.
+ *
+ * @param {string} name
+ * @param {*} value
+ * @return {?string} Markup string, or null if the property was invalid.
+ */
+
+function createMarkupForProperty(name, value) {
+  var propertyInfo = getPropertyInfo(name);
+
+  if (name !== 'style' && shouldIgnoreAttribute(name, propertyInfo, false)) {
+    return '';
+  }
+
+  if (shouldRemoveAttribute(name, value, propertyInfo, false)) {
+    return '';
+  }
+
+  if (propertyInfo !== null) {
+    var attributeName = propertyInfo.attributeName;
+    var type = propertyInfo.type;
+
+    if (type === BOOLEAN || type === OVERLOADED_BOOLEAN && value === true) {
+      return attributeName + '=""';
+    } else {
+      if (propertyInfo.sanitizeURL) {
+        value = '' + value;
+        sanitizeURL(value);
+      }
+
+      return attributeName + '=' + quoteAttributeValueForBrowser(value);
+    }
+  } else if (isAttributeNameSafe(name)) {
+    return name + '=' + quoteAttributeValueForBrowser(value);
+  }
+
+  return '';
+}
+/**
+ * Creates markup for a custom property.
+ *
+ * @param {string} name
+ * @param {*} value
+ * @return {string} Markup string, or empty string if the property was invalid.
+ */
+
+function createMarkupForCustomAttribute(name, value) {
+  if (!isAttributeNameSafe(name) || value == null) {
+    return '';
+  }
+
+  return name + '=' + quoteAttributeValueForBrowser(value);
+}
+
+/**
+ * inlined Object.is polyfill to avoid requiring consumers ship their own
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is
+ */
+function is(x, y) {
+  return x === y && (x !== 0 || 1 / x === 1 / y) || x !== x && y !== y // eslint-disable-line no-self-compare
+  ;
+}
+
+var objectIs = typeof Object.is === 'function' ? Object.is : is;
+
+var currentlyRenderingComponent = null;
+var firstWorkInProgressHook = null;
+var workInProgressHook = null; // Whether the work-in-progress hook is a re-rendered hook
+
+var isReRender = false; // Whether an update was scheduled during the currently executing render pass.
+
+var didScheduleRenderPhaseUpdate = false; // Lazily created map of render-phase updates
+
+var renderPhaseUpdates = null; // Counter to prevent infinite loops.
+
+var numberOfReRenders = 0;
+var RE_RENDER_LIMIT = 25;
+var isInHookUserCodeInDev = false; // In DEV, this is the name of the currently executing primitive hook
+
+var currentHookNameInDev;
+
+function resolveCurrentlyRenderingComponent() {
+  if (!(currentlyRenderingComponent !== null)) {
+    {
+      throw Error( "Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:\n1. You might have mismatching versions of React and the renderer (such as React DOM)\n2. You might be breaking the Rules of Hooks\n3. You might have more than one copy of React in the same app\nSee https://fb.me/react-invalid-hook-call for tips about how to debug and fix this problem." );
+    }
+  }
+
+  {
+    if (isInHookUserCodeInDev) {
+      error('Do not call Hooks inside useEffect(...), useMemo(...), or other built-in Hooks. ' + 'You can only call Hooks at the top level of your React function. ' + 'For more information, see ' + 'https://fb.me/rules-of-hooks');
+    }
+  }
+
+  return currentlyRenderingComponent;
+}
+
+function areHookInputsEqual(nextDeps, prevDeps) {
+  if (prevDeps === null) {
+    {
+      error('%s received a final argument during this render, but not during ' + 'the previous render. Even though the final argument is optional, ' + 'its type cannot change between renders.', currentHookNameInDev);
+    }
+
+    return false;
+  }
+
+  {
+    // Don't bother comparing lengths in prod because these arrays should be
+    // passed inline.
+    if (nextDeps.length !== prevDeps.length) {
+      error('The final argument passed to %s changed size between renders. The ' + 'order and size of this array must remain constant.\n\n' + 'Previous: %s\n' + 'Incoming: %s', currentHookNameInDev, "[" + nextDeps.join(', ') + "]", "[" + prevDeps.join(', ') + "]");
+    }
+  }
+
+  for (var i = 0; i < prevDeps.length && i < nextDeps.length; i++) {
+    if (objectIs(nextDeps[i], prevDeps[i])) {
+      continue;
+    }
+
+    return false;
+  }
+
+  return true;
+}
+
+function createHook() {
+  if (numberOfReRenders > 0) {
+    {
+      {
+        throw Error( "Rendered more hooks than during the previous render" );
+      }
+    }
+  }
+
+  return {
+    memoizedState: null,
+    queue: null,
+    next: null
+  };
+}
+
+function createWorkInProgressHook() {
+  if (workInProgressHook === null) {
+    // This is the first hook in the list
+    if (firstWorkInProgressHook === null) {
+      isReRender = false;
+      firstWorkInProgressHook = workInProgressHook = createHook();
+    } else {
+      // There's already a work-in-progress. Reuse it.
+      isReRender = true;
+      workInProgressHook = firstWorkInProgressHook;
+    }
+  } else {
+    if (workInProgressHook.next === null) {
+      isReRender = false; // Append to the end of the list
+
+      workInProgressHook = workInProgressHook.next = createHook();
+    } else {
+      // There's already a work-in-progress. Reuse it.
+      isReRender = true;
+      workInProgressHook = workInProgressHook.next;
+    }
+  }
+
+  return workInProgressHook;
+}
+
+function prepareToUseHooks(componentIdentity) {
+  currentlyRenderingComponent = componentIdentity;
+
+  {
+    isInHookUserCodeInDev = false;
+  } // The following should have already been reset
+  // didScheduleRenderPhaseUpdate = false;
+  // firstWorkInProgressHook = null;
+  // numberOfReRenders = 0;
+  // renderPhaseUpdates = null;
+  // workInProgressHook = null;
+
+}
+function finishHooks(Component, props, children, refOrContext) {
+  // This must be called after every function component to prevent hooks from
+  // being used in classes.
+  while (didScheduleRenderPhaseUpdate) {
+    // Updates were scheduled during the render phase. They are stored in
+    // the `renderPhaseUpdates` map. Call the component again, reusing the
+    // work-in-progress hooks and applying the additional updates on top. Keep
+    // restarting until no more updates are scheduled.
+    didScheduleRenderPhaseUpdate = false;
+    numberOfReRenders += 1; // Start over from the beginning of the list
+
+    workInProgressHook = null;
+    children = Component(props, refOrContext);
+  }
+
+  currentlyRenderingComponent = null;
+  firstWorkInProgressHook = null;
+  numberOfReRenders = 0;
+  renderPhaseUpdates = null;
+  workInProgressHook = null;
+
+  {
+    isInHookUserCodeInDev = false;
+  } // These were reset above
+  // currentlyRenderingComponent = null;
+  // didScheduleRenderPhaseUpdate = false;
+  // firstWorkInProgressHook = null;
+  // numberOfReRenders = 0;
+  // renderPhaseUpdates = null;
+  // workInProgressHook = null;
+
+
+  return children;
+}
+
+function readContext(context, observedBits) {
+  var threadID = currentThreadID;
+  validateContextBounds(context, threadID);
+
+  {
+    if (isInHookUserCodeInDev) {
+      error('Context can only be read while React is rendering. ' + 'In classes, you can read it in the render method or getDerivedStateFromProps. ' + 'In function components, you can read it directly in the function body, but not ' + 'inside Hooks like useReducer() or useMemo().');
+    }
+  }
+
+  return context[threadID];
+}
+
+function useContext(context, observedBits) {
+  {
+    currentHookNameInDev = 'useContext';
+  }
+
+  resolveCurrentlyRenderingComponent();
+  var threadID = currentThreadID;
+  validateContextBounds(context, threadID);
+  return context[threadID];
+}
+
+function basicStateReducer(state, action) {
+  // $FlowFixMe: Flow doesn't like mixed types
+  return typeof action === 'function' ? action(state) : action;
+}
+
+function useState(initialState) {
+  {
+    currentHookNameInDev = 'useState';
+  }
+
+  return useReducer(basicStateReducer, // useReducer has a special case to support lazy useState initializers
+  initialState);
+}
+function useReducer(reducer, initialArg, init) {
+  {
+    if (reducer !== basicStateReducer) {
+      currentHookNameInDev = 'useReducer';
+    }
+  }
+
+  currentlyRenderingComponent = resolveCurrentlyRenderingComponent();
+  workInProgressHook = createWorkInProgressHook();
+
+  if (isReRender) {
+    // This is a re-render. Apply the new render phase updates to the previous
+    // current hook.
+    var queue = workInProgressHook.queue;
+    var dispatch = queue.dispatch;
+
+    if (renderPhaseUpdates !== null) {
+      // Render phase updates are stored in a map of queue -> linked list
+      var firstRenderPhaseUpdate = renderPhaseUpdates.get(queue);
+
+      if (firstRenderPhaseUpdate !== undefined) {
+        renderPhaseUpdates.delete(queue);
+        var newState = workInProgressHook.memoizedState;
+        var update = firstRenderPhaseUpdate;
+
+        do {
+          // Process this render phase update. We don't have to check the
+          // priority because it will always be the same as the current
+          // render's.
+          var action = update.action;
+
+          {
+            isInHookUserCodeInDev = true;
+          }
+
+          newState = reducer(newState, action);
+
+          {
+            isInHookUserCodeInDev = false;
+          }
+
+          update = update.next;
+        } while (update !== null);
+
+        workInProgressHook.memoizedState = newState;
+        return [newState, dispatch];
+      }
+    }
+
+    return [workInProgressHook.memoizedState, dispatch];
+  } else {
+    {
+      isInHookUserCodeInDev = true;
+    }
+
+    var initialState;
+
+    if (reducer === basicStateReducer) {
+      // Special case for `useState`.
+      initialState = typeof initialArg === 'function' ? initialArg() : initialArg;
+    } else {
+      initialState = init !== undefined ? init(initialArg) : initialArg;
+    }
+
+    {
+      isInHookUserCodeInDev = false;
+    }
+
+    workInProgressHook.memoizedState = initialState;
+
+    var _queue = workInProgressHook.queue = {
+      last: null,
+      dispatch: null
+    };
+
+    var _dispatch = _queue.dispatch = dispatchAction.bind(null, currentlyRenderingComponent, _queue);
+
+    return [workInProgressHook.memoizedState, _dispatch];
+  }
+}
+
+function useMemo(nextCreate, deps) {
+  currentlyRenderingComponent = resolveCurrentlyRenderingComponent();
+  workInProgressHook = createWorkInProgressHook();
+  var nextDeps = deps === undefined ? null : deps;
+
+  if (workInProgressHook !== null) {
+    var prevState = workInProgressHook.memoizedState;
+
+    if (prevState !== null) {
+      if (nextDeps !== null) {
+        var prevDeps = prevState[1];
+
+        if (areHookInputsEqual(nextDeps, prevDeps)) {
+          return prevState[0];
+        }
+      }
+    }
+  }
+
+  {
+    isInHookUserCodeInDev = true;
+  }
+
+  var nextValue = nextCreate();
+
+  {
+    isInHookUserCodeInDev = false;
+  }
+
+  workInProgressHook.memoizedState = [nextValue, nextDeps];
+  return nextValue;
+}
+
+function useRef(initialValue) {
+  currentlyRenderingComponent = resolveCurrentlyRenderingComponent();
+  workInProgressHook = createWorkInProgressHook();
+  var previousRef = workInProgressHook.memoizedState;
+
+  if (previousRef === null) {
+    var ref = {
+      current: initialValue
+    };
+
+    {
+      Object.seal(ref);
+    }
+
+    workInProgressHook.memoizedState = ref;
+    return ref;
+  } else {
+    return previousRef;
+  }
+}
+
+function useLayoutEffect(create, inputs) {
+  {
+    currentHookNameInDev = 'useLayoutEffect';
+
+    error('useLayoutEffect does nothing on the server, because its effect cannot ' + "be encoded into the server renderer's output format. This will lead " + 'to a mismatch between the initial, non-hydrated UI and the intended ' + 'UI. To avoid this, useLayoutEffect should only be used in ' + 'components that render exclusively on the client. ' + 'See https://fb.me/react-uselayouteffect-ssr for common fixes.');
+  }
+}
+
+function dispatchAction(componentIdentity, queue, action) {
+  if (!(numberOfReRenders < RE_RENDER_LIMIT)) {
+    {
+      throw Error( "Too many re-renders. React limits the number of renders to prevent an infinite loop." );
+    }
+  }
+
+  if (componentIdentity === currentlyRenderingComponent) {
+    // This is a render phase update. Stash it in a lazily-created map of
+    // queue -> linked list of updates. After this render pass, we'll restart
+    // and apply the stashed updates on top of the work-in-progress hook.
+    didScheduleRenderPhaseUpdate = true;
+    var update = {
+      action: action,
+      next: null
+    };
+
+    if (renderPhaseUpdates === null) {
+      renderPhaseUpdates = new Map();
+    }
+
+    var firstRenderPhaseUpdate = renderPhaseUpdates.get(queue);
+
+    if (firstRenderPhaseUpdate === undefined) {
+      renderPhaseUpdates.set(queue, update);
+    } else {
+      // Append the update to the end of the list.
+      var lastRenderPhaseUpdate = firstRenderPhaseUpdate;
+
+      while (lastRenderPhaseUpdate.next !== null) {
+        lastRenderPhaseUpdate = lastRenderPhaseUpdate.next;
+      }
+
+      lastRenderPhaseUpdate.next = update;
+    }
+  }
+}
+
+function useCallback(callback, deps) {
+  // Callbacks are passed as they are in the server environment.
+  return callback;
+}
+
+function useResponder(responder, props) {
+  return {
+    props: props,
+    responder: responder
+  };
+}
+
+function useDeferredValue(value, config) {
+  resolveCurrentlyRenderingComponent();
+  return value;
+}
+
+function useTransition(config) {
+  resolveCurrentlyRenderingComponent();
+
+  var startTransition = function (callback) {
+    callback();
+  };
+
+  return [startTransition, false];
+}
+
+function noop() {}
+
+var currentThreadID = 0;
+function setCurrentThreadID(threadID) {
+  currentThreadID = threadID;
+}
+var Dispatcher = {
+  readContext: readContext,
+  useContext: useContext,
+  useMemo: useMemo,
+  useReducer: useReducer,
+  useRef: useRef,
+  useState: useState,
+  useLayoutEffect: useLayoutEffect,
+  useCallback: useCallback,
+  // useImperativeHandle is not run in the server environment
+  useImperativeHandle: noop,
+  // Effects are not run in the server environment.
+  useEffect: noop,
+  // Debugging effect
+  useDebugValue: noop,
+  useResponder: useResponder,
+  useDeferredValue: useDeferredValue,
+  useTransition: useTransition
+};
+
+var HTML_NAMESPACE = 'http://www.w3.org/1999/xhtml';
+var MATH_NAMESPACE = 'http://www.w3.org/1998/Math/MathML';
+var SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+var Namespaces = {
+  html: HTML_NAMESPACE,
+  mathml: MATH_NAMESPACE,
+  svg: SVG_NAMESPACE
+}; // Assumes there is no parent namespace.
+
+function getIntrinsicNamespace(type) {
+  switch (type) {
+    case 'svg':
+      return SVG_NAMESPACE;
+
+    case 'math':
+      return MATH_NAMESPACE;
+
+    default:
+      return HTML_NAMESPACE;
+  }
+}
+function getChildNamespace(parentNamespace, type) {
+  if (parentNamespace == null || parentNamespace === HTML_NAMESPACE) {
+    // No (or default) parent namespace: potential entry point.
+    return getIntrinsicNamespace(type);
+  }
+
+  if (parentNamespace === SVG_NAMESPACE && type === 'foreignObject') {
+    // We're leaving SVG.
+    return HTML_NAMESPACE;
+  } // By default, pass namespace below.
+
+
+  return parentNamespace;
+}
+
+var ReactDebugCurrentFrame$2 = null;
+var ReactControlledValuePropTypes = {
+  checkPropTypes: null
+};
+
+{
+  ReactDebugCurrentFrame$2 = ReactSharedInternals.ReactDebugCurrentFrame;
+  var hasReadOnlyValue = {
+    button: true,
+    checkbox: true,
+    image: true,
+    hidden: true,
+    radio: true,
+    reset: true,
+    submit: true
+  };
+  var propTypes = {
+    value: function (props, propName, componentName) {
+      if (hasReadOnlyValue[props.type] || props.onChange || props.readOnly || props.disabled || props[propName] == null || enableDeprecatedFlareAPI ) {
+        return null;
+      }
+
+      return new Error('You provided a `value` prop to a form field without an ' + '`onChange` handler. This will render a read-only field. If ' + 'the field should be mutable use `defaultValue`. Otherwise, ' + 'set either `onChange` or `readOnly`.');
+    },
+    checked: function (props, propName, componentName) {
+      if (props.onChange || props.readOnly || props.disabled || props[propName] == null || enableDeprecatedFlareAPI ) {
+        return null;
+      }
+
+      return new Error('You provided a `checked` prop to a form field without an ' + '`onChange` handler. This will render a read-only field. If ' + 'the field should be mutable use `defaultChecked`. Otherwise, ' + 'set either `onChange` or `readOnly`.');
+    }
+  };
+  /**
+   * Provide a linked `value` attribute for controlled forms. You should not use
+   * this outside of the ReactDOM controlled form components.
+   */
+
+  ReactControlledValuePropTypes.checkPropTypes = function (tagName, props) {
+    checkPropTypes(propTypes, props, 'prop', tagName, ReactDebugCurrentFrame$2.getStackAddendum);
+  };
+}
+
+// For HTML, certain tags should omit their close tag. We keep a whitelist for
+// those special-case tags.
+var omittedCloseTags = {
+  area: true,
+  base: true,
+  br: true,
+  col: true,
+  embed: true,
+  hr: true,
+  img: true,
+  input: true,
+  keygen: true,
+  link: true,
+  meta: true,
+  param: true,
+  source: true,
+  track: true,
+  wbr: true // NOTE: menuitem's close tag should be omitted, but that causes problems.
+
+};
+
+// `omittedCloseTags` except that `menuitem` should still have its closing tag.
+
+var voidElementTags = _assign({
+  menuitem: true
+}, omittedCloseTags);
+
+var HTML = '__html';
+var ReactDebugCurrentFrame$3 = null;
+
+{
+  ReactDebugCurrentFrame$3 = ReactSharedInternals.ReactDebugCurrentFrame;
+}
+
+function assertValidProps(tag, props) {
+  if (!props) {
+    return;
+  } // Note the use of `==` which checks for null or undefined.
+
+
+  if (voidElementTags[tag]) {
+    if (!(props.children == null && props.dangerouslySetInnerHTML == null)) {
+      {
+        throw Error( tag + " is a void element tag and must neither have `children` nor use `dangerouslySetInnerHTML`." + ( ReactDebugCurrentFrame$3.getStackAddendum() ) );
+      }
+    }
+  }
+
+  if (props.dangerouslySetInnerHTML != null) {
+    if (!(props.children == null)) {
+      {
+        throw Error( "Can only set one of `children` or `props.dangerouslySetInnerHTML`." );
+      }
+    }
+
+    if (!(typeof props.dangerouslySetInnerHTML === 'object' && HTML in props.dangerouslySetInnerHTML)) {
+      {
+        throw Error( "`props.dangerouslySetInnerHTML` must be in the form `{__html: ...}`. Please visit https://fb.me/react-invariant-dangerously-set-inner-html for more information." );
+      }
+    }
+  }
+
+  {
+    if (!props.suppressContentEditableWarning && props.contentEditable && props.children != null) {
+      error('A component is `contentEditable` and contains `children` managed by ' + 'React. It is now your responsibility to guarantee that none of ' + 'those nodes are unexpectedly modified or duplicated. This is ' + 'probably not intentional.');
+    }
+  }
+
+  if (!(props.style == null || typeof props.style === 'object')) {
+    {
+      throw Error( "The `style` prop expects a mapping from style properties to values, not a string. For example, style={{marginRight: spacing + 'em'}} when using JSX." + ( ReactDebugCurrentFrame$3.getStackAddendum() ) );
+    }
+  }
+}
+
+/**
+ * CSS properties which accept numbers but are not in units of "px".
+ */
+var isUnitlessNumber = {
+  animationIterationCount: true,
+  borderImageOutset: true,
+  borderImageSlice: true,
+  borderImageWidth: true,
+  boxFlex: true,
+  boxFlexGroup: true,
+  boxOrdinalGroup: true,
+  columnCount: true,
+  columns: true,
+  flex: true,
+  flexGrow: true,
+  flexPositive: true,
+  flexShrink: true,
+  flexNegative: true,
+  flexOrder: true,
+  gridArea: true,
+  gridRow: true,
+  gridRowEnd: true,
+  gridRowSpan: true,
+  gridRowStart: true,
+  gridColumn: true,
+  gridColumnEnd: true,
+  gridColumnSpan: true,
+  gridColumnStart: true,
+  fontWeight: true,
+  lineClamp: true,
+  lineHeight: true,
+  opacity: true,
+  order: true,
+  orphans: true,
+  tabSize: true,
+  widows: true,
+  zIndex: true,
+  zoom: true,
+  // SVG-related properties
+  fillOpacity: true,
+  floodOpacity: true,
+  stopOpacity: true,
+  strokeDasharray: true,
+  strokeDashoffset: true,
+  strokeMiterlimit: true,
+  strokeOpacity: true,
+  strokeWidth: true
+};
+/**
+ * @param {string} prefix vendor-specific prefix, eg: Webkit
+ * @param {string} key style name, eg: transitionDuration
+ * @return {string} style name prefixed with `prefix`, properly camelCased, eg:
+ * WebkitTransitionDuration
+ */
+
+function prefixKey(prefix, key) {
+  return prefix + key.charAt(0).toUpperCase() + key.substring(1);
+}
+/**
+ * Support style names that may come passed in prefixed by adding permutations
+ * of vendor prefixes.
+ */
+
+
+var prefixes = ['Webkit', 'ms', 'Moz', 'O']; // Using Object.keys here, or else the vanilla for-in loop makes IE8 go into an
+// infinite loop, because it iterates over the newly added props too.
+
+Object.keys(isUnitlessNumber).forEach(function (prop) {
+  prefixes.forEach(function (prefix) {
+    isUnitlessNumber[prefixKey(prefix, prop)] = isUnitlessNumber[prop];
+  });
+});
+
+/**
+ * Convert a value into the proper css writable value. The style name `name`
+ * should be logical (no hyphens), as specified
+ * in `CSSProperty.isUnitlessNumber`.
+ *
+ * @param {string} name CSS property name such as `topMargin`.
+ * @param {*} value CSS property value such as `10px`.
+ * @return {string} Normalized style value with dimensions applied.
+ */
+
+function dangerousStyleValue(name, value, isCustomProperty) {
+  // Note that we've removed escapeTextForBrowser() calls here since the
+  // whole string will be escaped when the attribute is injected into
+  // the markup. If you provide unsafe user data here they can inject
+  // arbitrary CSS which may be problematic (I couldn't repro this):
+  // https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet
+  // http://www.thespanner.co.uk/2007/11/26/ultimate-xss-css-injection/
+  // This is not an XSS hole but instead a potential CSS injection issue
+  // which has lead to a greater discussion about how we're going to
+  // trust URLs moving forward. See #2115901
+  var isEmpty = value == null || typeof value === 'boolean' || value === '';
+
+  if (isEmpty) {
+    return '';
+  }
+
+  if (!isCustomProperty && typeof value === 'number' && value !== 0 && !(isUnitlessNumber.hasOwnProperty(name) && isUnitlessNumber[name])) {
+    return value + 'px'; // Presumes implicit 'px' suffix for unitless numbers
+  }
+
+  return ('' + value).trim();
+}
+
+var uppercasePattern = /([A-Z])/g;
+var msPattern = /^ms-/;
+/**
+ * Hyphenates a camelcased CSS property name, for example:
+ *
+ *   > hyphenateStyleName('backgroundColor')
+ *   < "background-color"
+ *   > hyphenateStyleName('MozTransition')
+ *   < "-moz-transition"
+ *   > hyphenateStyleName('msTransition')
+ *   < "-ms-transition"
+ *
+ * As Modernizr suggests (http://modernizr.com/docs/#prefixed), an `ms` prefix
+ * is converted to `-ms-`.
+ */
+
+function hyphenateStyleName(name) {
+  return name.replace(uppercasePattern, '-$1').toLowerCase().replace(msPattern, '-ms-');
+}
+
+function isCustomComponent(tagName, props) {
+  if (tagName.indexOf('-') === -1) {
+    return typeof props.is === 'string';
+  }
+
+  switch (tagName) {
+    // These are reserved SVG and MathML elements.
+    // We don't mind this whitelist too much because we expect it to never grow.
+    // The alternative is to track the namespace in a few places which is convoluted.
+    // https://w3c.github.io/webcomponents/spec/custom/#custom-elements-core-concepts
+    case 'annotation-xml':
+    case 'color-profile':
+    case 'font-face':
+    case 'font-face-src':
+    case 'font-face-uri':
+    case 'font-face-format':
+    case 'font-face-name':
+    case 'missing-glyph':
+      return false;
+
+    default:
+      return true;
+  }
+}
+
+var warnValidStyle = function () {};
+
+{
+  // 'msTransform' is correct, but the other prefixes should be capitalized
+  var badVendoredStyleNamePattern = /^(?:webkit|moz|o)[A-Z]/;
+  var msPattern$1 = /^-ms-/;
+  var hyphenPattern = /-(.)/g; // style values shouldn't contain a semicolon
+
+  var badStyleValueWithSemicolonPattern = /;\s*$/;
+  var warnedStyleNames = {};
+  var warnedStyleValues = {};
+  var warnedForNaNValue = false;
+  var warnedForInfinityValue = false;
+
+  var camelize = function (string) {
+    return string.replace(hyphenPattern, function (_, character) {
+      return character.toUpperCase();
+    });
+  };
+
+  var warnHyphenatedStyleName = function (name) {
+    if (warnedStyleNames.hasOwnProperty(name) && warnedStyleNames[name]) {
+      return;
+    }
+
+    warnedStyleNames[name] = true;
+
+    error('Unsupported style property %s. Did you mean %s?', name, // As Andi Smith suggests
+    // (http://www.andismith.com/blog/2012/02/modernizr-prefixed/), an `-ms` prefix
+    // is converted to lowercase `ms`.
+    camelize(name.replace(msPattern$1, 'ms-')));
+  };
+
+  var warnBadVendoredStyleName = function (name) {
+    if (warnedStyleNames.hasOwnProperty(name) && warnedStyleNames[name]) {
+      return;
+    }
+
+    warnedStyleNames[name] = true;
+
+    error('Unsupported vendor-prefixed style property %s. Did you mean %s?', name, name.charAt(0).toUpperCase() + name.slice(1));
+  };
+
+  var warnStyleValueWithSemicolon = function (name, value) {
+    if (warnedStyleValues.hasOwnProperty(value) && warnedStyleValues[value]) {
+      return;
+    }
+
+    warnedStyleValues[value] = true;
+
+    error("Style property values shouldn't contain a semicolon. " + 'Try "%s: %s" instead.', name, value.replace(badStyleValueWithSemicolonPattern, ''));
+  };
+
+  var warnStyleValueIsNaN = function (name, value) {
+    if (warnedForNaNValue) {
+      return;
+    }
+
+    warnedForNaNValue = true;
+
+    error('`NaN` is an invalid value for the `%s` css style property.', name);
+  };
+
+  var warnStyleValueIsInfinity = function (name, value) {
+    if (warnedForInfinityValue) {
+      return;
+    }
+
+    warnedForInfinityValue = true;
+
+    error('`Infinity` is an invalid value for the `%s` css style property.', name);
+  };
+
+  warnValidStyle = function (name, value) {
+    if (name.indexOf('-') > -1) {
+      warnHyphenatedStyleName(name);
+    } else if (badVendoredStyleNamePattern.test(name)) {
+      warnBadVendoredStyleName(name);
+    } else if (badStyleValueWithSemicolonPattern.test(value)) {
+      warnStyleValueWithSemicolon(name, value);
+    }
+
+    if (typeof value === 'number') {
+      if (isNaN(value)) {
+        warnStyleValueIsNaN(name, value);
+      } else if (!isFinite(value)) {
+        warnStyleValueIsInfinity(name, value);
+      }
+    }
+  };
+}
+
+var warnValidStyle$1 = warnValidStyle;
+
+var ariaProperties = {
+  'aria-current': 0,
+  // state
+  'aria-details': 0,
+  'aria-disabled': 0,
+  // state
+  'aria-hidden': 0,
+  // state
+  'aria-invalid': 0,
+  // state
+  'aria-keyshortcuts': 0,
+  'aria-label': 0,
+  'aria-roledescription': 0,
+  // Widget Attributes
+  'aria-autocomplete': 0,
+  'aria-checked': 0,
+  'aria-expanded': 0,
+  'aria-haspopup': 0,
+  'aria-level': 0,
+  'aria-modal': 0,
+  'aria-multiline': 0,
+  'aria-multiselectable': 0,
+  'aria-orientation': 0,
+  'aria-placeholder': 0,
+  'aria-pressed': 0,
+  'aria-readonly': 0,
+  'aria-required': 0,
+  'aria-selected': 0,
+  'aria-sort': 0,
+  'aria-valuemax': 0,
+  'aria-valuemin': 0,
+  'aria-valuenow': 0,
+  'aria-valuetext': 0,
+  // Live Region Attributes
+  'aria-atomic': 0,
+  'aria-busy': 0,
+  'aria-live': 0,
+  'aria-relevant': 0,
+  // Drag-and-Drop Attributes
+  'aria-dropeffect': 0,
+  'aria-grabbed': 0,
+  // Relationship Attributes
+  'aria-activedescendant': 0,
+  'aria-colcount': 0,
+  'aria-colindex': 0,
+  'aria-colspan': 0,
+  'aria-controls': 0,
+  'aria-describedby': 0,
+  'aria-errormessage': 0,
+  'aria-flowto': 0,
+  'aria-labelledby': 0,
+  'aria-owns': 0,
+  'aria-posinset': 0,
+  'aria-rowcount': 0,
+  'aria-rowindex': 0,
+  'aria-rowspan': 0,
+  'aria-setsize': 0
+};
+
+var warnedProperties = {};
+var rARIA = new RegExp('^(aria)-[' + ATTRIBUTE_NAME_CHAR + ']*$');
+var rARIACamel = new RegExp('^(aria)[A-Z][' + ATTRIBUTE_NAME_CHAR + ']*$');
+var hasOwnProperty$1 = Object.prototype.hasOwnProperty;
+
+function validateProperty(tagName, name) {
+  {
+    if (hasOwnProperty$1.call(warnedProperties, name) && warnedProperties[name]) {
+      return true;
+    }
+
+    if (rARIACamel.test(name)) {
+      var ariaName = 'aria-' + name.slice(4).toLowerCase();
+      var correctName = ariaProperties.hasOwnProperty(ariaName) ? ariaName : null; // If this is an aria-* attribute, but is not listed in the known DOM
+      // DOM properties, then it is an invalid aria-* attribute.
+
+      if (correctName == null) {
+        error('Invalid ARIA attribute `%s`. ARIA attributes follow the pattern aria-* and must be lowercase.', name);
+
+        warnedProperties[name] = true;
+        return true;
+      } // aria-* attributes should be lowercase; suggest the lowercase version.
+
+
+      if (name !== correctName) {
+        error('Invalid ARIA attribute `%s`. Did you mean `%s`?', name, correctName);
+
+        warnedProperties[name] = true;
+        return true;
+      }
+    }
+
+    if (rARIA.test(name)) {
+      var lowerCasedName = name.toLowerCase();
+      var standardName = ariaProperties.hasOwnProperty(lowerCasedName) ? lowerCasedName : null; // If this is an aria-* attribute, but is not listed in the known DOM
+      // DOM properties, then it is an invalid aria-* attribute.
+
+      if (standardName == null) {
+        warnedProperties[name] = true;
+        return false;
+      } // aria-* attributes should be lowercase; suggest the lowercase version.
+
+
+      if (name !== standardName) {
+        error('Unknown ARIA attribute `%s`. Did you mean `%s`?', name, standardName);
+
+        warnedProperties[name] = true;
+        return true;
+      }
+    }
+  }
+
+  return true;
+}
+
+function warnInvalidARIAProps(type, props) {
+  {
+    var invalidProps = [];
+
+    for (var key in props) {
+      var isValid = validateProperty(type, key);
+
+      if (!isValid) {
+        invalidProps.push(key);
+      }
+    }
+
+    var unknownPropString = invalidProps.map(function (prop) {
+      return '`' + prop + '`';
+    }).join(', ');
+
+    if (invalidProps.length === 1) {
+      error('Invalid aria prop %s on <%s> tag. ' + 'For details, see https://fb.me/invalid-aria-prop', unknownPropString, type);
+    } else if (invalidProps.length > 1) {
+      error('Invalid aria props %s on <%s> tag. ' + 'For details, see https://fb.me/invalid-aria-prop', unknownPropString, type);
+    }
+  }
+}
+
+function validateProperties(type, props) {
+  if (isCustomComponent(type, props)) {
+    return;
+  }
+
+  warnInvalidARIAProps(type, props);
+}
+
+var didWarnValueNull = false;
+function validateProperties$1(type, props) {
+  {
+    if (type !== 'input' && type !== 'textarea' && type !== 'select') {
+      return;
+    }
+
+    if (props != null && props.value === null && !didWarnValueNull) {
+      didWarnValueNull = true;
+
+      if (type === 'select' && props.multiple) {
+        error('`value` prop on `%s` should not be null. ' + 'Consider using an empty array when `multiple` is set to `true` ' + 'to clear the component or `undefined` for uncontrolled components.', type);
+      } else {
+        error('`value` prop on `%s` should not be null. ' + 'Consider using an empty string to clear the component or `undefined` ' + 'for uncontrolled components.', type);
+      }
+    }
+  }
+}
+
+/**
+ * Mapping from registration name to plugin module
+ */
+
+var registrationNameModules = {};
+/**
+ * Mapping from lowercase registration names to the properly cased version,
+ * used to warn in the case of missing event handlers. Available
+ * only in true.
+ * @type {Object}
+ */
+
+var possibleRegistrationNames =  {} ; // Trust the developer to only use possibleRegistrationNames in true
+
+// When adding attributes to the HTML or SVG whitelist, be sure to
+// also add them to this module to ensure casing and incorrect name
+// warnings.
+var possibleStandardNames = {
+  // HTML
+  accept: 'accept',
+  acceptcharset: 'acceptCharset',
+  'accept-charset': 'acceptCharset',
+  accesskey: 'accessKey',
+  action: 'action',
+  allowfullscreen: 'allowFullScreen',
+  alt: 'alt',
+  as: 'as',
+  async: 'async',
+  autocapitalize: 'autoCapitalize',
+  autocomplete: 'autoComplete',
+  autocorrect: 'autoCorrect',
+  autofocus: 'autoFocus',
+  autoplay: 'autoPlay',
+  autosave: 'autoSave',
+  capture: 'capture',
+  cellpadding: 'cellPadding',
+  cellspacing: 'cellSpacing',
+  challenge: 'challenge',
+  charset: 'charSet',
+  checked: 'checked',
+  children: 'children',
+  cite: 'cite',
+  class: 'className',
+  classid: 'classID',
+  classname: 'className',
+  cols: 'cols',
+  colspan: 'colSpan',
+  content: 'content',
+  contenteditable: 'contentEditable',
+  contextmenu: 'contextMenu',
+  controls: 'controls',
+  controlslist: 'controlsList',
+  coords: 'coords',
+  crossorigin: 'crossOrigin',
+  dangerouslysetinnerhtml: 'dangerouslySetInnerHTML',
+  data: 'data',
+  datetime: 'dateTime',
+  default: 'default',
+  defaultchecked: 'defaultChecked',
+  defaultvalue: 'defaultValue',
+  defer: 'defer',
+  dir: 'dir',
+  disabled: 'disabled',
+  disablepictureinpicture: 'disablePictureInPicture',
+  download: 'download',
+  draggable: 'draggable',
+  enctype: 'encType',
+  for: 'htmlFor',
+  form: 'form',
+  formmethod: 'formMethod',
+  formaction: 'formAction',
+  formenctype: 'formEncType',
+  formnovalidate: 'formNoValidate',
+  formtarget: 'formTarget',
+  frameborder: 'frameBorder',
+  headers: 'headers',
+  height: 'height',
+  hidden: 'hidden',
+  high: 'high',
+  href: 'href',
+  hreflang: 'hrefLang',
+  htmlfor: 'htmlFor',
+  httpequiv: 'httpEquiv',
+  'http-equiv': 'httpEquiv',
+  icon: 'icon',
+  id: 'id',
+  innerhtml: 'innerHTML',
+  inputmode: 'inputMode',
+  integrity: 'integrity',
+  is: 'is',
+  itemid: 'itemID',
+  itemprop: 'itemProp',
+  itemref: 'itemRef',
+  itemscope: 'itemScope',
+  itemtype: 'itemType',
+  keyparams: 'keyParams',
+  keytype: 'keyType',
+  kind: 'kind',
+  label: 'label',
+  lang: 'lang',
+  list: 'list',
+  loop: 'loop',
+  low: 'low',
+  manifest: 'manifest',
+  marginwidth: 'marginWidth',
+  marginheight: 'marginHeight',
+  max: 'max',
+  maxlength: 'maxLength',
+  media: 'media',
+  mediagroup: 'mediaGroup',
+  method: 'method',
+  min: 'min',
+  minlength: 'minLength',
+  multiple: 'multiple',
+  muted: 'muted',
+  name: 'name',
+  nomodule: 'noModule',
+  nonce: 'nonce',
+  novalidate: 'noValidate',
+  open: 'open',
+  optimum: 'optimum',
+  pattern: 'pattern',
+  placeholder: 'placeholder',
+  playsinline: 'playsInline',
+  poster: 'poster',
+  preload: 'preload',
+  profile: 'profile',
+  radiogroup: 'radioGroup',
+  readonly: 'readOnly',
+  referrerpolicy: 'referrerPolicy',
+  rel: 'rel',
+  required: 'required',
+  reversed: 'reversed',
+  role: 'role',
+  rows: 'rows',
+  rowspan: 'rowSpan',
+  sandbox: 'sandbox',
+  scope: 'scope',
+  scoped: 'scoped',
+  scrolling: 'scrolling',
+  seamless: 'seamless',
+  selected: 'selected',
+  shape: 'shape',
+  size: 'size',
+  sizes: 'sizes',
+  span: 'span',
+  spellcheck: 'spellCheck',
+  src: 'src',
+  srcdoc: 'srcDoc',
+  srclang: 'srcLang',
+  srcset: 'srcSet',
+  start: 'start',
+  step: 'step',
+  style: 'style',
+  summary: 'summary',
+  tabindex: 'tabIndex',
+  target: 'target',
+  title: 'title',
+  type: 'type',
+  usemap: 'useMap',
+  value: 'value',
+  width: 'width',
+  wmode: 'wmode',
+  wrap: 'wrap',
+  // SVG
+  about: 'about',
+  accentheight: 'accentHeight',
+  'accent-height': 'accentHeight',
+  accumulate: 'accumulate',
+  additive: 'additive',
+  alignmentbaseline: 'alignmentBaseline',
+  'alignment-baseline': 'alignmentBaseline',
+  allowreorder: 'allowReorder',
+  alphabetic: 'alphabetic',
+  amplitude: 'amplitude',
+  arabicform: 'arabicForm',
+  'arabic-form': 'arabicForm',
+  ascent: 'ascent',
+  attributename: 'attributeName',
+  attributetype: 'attributeType',
+  autoreverse: 'autoReverse',
+  azimuth: 'azimuth',
+  basefrequency: 'baseFrequency',
+  baselineshift: 'baselineShift',
+  'baseline-shift': 'baselineShift',
+  baseprofile: 'baseProfile',
+  bbox: 'bbox',
+  begin: 'begin',
+  bias: 'bias',
+  by: 'by',
+  calcmode: 'calcMode',
+  capheight: 'capHeight',
+  'cap-height': 'capHeight',
+  clip: 'clip',
+  clippath: 'clipPath',
+  'clip-path': 'clipPath',
+  clippathunits: 'clipPathUnits',
+  cliprule: 'clipRule',
+  'clip-rule': 'clipRule',
+  color: 'color',
+  colorinterpolation: 'colorInterpolation',
+  'color-interpolation': 'colorInterpolation',
+  colorinterpolationfilters: 'colorInterpolationFilters',
+  'color-interpolation-filters': 'colorInterpolationFilters',
+  colorprofile: 'colorProfile',
+  'color-profile': 'colorProfile',
+  colorrendering: 'colorRendering',
+  'color-rendering': 'colorRendering',
+  contentscripttype: 'contentScriptType',
+  contentstyletype: 'contentStyleType',
+  cursor: 'cursor',
+  cx: 'cx',
+  cy: 'cy',
+  d: 'd',
+  datatype: 'datatype',
+  decelerate: 'decelerate',
+  descent: 'descent',
+  diffuseconstant: 'diffuseConstant',
+  direction: 'direction',
+  display: 'display',
+  divisor: 'divisor',
+  dominantbaseline: 'dominantBaseline',
+  'dominant-baseline': 'dominantBaseline',
+  dur: 'dur',
+  dx: 'dx',
+  dy: 'dy',
+  edgemode: 'edgeMode',
+  elevation: 'elevation',
+  enablebackground: 'enableBackground',
+  'enable-background': 'enableBackground',
+  end: 'end',
+  exponent: 'exponent',
+  externalresourcesrequired: 'externalResourcesRequired',
+  fill: 'fill',
+  fillopacity: 'fillOpacity',
+  'fill-opacity': 'fillOpacity',
+  fillrule: 'fillRule',
+  'fill-rule': 'fillRule',
+  filter: 'filter',
+  filterres: 'filterRes',
+  filterunits: 'filterUnits',
+  floodopacity: 'floodOpacity',
+  'flood-opacity': 'floodOpacity',
+  floodcolor: 'floodColor',
+  'flood-color': 'floodColor',
+  focusable: 'focusable',
+  fontfamily: 'fontFamily',
+  'font-family': 'fontFamily',
+  fontsize: 'fontSize',
+  'font-size': 'fontSize',
+  fontsizeadjust: 'fontSizeAdjust',
+  'font-size-adjust': 'fontSizeAdjust',
+  fontstretch: 'fontStretch',
+  'font-stretch': 'fontStretch',
+  fontstyle: 'fontStyle',
+  'font-style': 'fontStyle',
+  fontvariant: 'fontVariant',
+  'font-variant': 'fontVariant',
+  fontweight: 'fontWeight',
+  'font-weight': 'fontWeight',
+  format: 'format',
+  from: 'from',
+  fx: 'fx',
+  fy: 'fy',
+  g1: 'g1',
+  g2: 'g2',
+  glyphname: 'glyphName',
+  'glyph-name': 'glyphName',
+  glyphorientationhorizontal: 'glyphOrientationHorizontal',
+  'glyph-orientation-horizontal': 'glyphOrientationHorizontal',
+  glyphorientationvertical: 'glyphOrientationVertical',
+  'glyph-orientation-vertical': 'glyphOrientationVertical',
+  glyphref: 'glyphRef',
+  gradienttransform: 'gradientTransform',
+  gradientunits: 'gradientUnits',
+  hanging: 'hanging',
+  horizadvx: 'horizAdvX',
+  'horiz-adv-x': 'horizAdvX',
+  horizoriginx: 'horizOriginX',
+  'horiz-origin-x': 'horizOriginX',
+  ideographic: 'ideographic',
+  imagerendering: 'imageRendering',
+  'image-rendering': 'imageRendering',
+  in2: 'in2',
+  in: 'in',
+  inlist: 'inlist',
+  intercept: 'intercept',
+  k1: 'k1',
+  k2: 'k2',
+  k3: 'k3',
+  k4: 'k4',
+  k: 'k',
+  kernelmatrix: 'kernelMatrix',
+  kernelunitlength: 'kernelUnitLength',
+  kerning: 'kerning',
+  keypoints: 'keyPoints',
+  keysplines: 'keySplines',
+  keytimes: 'keyTimes',
+  lengthadjust: 'lengthAdjust',
+  letterspacing: 'letterSpacing',
+  'letter-spacing': 'letterSpacing',
+  lightingcolor: 'lightingColor',
+  'lighting-color': 'lightingColor',
+  limitingconeangle: 'limitingConeAngle',
+  local: 'local',
+  markerend: 'markerEnd',
+  'marker-end': 'markerEnd',
+  markerheight: 'markerHeight',
+  markermid: 'markerMid',
+  'marker-mid': 'markerMid',
+  markerstart: 'markerStart',
+  'marker-start': 'markerStart',
+  markerunits: 'markerUnits',
+  markerwidth: 'markerWidth',
+  mask: 'mask',
+  maskcontentunits: 'maskContentUnits',
+  maskunits: 'maskUnits',
+  mathematical: 'mathematical',
+  mode: 'mode',
+  numoctaves: 'numOctaves',
+  offset: 'offset',
+  opacity: 'opacity',
+  operator: 'operator',
+  order: 'order',
+  orient: 'orient',
+  orientation: 'orientation',
+  origin: 'origin',
+  overflow: 'overflow',
+  overlineposition: 'overlinePosition',
+  'overline-position': 'overlinePosition',
+  overlinethickness: 'overlineThickness',
+  'overline-thickness': 'overlineThickness',
+  paintorder: 'paintOrder',
+  'paint-order': 'paintOrder',
+  panose1: 'panose1',
+  'panose-1': 'panose1',
+  pathlength: 'pathLength',
+  patterncontentunits: 'patternContentUnits',
+  patterntransform: 'patternTransform',
+  patternunits: 'patternUnits',
+  pointerevents: 'pointerEvents',
+  'pointer-events': 'pointerEvents',
+  points: 'points',
+  pointsatx: 'pointsAtX',
+  pointsaty: 'pointsAtY',
+  pointsatz: 'pointsAtZ',
+  prefix: 'prefix',
+  preservealpha: 'preserveAlpha',
+  preserveaspectratio: 'preserveAspectRatio',
+  primitiveunits: 'primitiveUnits',
+  property: 'property',
+  r: 'r',
+  radius: 'radius',
+  refx: 'refX',
+  refy: 'refY',
+  renderingintent: 'renderingIntent',
+  'rendering-intent': 'renderingIntent',
+  repeatcount: 'repeatCount',
+  repeatdur: 'repeatDur',
+  requiredextensions: 'requiredExtensions',
+  requiredfeatures: 'requiredFeatures',
+  resource: 'resource',
+  restart: 'restart',
+  result: 'result',
+  results: 'results',
+  rotate: 'rotate',
+  rx: 'rx',
+  ry: 'ry',
+  scale: 'scale',
+  security: 'security',
+  seed: 'seed',
+  shaperendering: 'shapeRendering',
+  'shape-rendering': 'shapeRendering',
+  slope: 'slope',
+  spacing: 'spacing',
+  specularconstant: 'specularConstant',
+  specularexponent: 'specularExponent',
+  speed: 'speed',
+  spreadmethod: 'spreadMethod',
+  startoffset: 'startOffset',
+  stddeviation: 'stdDeviation',
+  stemh: 'stemh',
+  stemv: 'stemv',
+  stitchtiles: 'stitchTiles',
+  stopcolor: 'stopColor',
+  'stop-color': 'stopColor',
+  stopopacity: 'stopOpacity',
+  'stop-opacity': 'stopOpacity',
+  strikethroughposition: 'strikethroughPosition',
+  'strikethrough-position': 'strikethroughPosition',
+  strikethroughthickness: 'strikethroughThickness',
+  'strikethrough-thickness': 'strikethroughThickness',
+  string: 'string',
+  stroke: 'stroke',
+  strokedasharray: 'strokeDasharray',
+  'stroke-dasharray': 'strokeDasharray',
+  strokedashoffset: 'strokeDashoffset',
+  'stroke-dashoffset': 'strokeDashoffset',
+  strokelinecap: 'strokeLinecap',
+  'stroke-linecap': 'strokeLinecap',
+  strokelinejoin: 'strokeLinejoin',
+  'stroke-linejoin': 'strokeLinejoin',
+  strokemiterlimit: 'strokeMiterlimit',
+  'stroke-miterlimit': 'strokeMiterlimit',
+  strokewidth: 'strokeWidth',
+  'stroke-width': 'strokeWidth',
+  strokeopacity: 'strokeOpacity',
+  'stroke-opacity': 'strokeOpacity',
+  suppresscontenteditablewarning: 'suppressContentEditableWarning',
+  suppresshydrationwarning: 'suppressHydrationWarning',
+  surfacescale: 'surfaceScale',
+  systemlanguage: 'systemLanguage',
+  tablevalues: 'tableValues',
+  targetx: 'targetX',
+  targety: 'targetY',
+  textanchor: 'textAnchor',
+  'text-anchor': 'textAnchor',
+  textdecoration: 'textDecoration',
+  'text-decoration': 'textDecoration',
+  textlength: 'textLength',
+  textrendering: 'textRendering',
+  'text-rendering': 'textRendering',
+  to: 'to',
+  transform: 'transform',
+  typeof: 'typeof',
+  u1: 'u1',
+  u2: 'u2',
+  underlineposition: 'underlinePosition',
+  'underline-position': 'underlinePosition',
+  underlinethickness: 'underlineThickness',
+  'underline-thickness': 'underlineThickness',
+  unicode: 'unicode',
+  unicodebidi: 'unicodeBidi',
+  'unicode-bidi': 'unicodeBidi',
+  unicoderange: 'unicodeRange',
+  'unicode-range': 'unicodeRange',
+  unitsperem: 'unitsPerEm',
+  'units-per-em': 'unitsPerEm',
+  unselectable: 'unselectable',
+  valphabetic: 'vAlphabetic',
+  'v-alphabetic': 'vAlphabetic',
+  values: 'values',
+  vectoreffect: 'vectorEffect',
+  'vector-effect': 'vectorEffect',
+  version: 'version',
+  vertadvy: 'vertAdvY',
+  'vert-adv-y': 'vertAdvY',
+  vertoriginx: 'vertOriginX',
+  'vert-origin-x': 'vertOriginX',
+  vertoriginy: 'vertOriginY',
+  'vert-origin-y': 'vertOriginY',
+  vhanging: 'vHanging',
+  'v-hanging': 'vHanging',
+  videographic: 'vIdeographic',
+  'v-ideographic': 'vIdeographic',
+  viewbox: 'viewBox',
+  viewtarget: 'viewTarget',
+  visibility: 'visibility',
+  vmathematical: 'vMathematical',
+  'v-mathematical': 'vMathematical',
+  vocab: 'vocab',
+  widths: 'widths',
+  wordspacing: 'wordSpacing',
+  'word-spacing': 'wordSpacing',
+  writingmode: 'writingMode',
+  'writing-mode': 'writingMode',
+  x1: 'x1',
+  x2: 'x2',
+  x: 'x',
+  xchannelselector: 'xChannelSelector',
+  xheight: 'xHeight',
+  'x-height': 'xHeight',
+  xlinkactuate: 'xlinkActuate',
+  'xlink:actuate': 'xlinkActuate',
+  xlinkarcrole: 'xlinkArcrole',
+  'xlink:arcrole': 'xlinkArcrole',
+  xlinkhref: 'xlinkHref',
+  'xlink:href': 'xlinkHref',
+  xlinkrole: 'xlinkRole',
+  'xlink:role': 'xlinkRole',
+  xlinkshow: 'xlinkShow',
+  'xlink:show': 'xlinkShow',
+  xlinktitle: 'xlinkTitle',
+  'xlink:title': 'xlinkTitle',
+  xlinktype: 'xlinkType',
+  'xlink:type': 'xlinkType',
+  xmlbase: 'xmlBase',
+  'xml:base': 'xmlBase',
+  xmllang: 'xmlLang',
+  'xml:lang': 'xmlLang',
+  xmlns: 'xmlns',
+  'xml:space': 'xmlSpace',
+  xmlnsxlink: 'xmlnsXlink',
+  'xmlns:xlink': 'xmlnsXlink',
+  xmlspace: 'xmlSpace',
+  y1: 'y1',
+  y2: 'y2',
+  y: 'y',
+  ychannelselector: 'yChannelSelector',
+  z: 'z',
+  zoomandpan: 'zoomAndPan'
+};
+
+var validateProperty$1 = function () {};
+
+{
+  var warnedProperties$1 = {};
+  var _hasOwnProperty = Object.prototype.hasOwnProperty;
+  var EVENT_NAME_REGEX = /^on./;
+  var INVALID_EVENT_NAME_REGEX = /^on[^A-Z]/;
+  var rARIA$1 = new RegExp('^(aria)-[' + ATTRIBUTE_NAME_CHAR + ']*$');
+  var rARIACamel$1 = new RegExp('^(aria)[A-Z][' + ATTRIBUTE_NAME_CHAR + ']*$');
+
+  validateProperty$1 = function (tagName, name, value, canUseEventSystem) {
+    if (_hasOwnProperty.call(warnedProperties$1, name) && warnedProperties$1[name]) {
+      return true;
+    }
+
+    var lowerCasedName = name.toLowerCase();
+
+    if (lowerCasedName === 'onfocusin' || lowerCasedName === 'onfocusout') {
+      error('React uses onFocus and onBlur instead of onFocusIn and onFocusOut. ' + 'All React events are normalized to bubble, so onFocusIn and onFocusOut ' + 'are not needed/supported by React.');
+
+      warnedProperties$1[name] = true;
+      return true;
+    } // We can't rely on the event system being injected on the server.
+
+
+    if (canUseEventSystem) {
+      if (registrationNameModules.hasOwnProperty(name)) {
+        return true;
+      }
+
+      var registrationName = possibleRegistrationNames.hasOwnProperty(lowerCasedName) ? possibleRegistrationNames[lowerCasedName] : null;
+
+      if (registrationName != null) {
+        error('Invalid event handler property `%s`. Did you mean `%s`?', name, registrationName);
+
+        warnedProperties$1[name] = true;
+        return true;
+      }
+
+      if (EVENT_NAME_REGEX.test(name)) {
+        error('Unknown event handler property `%s`. It will be ignored.', name);
+
+        warnedProperties$1[name] = true;
+        return true;
+      }
+    } else if (EVENT_NAME_REGEX.test(name)) {
+      // If no event plugins have been injected, we are in a server environment.
+      // So we can't tell if the event name is correct for sure, but we can filter
+      // out known bad ones like `onclick`. We can't suggest a specific replacement though.
+      if (INVALID_EVENT_NAME_REGEX.test(name)) {
+        error('Invalid event handler property `%s`. ' + 'React events use the camelCase naming convention, for example `onClick`.', name);
+      }
+
+      warnedProperties$1[name] = true;
+      return true;
+    } // Let the ARIA attribute hook validate ARIA attributes
+
+
+    if (rARIA$1.test(name) || rARIACamel$1.test(name)) {
+      return true;
+    }
+
+    if (lowerCasedName === 'innerhtml') {
+      error('Directly setting property `innerHTML` is not permitted. ' + 'For more information, lookup documentation on `dangerouslySetInnerHTML`.');
+
+      warnedProperties$1[name] = true;
+      return true;
+    }
+
+    if (lowerCasedName === 'aria') {
+      error('The `aria` attribute is reserved for future use in React. ' + 'Pass individual `aria-` attributes instead.');
+
+      warnedProperties$1[name] = true;
+      return true;
+    }
+
+    if (lowerCasedName === 'is' && value !== null && value !== undefined && typeof value !== 'string') {
+      error('Received a `%s` for a string attribute `is`. If this is expected, cast ' + 'the value to a string.', typeof value);
+
+      warnedProperties$1[name] = true;
+      return true;
+    }
+
+    if (typeof value === 'number' && isNaN(value)) {
+      error('Received NaN for the `%s` attribute. If this is expected, cast ' + 'the value to a string.', name);
+
+      warnedProperties$1[name] = true;
+      return true;
+    }
+
+    var propertyInfo = getPropertyInfo(name);
+    var isReserved = propertyInfo !== null && propertyInfo.type === RESERVED; // Known attributes should match the casing specified in the property config.
+
+    if (possibleStandardNames.hasOwnProperty(lowerCasedName)) {
+      var standardName = possibleStandardNames[lowerCasedName];
+
+      if (standardName !== name) {
+        error('Invalid DOM property `%s`. Did you mean `%s`?', name, standardName);
+
+        warnedProperties$1[name] = true;
+        return true;
+      }
+    } else if (!isReserved && name !== lowerCasedName) {
+      // Unknown attributes should have lowercase casing since that's how they
+      // will be cased anyway with server rendering.
+      error('React does not recognize the `%s` prop on a DOM element. If you ' + 'intentionally want it to appear in the DOM as a custom ' + 'attribute, spell it as lowercase `%s` instead. ' + 'If you accidentally passed it from a parent component, remove ' + 'it from the DOM element.', name, lowerCasedName);
+
+      warnedProperties$1[name] = true;
+      return true;
+    }
+
+    if (typeof value === 'boolean' && shouldRemoveAttributeWithWarning(name, value, propertyInfo, false)) {
+      if (value) {
+        error('Received `%s` for a non-boolean attribute `%s`.\n\n' + 'If you want to write it to the DOM, pass a string instead: ' + '%s="%s" or %s={value.toString()}.', value, name, name, value, name);
+      } else {
+        error('Received `%s` for a non-boolean attribute `%s`.\n\n' + 'If you want to write it to the DOM, pass a string instead: ' + '%s="%s" or %s={value.toString()}.\n\n' + 'If you used to conditionally omit it with %s={condition && value}, ' + 'pass %s={condition ? value : undefined} instead.', value, name, name, value, name, name, name);
+      }
+
+      warnedProperties$1[name] = true;
+      return true;
+    } // Now that we've validated casing, do not validate
+    // data types for reserved props
+
+
+    if (isReserved) {
+      return true;
+    } // Warn when a known attribute is a bad type
+
+
+    if (shouldRemoveAttributeWithWarning(name, value, propertyInfo, false)) {
+      warnedProperties$1[name] = true;
+      return false;
+    } // Warn when passing the strings 'false' or 'true' into a boolean prop
+
+
+    if ((value === 'false' || value === 'true') && propertyInfo !== null && propertyInfo.type === BOOLEAN) {
+      error('Received the string `%s` for the boolean attribute `%s`. ' + '%s ' + 'Did you mean %s={%s}?', value, name, value === 'false' ? 'The browser will interpret it as a truthy value.' : 'Although this works, it will not work as expected if you pass the string "false".', name, value);
+
+      warnedProperties$1[name] = true;
+      return true;
+    }
+
+    return true;
+  };
+}
+
+var warnUnknownProperties = function (type, props, canUseEventSystem) {
+  {
+    var unknownProps = [];
+
+    for (var key in props) {
+      var isValid = validateProperty$1(type, key, props[key], canUseEventSystem);
+
+      if (!isValid) {
+        unknownProps.push(key);
+      }
+    }
+
+    var unknownPropString = unknownProps.map(function (prop) {
+      return '`' + prop + '`';
+    }).join(', ');
+
+    if (unknownProps.length === 1) {
+      error('Invalid value for prop %s on <%s> tag. Either remove it from the element, ' + 'or pass a string or number value to keep it in the DOM. ' + 'For details, see https://fb.me/react-attribute-behavior', unknownPropString, type);
+    } else if (unknownProps.length > 1) {
+      error('Invalid values for props %s on <%s> tag. Either remove them from the element, ' + 'or pass a string or number value to keep them in the DOM. ' + 'For details, see https://fb.me/react-attribute-behavior', unknownPropString, type);
+    }
+  }
+};
+
+function validateProperties$2(type, props, canUseEventSystem) {
+  if (isCustomComponent(type, props)) {
+    return;
+  }
+
+  warnUnknownProperties(type, props, canUseEventSystem);
+}
+
+var toArray = React.Children.toArray; // This is only used in DEV.
+// Each entry is `this.stack` from a currently executing renderer instance.
+// (There may be more than one because ReactDOMServer is reentrant).
+// Each stack is an array of frames which may contain nested stacks of elements.
+
+var currentDebugStacks = [];
+var ReactCurrentDispatcher = ReactSharedInternals.ReactCurrentDispatcher;
+var ReactDebugCurrentFrame$4;
+var prevGetCurrentStackImpl = null;
+
+var getCurrentServerStackImpl = function () {
+  return '';
+};
+
+var describeStackFrame = function (element) {
+  return '';
+};
+
+var validatePropertiesInDevelopment = function (type, props) {};
+
+var pushCurrentDebugStack = function (stack) {};
+
+var pushElementToDebugStack = function (element) {};
+
+var popCurrentDebugStack = function () {};
+
+var hasWarnedAboutUsingContextAsConsumer = false;
+
+{
+  ReactDebugCurrentFrame$4 = ReactSharedInternals.ReactDebugCurrentFrame;
+
+  validatePropertiesInDevelopment = function (type, props) {
+    validateProperties(type, props);
+    validateProperties$1(type, props);
+    validateProperties$2(type, props,
+    /* canUseEventSystem */
+    false);
+  };
+
+  describeStackFrame = function (element) {
+    var source = element._source;
+    var type = element.type;
+    var name = getComponentName(type);
+    var ownerName = null;
+    return describeComponentFrame(name, source, ownerName);
+  };
+
+  pushCurrentDebugStack = function (stack) {
+    currentDebugStacks.push(stack);
+
+    if (currentDebugStacks.length === 1) {
+      // We are entering a server renderer.
+      // Remember the previous (e.g. client) global stack implementation.
+      prevGetCurrentStackImpl = ReactDebugCurrentFrame$4.getCurrentStack;
+      ReactDebugCurrentFrame$4.getCurrentStack = getCurrentServerStackImpl;
+    }
+  };
+
+  pushElementToDebugStack = function (element) {
+    // For the innermost executing ReactDOMServer call,
+    var stack = currentDebugStacks[currentDebugStacks.length - 1]; // Take the innermost executing frame (e.g. <Foo>),
+
+    var frame = stack[stack.length - 1]; // and record that it has one more element associated with it.
+
+    frame.debugElementStack.push(element); // We only need this because we tail-optimize single-element
+    // children and directly handle them in an inner loop instead of
+    // creating separate frames for them.
+  };
+
+  popCurrentDebugStack = function () {
+    currentDebugStacks.pop();
+
+    if (currentDebugStacks.length === 0) {
+      // We are exiting the server renderer.
+      // Restore the previous (e.g. client) global stack implementation.
+      ReactDebugCurrentFrame$4.getCurrentStack = prevGetCurrentStackImpl;
+      prevGetCurrentStackImpl = null;
+    }
+  };
+
+  getCurrentServerStackImpl = function () {
+    if (currentDebugStacks.length === 0) {
+      // Nothing is currently rendering.
+      return '';
+    } // ReactDOMServer is reentrant so there may be multiple calls at the same time.
+    // Take the frames from the innermost call which is the last in the array.
+
+
+    var frames = currentDebugStacks[currentDebugStacks.length - 1];
+    var stack = ''; // Go through every frame in the stack from the innermost one.
+
+    for (var i = frames.length - 1; i >= 0; i--) {
+      var frame = frames[i]; // Every frame might have more than one debug element stack entry associated with it.
+      // This is because single-child nesting doesn't create materialized frames.
+      // Instead it would push them through `pushElementToDebugStack()`.
+
+      var debugElementStack = frame.debugElementStack;
+
+      for (var ii = debugElementStack.length - 1; ii >= 0; ii--) {
+        stack += describeStackFrame(debugElementStack[ii]);
+      }
+    }
+
+    return stack;
+  };
+}
+
+var didWarnDefaultInputValue = false;
+var didWarnDefaultChecked = false;
+var didWarnDefaultSelectValue = false;
+var didWarnDefaultTextareaValue = false;
+var didWarnInvalidOptionChildren = false;
+var didWarnAboutNoopUpdateForComponent = {};
+var didWarnAboutBadClass = {};
+var didWarnAboutModulePatternComponent = {};
+var didWarnAboutDeprecatedWillMount = {};
+var didWarnAboutUndefinedDerivedState = {};
+var didWarnAboutUninitializedState = {};
+var valuePropNames = ['value', 'defaultValue'];
+var newlineEatingTags = {
+  listing: true,
+  pre: true,
+  textarea: true
+}; // We accept any tag to be rendered but since this gets injected into arbitrary
+// HTML, we want to make sure that it's a safe tag.
+// http://www.w3.org/TR/REC-xml/#NT-Name
+
+var VALID_TAG_REGEX = /^[a-zA-Z][a-zA-Z:_\.\-\d]*$/; // Simplified subset
+
+var validatedTagCache = {};
+
+function validateDangerousTag(tag) {
+  if (!validatedTagCache.hasOwnProperty(tag)) {
+    if (!VALID_TAG_REGEX.test(tag)) {
+      {
+        throw Error( "Invalid tag: " + tag );
+      }
+    }
+
+    validatedTagCache[tag] = true;
+  }
+}
+
+var styleNameCache = {};
+
+var processStyleName = function (styleName) {
+  if (styleNameCache.hasOwnProperty(styleName)) {
+    return styleNameCache[styleName];
+  }
+
+  var result = hyphenateStyleName(styleName);
+  styleNameCache[styleName] = result;
+  return result;
+};
+
+function createMarkupForStyles(styles) {
+  var serialized = '';
+  var delimiter = '';
+
+  for (var styleName in styles) {
+    if (!styles.hasOwnProperty(styleName)) {
+      continue;
+    }
+
+    var isCustomProperty = styleName.indexOf('--') === 0;
+    var styleValue = styles[styleName];
+
+    {
+      if (!isCustomProperty) {
+        warnValidStyle$1(styleName, styleValue);
+      }
+    }
+
+    if (styleValue != null) {
+      serialized += delimiter + (isCustomProperty ? styleName : processStyleName(styleName)) + ':';
+      serialized += dangerousStyleValue(styleName, styleValue, isCustomProperty);
+      delimiter = ';';
+    }
+  }
+
+  return serialized || null;
+}
+
+function warnNoop(publicInstance, callerName) {
+  {
+    var _constructor = publicInstance.constructor;
+    var componentName = _constructor && getComponentName(_constructor) || 'ReactClass';
+    var warningKey = componentName + '.' + callerName;
+
+    if (didWarnAboutNoopUpdateForComponent[warningKey]) {
+      return;
+    }
+
+    error('%s(...): Can only update a mounting component. ' + 'This usually means you called %s() outside componentWillMount() on the server. ' + 'This is a no-op.\n\nPlease check the code for the %s component.', callerName, callerName, componentName);
+
+    didWarnAboutNoopUpdateForComponent[warningKey] = true;
+  }
+}
+
+function shouldConstruct(Component) {
+  return Component.prototype && Component.prototype.isReactComponent;
+}
+
+function getNonChildrenInnerMarkup(props) {
+  var innerHTML = props.dangerouslySetInnerHTML;
+
+  if (innerHTML != null) {
+    if (innerHTML.__html != null) {
+      return innerHTML.__html;
+    }
+  } else {
+    var content = props.children;
+
+    if (typeof content === 'string' || typeof content === 'number') {
+      return escapeTextForBrowser(content);
+    }
+  }
+
+  return null;
+}
+
+function flattenTopLevelChildren(children) {
+  if (!React.isValidElement(children)) {
+    return toArray(children);
+  }
+
+  var element = children;
+
+  if (element.type !== REACT_FRAGMENT_TYPE) {
+    return [element];
+  }
+
+  var fragmentChildren = element.props.children;
+
+  if (!React.isValidElement(fragmentChildren)) {
+    return toArray(fragmentChildren);
+  }
+
+  var fragmentChildElement = fragmentChildren;
+  return [fragmentChildElement];
+}
+
+function flattenOptionChildren(children) {
+  if (children === undefined || children === null) {
+    return children;
+  }
+
+  var content = ''; // Flatten children and warn if they aren't strings or numbers;
+  // invalid types are ignored.
+
+  React.Children.forEach(children, function (child) {
+    if (child == null) {
+      return;
+    }
+
+    content += child;
+
+    {
+      if (!didWarnInvalidOptionChildren && typeof child !== 'string' && typeof child !== 'number') {
+        didWarnInvalidOptionChildren = true;
+
+        error('Only strings and numbers are supported as <option> children.');
+      }
+    }
+  });
+  return content;
+}
+
+var hasOwnProperty$2 = Object.prototype.hasOwnProperty;
+var STYLE = 'style';
+var RESERVED_PROPS = {
+  children: null,
+  dangerouslySetInnerHTML: null,
+  suppressContentEditableWarning: null,
+  suppressHydrationWarning: null
+};
+
+function createOpenTagMarkup(tagVerbatim, tagLowercase, props, namespace, makeStaticMarkup, isRootElement) {
+  var ret = '<' + tagVerbatim;
+
+  for (var propKey in props) {
+    if (!hasOwnProperty$2.call(props, propKey)) {
+      continue;
+    }
+
+    var propValue = props[propKey];
+
+    if (propValue == null) {
+      continue;
+    }
+
+    if (propKey === STYLE) {
+      propValue = createMarkupForStyles(propValue);
+    }
+
+    var markup = null;
+
+    if (isCustomComponent(tagLowercase, props)) {
+      if (!RESERVED_PROPS.hasOwnProperty(propKey)) {
+        markup = createMarkupForCustomAttribute(propKey, propValue);
+      }
+    } else {
+      markup = createMarkupForProperty(propKey, propValue);
+    }
+
+    if (markup) {
+      ret += ' ' + markup;
+    }
+  } // For static pages, no need to put React ID and checksum. Saves lots of
+  // bytes.
+
+
+  if (makeStaticMarkup) {
+    return ret;
+  }
+
+  if (isRootElement) {
+    ret += ' ' + createMarkupForRoot();
+  }
+
+  return ret;
+}
+
+function validateRenderResult(child, type) {
+  if (child === undefined) {
+    {
+      {
+        throw Error( (getComponentName(type) || 'Component') + "(...): Nothing was returned from render. This usually means a return statement is missing. Or, to render nothing, return null." );
+      }
+    }
+  }
+}
+
+function resolve(child, context, threadID) {
+  while (React.isValidElement(child)) {
+    // Safe because we just checked it's an element.
+    var element = child;
+    var Component = element.type;
+
+    {
+      pushElementToDebugStack(element);
+    }
+
+    if (typeof Component !== 'function') {
+      break;
+    }
+
+    processChild(element, Component);
+  } // Extra closure so queue and replace can be captured properly
+
+
+  function processChild(element, Component) {
+    var isClass = shouldConstruct(Component);
+    var publicContext = processContext(Component, context, threadID, isClass);
+    var queue = [];
+    var replace = false;
+    var updater = {
+      isMounted: function (publicInstance) {
+        return false;
+      },
+      enqueueForceUpdate: function (publicInstance) {
+        if (queue === null) {
+          warnNoop(publicInstance, 'forceUpdate');
+          return null;
+        }
+      },
+      enqueueReplaceState: function (publicInstance, completeState) {
+        replace = true;
+        queue = [completeState];
+      },
+      enqueueSetState: function (publicInstance, currentPartialState) {
+        if (queue === null) {
+          warnNoop(publicInstance, 'setState');
+          return null;
+        }
+
+        queue.push(currentPartialState);
+      }
+    };
+    var inst;
+
+    if (isClass) {
+      inst = new Component(element.props, publicContext, updater);
+
+      if (typeof Component.getDerivedStateFromProps === 'function') {
+        {
+          if (inst.state === null || inst.state === undefined) {
+            var componentName = getComponentName(Component) || 'Unknown';
+
+            if (!didWarnAboutUninitializedState[componentName]) {
+              error('`%s` uses `getDerivedStateFromProps` but its initial state is ' + '%s. This is not recommended. Instead, define the initial state by ' + 'assigning an object to `this.state` in the constructor of `%s`. ' + 'This ensures that `getDerivedStateFromProps` arguments have a consistent shape.', componentName, inst.state === null ? 'null' : 'undefined', componentName);
+
+              didWarnAboutUninitializedState[componentName] = true;
+            }
+          }
+        }
+
+        var partialState = Component.getDerivedStateFromProps.call(null, element.props, inst.state);
+
+        {
+          if (partialState === undefined) {
+            var _componentName = getComponentName(Component) || 'Unknown';
+
+            if (!didWarnAboutUndefinedDerivedState[_componentName]) {
+              error('%s.getDerivedStateFromProps(): A valid state object (or null) must be returned. ' + 'You have returned undefined.', _componentName);
+
+              didWarnAboutUndefinedDerivedState[_componentName] = true;
+            }
+          }
+        }
+
+        if (partialState != null) {
+          inst.state = _assign({}, inst.state, partialState);
+        }
+      }
+    } else {
+      {
+        if (Component.prototype && typeof Component.prototype.render === 'function') {
+          var _componentName2 = getComponentName(Component) || 'Unknown';
+
+          if (!didWarnAboutBadClass[_componentName2]) {
+            error("The <%s /> component appears to have a render method, but doesn't extend React.Component. " + 'This is likely to cause errors. Change %s to extend React.Component instead.', _componentName2, _componentName2);
+
+            didWarnAboutBadClass[_componentName2] = true;
+          }
+        }
+      }
+
+      var componentIdentity = {};
+      prepareToUseHooks(componentIdentity);
+      inst = Component(element.props, publicContext, updater);
+      inst = finishHooks(Component, element.props, inst, publicContext);
+
+      if (inst == null || inst.render == null) {
+        child = inst;
+        validateRenderResult(child, Component);
+        return;
+      }
+
+      {
+        var _componentName3 = getComponentName(Component) || 'Unknown';
+
+        if (!didWarnAboutModulePatternComponent[_componentName3]) {
+          error('The <%s /> component appears to be a function component that returns a class instance. ' + 'Change %s to a class that extends React.Component instead. ' + "If you can't use a class try assigning the prototype on the function as a workaround. " + "`%s.prototype = React.Component.prototype`. Don't use an arrow function since it " + 'cannot be called with `new` by React.', _componentName3, _componentName3, _componentName3);
+
+          didWarnAboutModulePatternComponent[_componentName3] = true;
+        }
+      }
+    }
+
+    inst.props = element.props;
+    inst.context = publicContext;
+    inst.updater = updater;
+    var initialState = inst.state;
+
+    if (initialState === undefined) {
+      inst.state = initialState = null;
+    }
+
+    if (typeof inst.UNSAFE_componentWillMount === 'function' || typeof inst.componentWillMount === 'function') {
+      if (typeof inst.componentWillMount === 'function') {
+        {
+          if ( inst.componentWillMount.__suppressDeprecationWarning !== true) {
+            var _componentName4 = getComponentName(Component) || 'Unknown';
+
+            if (!didWarnAboutDeprecatedWillMount[_componentName4]) {
+              warn( // keep this warning in sync with ReactStrictModeWarning.js
+              'componentWillMount has been renamed, and is not recommended for use. ' + 'See https://fb.me/react-unsafe-component-lifecycles for details.\n\n' + '* Move code from componentWillMount to componentDidMount (preferred in most cases) ' + 'or the constructor.\n' + '\nPlease update the following components: %s', _componentName4);
+
+              didWarnAboutDeprecatedWillMount[_componentName4] = true;
+            }
+          }
+        } // In order to support react-lifecycles-compat polyfilled components,
+        // Unsafe lifecycles should not be invoked for any component with the new gDSFP.
+
+
+        if (typeof Component.getDerivedStateFromProps !== 'function') {
+          inst.componentWillMount();
+        }
+      }
+
+      if (typeof inst.UNSAFE_componentWillMount === 'function' && typeof Component.getDerivedStateFromProps !== 'function') {
+        // In order to support react-lifecycles-compat polyfilled components,
+        // Unsafe lifecycles should not be invoked for any component with the new gDSFP.
+        inst.UNSAFE_componentWillMount();
+      }
+
+      if (queue.length) {
+        var oldQueue = queue;
+        var oldReplace = replace;
+        queue = null;
+        replace = false;
+
+        if (oldReplace && oldQueue.length === 1) {
+          inst.state = oldQueue[0];
+        } else {
+          var nextState = oldReplace ? oldQueue[0] : inst.state;
+          var dontMutate = true;
+
+          for (var i = oldReplace ? 1 : 0; i < oldQueue.length; i++) {
+            var partial = oldQueue[i];
+
+            var _partialState = typeof partial === 'function' ? partial.call(inst, nextState, element.props, publicContext) : partial;
+
+            if (_partialState != null) {
+              if (dontMutate) {
+                dontMutate = false;
+                nextState = _assign({}, nextState, _partialState);
+              } else {
+                _assign(nextState, _partialState);
+              }
+            }
+          }
+
+          inst.state = nextState;
+        }
+      } else {
+        queue = null;
+      }
+    }
+
+    child = inst.render();
+
+    {
+      if (child === undefined && inst.render._isMockFunction) {
+        // This is probably bad practice. Consider warning here and
+        // deprecating this convenience.
+        child = null;
+      }
+    }
+
+    validateRenderResult(child, Component);
+    var childContext;
+
+    {
+      if (typeof inst.getChildContext === 'function') {
+        var _childContextTypes = Component.childContextTypes;
+
+        if (typeof _childContextTypes === 'object') {
+          childContext = inst.getChildContext();
+
+          for (var contextKey in childContext) {
+            if (!(contextKey in _childContextTypes)) {
+              {
+                throw Error( (getComponentName(Component) || 'Unknown') + ".getChildContext(): key \"" + contextKey + "\" is not defined in childContextTypes." );
+              }
+            }
+          }
+        } else {
+          {
+            error('%s.getChildContext(): childContextTypes must be defined in order to ' + 'use getChildContext().', getComponentName(Component) || 'Unknown');
+          }
+        }
+      }
+
+      if (childContext) {
+        context = _assign({}, context, childContext);
+      }
+    }
+  }
+
+  return {
+    child: child,
+    context: context
+  };
+}
+
+var ReactDOMServerRenderer =
+/*#__PURE__*/
+function () {
+  // TODO: type this more strictly:
+  // DEV-only
+  function ReactDOMServerRenderer(children, makeStaticMarkup) {
+    var flatChildren = flattenTopLevelChildren(children);
+    var topFrame = {
+      type: null,
+      // Assume all trees start in the HTML namespace (not totally true, but
+      // this is what we did historically)
+      domNamespace: Namespaces.html,
+      children: flatChildren,
+      childIndex: 0,
+      context: emptyObject,
+      footer: ''
+    };
+
+    {
+      topFrame.debugElementStack = [];
+    }
+
+    this.threadID = allocThreadID();
+    this.stack = [topFrame];
+    this.exhausted = false;
+    this.currentSelectValue = null;
+    this.previousWasTextNode = false;
+    this.makeStaticMarkup = makeStaticMarkup;
+    this.suspenseDepth = 0; // Context (new API)
+
+    this.contextIndex = -1;
+    this.contextStack = [];
+    this.contextValueStack = [];
+
+    {
+      this.contextProviderStack = [];
+    }
+  }
+
+  var _proto = ReactDOMServerRenderer.prototype;
+
+  _proto.destroy = function destroy() {
+    if (!this.exhausted) {
+      this.exhausted = true;
+      this.clearProviders();
+      freeThreadID(this.threadID);
+    }
+  }
+  /**
+   * Note: We use just two stacks regardless of how many context providers you have.
+   * Providers are always popped in the reverse order to how they were pushed
+   * so we always know on the way down which provider you'll encounter next on the way up.
+   * On the way down, we push the current provider, and its context value *before*
+   * we mutated it, onto the stacks. Therefore, on the way up, we always know which
+   * provider needs to be "restored" to which value.
+   * https://github.com/facebook/react/pull/12985#issuecomment-396301248
+   */
+  ;
+
+  _proto.pushProvider = function pushProvider(provider) {
+    var index = ++this.contextIndex;
+    var context = provider.type._context;
+    var threadID = this.threadID;
+    validateContextBounds(context, threadID);
+    var previousValue = context[threadID]; // Remember which value to restore this context to on our way up.
+
+    this.contextStack[index] = context;
+    this.contextValueStack[index] = previousValue;
+
+    {
+      // Only used for push/pop mismatch warnings.
+      this.contextProviderStack[index] = provider;
+    } // Mutate the current value.
+
+
+    context[threadID] = provider.props.value;
+  };
+
+  _proto.popProvider = function popProvider(provider) {
+    var index = this.contextIndex;
+
+    {
+      if (index < 0 || provider !== this.contextProviderStack[index]) {
+        error('Unexpected pop.');
+      }
+    }
+
+    var context = this.contextStack[index];
+    var previousValue = this.contextValueStack[index]; // "Hide" these null assignments from Flow by using `any`
+    // because conceptually they are deletions--as long as we
+    // promise to never access values beyond `this.contextIndex`.
+
+    this.contextStack[index] = null;
+    this.contextValueStack[index] = null;
+
+    {
+      this.contextProviderStack[index] = null;
+    }
+
+    this.contextIndex--; // Restore to the previous value we stored as we were walking down.
+    // We've already verified that this context has been expanded to accommodate
+    // this thread id, so we don't need to do it again.
+
+    context[this.threadID] = previousValue;
+  };
+
+  _proto.clearProviders = function clearProviders() {
+    // Restore any remaining providers on the stack to previous values
+    for (var index = this.contextIndex; index >= 0; index--) {
+      var context = this.contextStack[index];
+      var previousValue = this.contextValueStack[index];
+      context[this.threadID] = previousValue;
+    }
+  };
+
+  _proto.read = function read(bytes) {
+    if (this.exhausted) {
+      return null;
+    }
+
+    var prevThreadID = currentThreadID;
+    setCurrentThreadID(this.threadID);
+    var prevDispatcher = ReactCurrentDispatcher.current;
+    ReactCurrentDispatcher.current = Dispatcher;
+
+    try {
+      // Markup generated within <Suspense> ends up buffered until we know
+      // nothing in that boundary suspended
+      var out = [''];
+      var suspended = false;
+
+      while (out[0].length < bytes) {
+        if (this.stack.length === 0) {
+          this.exhausted = true;
+          freeThreadID(this.threadID);
+          break;
+        }
+
+        var frame = this.stack[this.stack.length - 1];
+
+        if (suspended || frame.childIndex >= frame.children.length) {
+          var footer = frame.footer;
+
+          if (footer !== '') {
+            this.previousWasTextNode = false;
+          }
+
+          this.stack.pop();
+
+          if (frame.type === 'select') {
+            this.currentSelectValue = null;
+          } else if (frame.type != null && frame.type.type != null && frame.type.type.$$typeof === REACT_PROVIDER_TYPE) {
+            var provider = frame.type;
+            this.popProvider(provider);
+          } else if (frame.type === REACT_SUSPENSE_TYPE) {
+            this.suspenseDepth--;
+            var buffered = out.pop();
+
+            if (suspended) {
+              suspended = false; // If rendering was suspended at this boundary, render the fallbackFrame
+
+              var fallbackFrame = frame.fallbackFrame;
+
+              if (!fallbackFrame) {
+                {
+                  throw Error( true ? "ReactDOMServer did not find an internal fallback frame for Suspense. This is a bug in React. Please file an issue." : 0);
+                }
+              }
+
+              this.stack.push(fallbackFrame);
+              out[this.suspenseDepth] += '<!--$!-->'; // Skip flushing output since we're switching to the fallback
+
+              continue;
+            } else {
+              out[this.suspenseDepth] += buffered;
+            }
+          } // Flush output
+
+
+          out[this.suspenseDepth] += footer;
+          continue;
+        }
+
+        var child = frame.children[frame.childIndex++];
+        var outBuffer = '';
+
+        if (true) {
+          pushCurrentDebugStack(this.stack); // We're starting work on this frame, so reset its inner stack.
+
+          frame.debugElementStack.length = 0;
+        }
+
+        try {
+          outBuffer += this.render(child, frame.context, frame.domNamespace);
+        } catch (err) {
+          if (err != null && typeof err.then === 'function') {
+            if (enableSuspenseServerRenderer) {
+              if (!(this.suspenseDepth > 0)) {
+                {
+                  throw Error( true ? "A React component suspended while rendering, but no fallback UI was specified.\n\nAdd a <Suspense fallback=...> component higher in the tree to provide a loading indicator or placeholder to display." : 0);
+                }
+              }
+
+              suspended = true;
+            } else {
+              if (true) {
+                {
+                  throw Error( true ? "ReactDOMServer does not yet support Suspense." : 0);
+                }
+              }
+            }
+          } else {
+            throw err;
+          }
+        } finally {
+          if (true) {
+            popCurrentDebugStack();
+          }
+        }
+
+        if (out.length <= this.suspenseDepth) {
+          out.push('');
+        }
+
+        out[this.suspenseDepth] += outBuffer;
+      }
+
+      return out[0];
+    } finally {
+      ReactCurrentDispatcher.current = prevDispatcher;
+      setCurrentThreadID(prevThreadID);
+    }
+  };
+
+  _proto.render = function render(child, context, parentNamespace) {
+    if (typeof child === 'string' || typeof child === 'number') {
+      var text = '' + child;
+
+      if (text === '') {
+        return '';
+      }
+
+      if (this.makeStaticMarkup) {
+        return escapeTextForBrowser(text);
+      }
+
+      if (this.previousWasTextNode) {
+        return '<!-- -->' + escapeTextForBrowser(text);
+      }
+
+      this.previousWasTextNode = true;
+      return escapeTextForBrowser(text);
+    } else {
+      var nextChild;
+
+      var _resolve = resolve(child, context, this.threadID);
+
+      nextChild = _resolve.child;
+      context = _resolve.context;
+
+      if (nextChild === null || nextChild === false) {
+        return '';
+      } else if (!React.isValidElement(nextChild)) {
+        if (nextChild != null && nextChild.$$typeof != null) {
+          // Catch unexpected special types early.
+          var $$typeof = nextChild.$$typeof;
+
+          if (!($$typeof !== REACT_PORTAL_TYPE)) {
+            {
+              throw Error( "Portals are not currently supported by the server renderer. Render them conditionally so that they only appear on the client render." );
+            }
+          } // Catch-all to prevent an infinite loop if React.Children.toArray() supports some new type.
+
+
+          {
+            {
+              throw Error( "Unknown element-like object type: " + $$typeof.toString() + ". This is likely a bug in React. Please file an issue." );
+            }
+          }
+        }
+
+        var nextChildren = toArray(nextChild);
+        var frame = {
+          type: null,
+          domNamespace: parentNamespace,
+          children: nextChildren,
+          childIndex: 0,
+          context: context,
+          footer: ''
+        };
+
+        {
+          frame.debugElementStack = [];
+        }
+
+        this.stack.push(frame);
+        return '';
+      } // Safe because we just checked it's an element.
+
+
+      var nextElement = nextChild;
+      var elementType = nextElement.type;
+
+      if (typeof elementType === 'string') {
+        return this.renderDOM(nextElement, context, parentNamespace);
+      }
+
+      switch (elementType) {
+        case REACT_STRICT_MODE_TYPE:
+        case REACT_CONCURRENT_MODE_TYPE:
+        case REACT_PROFILER_TYPE:
+        case REACT_SUSPENSE_LIST_TYPE:
+        case REACT_FRAGMENT_TYPE:
+          {
+            var _nextChildren = toArray(nextChild.props.children);
+
+            var _frame = {
+              type: null,
+              domNamespace: parentNamespace,
+              children: _nextChildren,
+              childIndex: 0,
+              context: context,
+              footer: ''
+            };
+
+            {
+              _frame.debugElementStack = [];
+            }
+
+            this.stack.push(_frame);
+            return '';
+          }
+
+        case REACT_SUSPENSE_TYPE:
+          {
+            {
+              {
+                {
+                  throw Error( "ReactDOMServer does not yet support Suspense." );
+                }
+              }
+            }
+          }
+      }
+
+      if (typeof elementType === 'object' && elementType !== null) {
+        switch (elementType.$$typeof) {
+          case REACT_FORWARD_REF_TYPE:
+            {
+              var element = nextChild;
+
+              var _nextChildren4;
+
+              var componentIdentity = {};
+              prepareToUseHooks(componentIdentity);
+              _nextChildren4 = elementType.render(element.props, element.ref);
+              _nextChildren4 = finishHooks(elementType.render, element.props, _nextChildren4, element.ref);
+              _nextChildren4 = toArray(_nextChildren4);
+              var _frame4 = {
+                type: null,
+                domNamespace: parentNamespace,
+                children: _nextChildren4,
+                childIndex: 0,
+                context: context,
+                footer: ''
+              };
+
+              {
+                _frame4.debugElementStack = [];
+              }
+
+              this.stack.push(_frame4);
+              return '';
+            }
+
+          case REACT_MEMO_TYPE:
+            {
+              var _element = nextChild;
+              var _nextChildren5 = [React.createElement(elementType.type, _assign({
+                ref: _element.ref
+              }, _element.props))];
+              var _frame5 = {
+                type: null,
+                domNamespace: parentNamespace,
+                children: _nextChildren5,
+                childIndex: 0,
+                context: context,
+                footer: ''
+              };
+
+              {
+                _frame5.debugElementStack = [];
+              }
+
+              this.stack.push(_frame5);
+              return '';
+            }
+
+          case REACT_PROVIDER_TYPE:
+            {
+              var provider = nextChild;
+              var nextProps = provider.props;
+
+              var _nextChildren6 = toArray(nextProps.children);
+
+              var _frame6 = {
+                type: provider,
+                domNamespace: parentNamespace,
+                children: _nextChildren6,
+                childIndex: 0,
+                context: context,
+                footer: ''
+              };
+
+              {
+                _frame6.debugElementStack = [];
+              }
+
+              this.pushProvider(provider);
+              this.stack.push(_frame6);
+              return '';
+            }
+
+          case REACT_CONTEXT_TYPE:
+            {
+              var reactContext = nextChild.type; // The logic below for Context differs depending on PROD or DEV mode. In
+              // DEV mode, we create a separate object for Context.Consumer that acts
+              // like a proxy to Context. This proxy object adds unnecessary code in PROD
+              // so we use the old behaviour (Context.Consumer references Context) to
+              // reduce size and overhead. The separate object references context via
+              // a property called "_context", which also gives us the ability to check
+              // in DEV mode if this property exists or not and warn if it does not.
+
+              {
+                if (reactContext._context === undefined) {
+                  // This may be because it's a Context (rather than a Consumer).
+                  // Or it may be because it's older React where they're the same thing.
+                  // We only want to warn if we're sure it's a new React.
+                  if (reactContext !== reactContext.Consumer) {
+                    if (!hasWarnedAboutUsingContextAsConsumer) {
+                      hasWarnedAboutUsingContextAsConsumer = true;
+
+                      error('Rendering <Context> directly is not supported and will be removed in ' + 'a future major release. Did you mean to render <Context.Consumer> instead?');
+                    }
+                  }
+                } else {
+                  reactContext = reactContext._context;
+                }
+              }
+
+              var _nextProps = nextChild.props;
+              var threadID = this.threadID;
+              validateContextBounds(reactContext, threadID);
+              var nextValue = reactContext[threadID];
+
+              var _nextChildren7 = toArray(_nextProps.children(nextValue));
+
+              var _frame7 = {
+                type: nextChild,
+                domNamespace: parentNamespace,
+                children: _nextChildren7,
+                childIndex: 0,
+                context: context,
+                footer: ''
+              };
+
+              {
+                _frame7.debugElementStack = [];
+              }
+
+              this.stack.push(_frame7);
+              return '';
+            }
+          // eslint-disable-next-line-no-fallthrough
+
+          case REACT_FUNDAMENTAL_TYPE:
+            {
+
+              {
+                {
+                  throw Error( "ReactDOMServer does not yet support the fundamental API." );
+                }
+              }
+            }
+          // eslint-disable-next-line-no-fallthrough
+
+          case REACT_LAZY_TYPE:
+            {
+              var _element2 = nextChild;
+              var lazyComponent = nextChild.type; // Attempt to initialize lazy component regardless of whether the
+              // suspense server-side renderer is enabled so synchronously
+              // resolved constructors are supported.
+
+              initializeLazyComponentType(lazyComponent);
+
+              switch (lazyComponent._status) {
+                case Resolved:
+                  {
+                    var _nextChildren9 = [React.createElement(lazyComponent._result, _assign({
+                      ref: _element2.ref
+                    }, _element2.props))];
+                    var _frame9 = {
+                      type: null,
+                      domNamespace: parentNamespace,
+                      children: _nextChildren9,
+                      childIndex: 0,
+                      context: context,
+                      footer: ''
+                    };
+
+                    {
+                      _frame9.debugElementStack = [];
+                    }
+
+                    this.stack.push(_frame9);
+                    return '';
+                  }
+
+                case Rejected:
+                  throw lazyComponent._result;
+
+                case Pending:
+                default:
+                  {
+                    {
+                      throw Error( "ReactDOMServer does not yet support lazy-loaded components." );
+                    }
+                  }
+
+              }
+            }
+          // eslint-disable-next-line-no-fallthrough
+
+          case REACT_SCOPE_TYPE:
+            {
+
+              {
+                {
+                  throw Error( "ReactDOMServer does not yet support scope components." );
+                }
+              }
+            }
+        }
+      }
+
+      var info = '';
+
+      {
+        var owner = nextElement._owner;
+
+        if (elementType === undefined || typeof elementType === 'object' && elementType !== null && Object.keys(elementType).length === 0) {
+          info += ' You likely forgot to export your component from the file ' + "it's defined in, or you might have mixed up default and " + 'named imports.';
+        }
+
+        var ownerName = owner ? getComponentName(owner) : null;
+
+        if (ownerName) {
+          info += '\n\nCheck the render method of `' + ownerName + '`.';
+        }
+      }
+
+      {
+        {
+          throw Error( "Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: " + (elementType == null ? elementType : typeof elementType) + "." + info );
+        }
+      }
+    }
+  };
+
+  _proto.renderDOM = function renderDOM(element, context, parentNamespace) {
+    var tag = element.type.toLowerCase();
+    var namespace = parentNamespace;
+
+    if (parentNamespace === Namespaces.html) {
+      namespace = getIntrinsicNamespace(tag);
+    }
+
+    {
+      if (namespace === Namespaces.html) {
+        // Should this check be gated by parent namespace? Not sure we want to
+        // allow <SVG> or <mATH>.
+        if (tag !== element.type) {
+          error('<%s /> is using incorrect casing. ' + 'Use PascalCase for React components, ' + 'or lowercase for HTML elements.', element.type);
+        }
+      }
+    }
+
+    validateDangerousTag(tag);
+    var props = element.props;
+
+    if (tag === 'input') {
+      {
+        ReactControlledValuePropTypes.checkPropTypes('input', props);
+
+        if (props.checked !== undefined && props.defaultChecked !== undefined && !didWarnDefaultChecked) {
+          error('%s contains an input of type %s with both checked and defaultChecked props. ' + 'Input elements must be either controlled or uncontrolled ' + '(specify either the checked prop, or the defaultChecked prop, but not ' + 'both). Decide between using a controlled or uncontrolled input ' + 'element and remove one of these props. More info: ' + 'https://fb.me/react-controlled-components', 'A component', props.type);
+
+          didWarnDefaultChecked = true;
+        }
+
+        if (props.value !== undefined && props.defaultValue !== undefined && !didWarnDefaultInputValue) {
+          error('%s contains an input of type %s with both value and defaultValue props. ' + 'Input elements must be either controlled or uncontrolled ' + '(specify either the value prop, or the defaultValue prop, but not ' + 'both). Decide between using a controlled or uncontrolled input ' + 'element and remove one of these props. More info: ' + 'https://fb.me/react-controlled-components', 'A component', props.type);
+
+          didWarnDefaultInputValue = true;
+        }
+      }
+
+      props = _assign({
+        type: undefined
+      }, props, {
+        defaultChecked: undefined,
+        defaultValue: undefined,
+        value: props.value != null ? props.value : props.defaultValue,
+        checked: props.checked != null ? props.checked : props.defaultChecked
+      });
+    } else if (tag === 'textarea') {
+      {
+        ReactControlledValuePropTypes.checkPropTypes('textarea', props);
+
+        if (props.value !== undefined && props.defaultValue !== undefined && !didWarnDefaultTextareaValue) {
+          error('Textarea elements must be either controlled or uncontrolled ' + '(specify either the value prop, or the defaultValue prop, but not ' + 'both). Decide between using a controlled or uncontrolled textarea ' + 'and remove one of these props. More info: ' + 'https://fb.me/react-controlled-components');
+
+          didWarnDefaultTextareaValue = true;
+        }
+      }
+
+      var initialValue = props.value;
+
+      if (initialValue == null) {
+        var defaultValue = props.defaultValue; // TODO (yungsters): Remove support for children content in <textarea>.
+
+        var textareaChildren = props.children;
+
+        if (textareaChildren != null) {
+          {
+            error('Use the `defaultValue` or `value` props instead of setting ' + 'children on <textarea>.');
+          }
+
+          if (!(defaultValue == null)) {
+            {
+              throw Error( "If you supply `defaultValue` on a <textarea>, do not pass children." );
+            }
+          }
+
+          if (Array.isArray(textareaChildren)) {
+            if (!(textareaChildren.length <= 1)) {
+              {
+                throw Error( "<textarea> can only have at most one child." );
+              }
+            }
+
+            textareaChildren = textareaChildren[0];
+          }
+
+          defaultValue = '' + textareaChildren;
+        }
+
+        if (defaultValue == null) {
+          defaultValue = '';
+        }
+
+        initialValue = defaultValue;
+      }
+
+      props = _assign({}, props, {
+        value: undefined,
+        children: '' + initialValue
+      });
+    } else if (tag === 'select') {
+      {
+        ReactControlledValuePropTypes.checkPropTypes('select', props);
+
+        for (var i = 0; i < valuePropNames.length; i++) {
+          var propName = valuePropNames[i];
+
+          if (props[propName] == null) {
+            continue;
+          }
+
+          var isArray = Array.isArray(props[propName]);
+
+          if (props.multiple && !isArray) {
+            error('The `%s` prop supplied to <select> must be an array if ' + '`multiple` is true.', propName);
+          } else if (!props.multiple && isArray) {
+            error('The `%s` prop supplied to <select> must be a scalar ' + 'value if `multiple` is false.', propName);
+          }
+        }
+
+        if (props.value !== undefined && props.defaultValue !== undefined && !didWarnDefaultSelectValue) {
+          error('Select elements must be either controlled or uncontrolled ' + '(specify either the value prop, or the defaultValue prop, but not ' + 'both). Decide between using a controlled or uncontrolled select ' + 'element and remove one of these props. More info: ' + 'https://fb.me/react-controlled-components');
+
+          didWarnDefaultSelectValue = true;
+        }
+      }
+
+      this.currentSelectValue = props.value != null ? props.value : props.defaultValue;
+      props = _assign({}, props, {
+        value: undefined
+      });
+    } else if (tag === 'option') {
+      var selected = null;
+      var selectValue = this.currentSelectValue;
+      var optionChildren = flattenOptionChildren(props.children);
+
+      if (selectValue != null) {
+        var value;
+
+        if (props.value != null) {
+          value = props.value + '';
+        } else {
+          value = optionChildren;
+        }
+
+        selected = false;
+
+        if (Array.isArray(selectValue)) {
+          // multiple
+          for (var j = 0; j < selectValue.length; j++) {
+            if ('' + selectValue[j] === value) {
+              selected = true;
+              break;
+            }
+          }
+        } else {
+          selected = '' + selectValue === value;
+        }
+
+        props = _assign({
+          selected: undefined,
+          children: undefined
+        }, props, {
+          selected: selected,
+          children: optionChildren
+        });
+      }
+    }
+
+    {
+      validatePropertiesInDevelopment(tag, props);
+    }
+
+    assertValidProps(tag, props);
+    var out = createOpenTagMarkup(element.type, tag, props, namespace, this.makeStaticMarkup, this.stack.length === 1);
+    var footer = '';
+
+    if (omittedCloseTags.hasOwnProperty(tag)) {
+      out += '/>';
+    } else {
+      out += '>';
+      footer = '</' + element.type + '>';
+    }
+
+    var children;
+    var innerMarkup = getNonChildrenInnerMarkup(props);
+
+    if (innerMarkup != null) {
+      children = [];
+
+      if (newlineEatingTags.hasOwnProperty(tag) && innerMarkup.charAt(0) === '\n') {
+        // text/html ignores the first character in these tags if it's a newline
+        // Prefer to break application/xml over text/html (for now) by adding
+        // a newline specifically to get eaten by the parser. (Alternately for
+        // textareas, replacing "^\n" with "\r\n" doesn't get eaten, and the first
+        // \r is normalized out by HTMLTextAreaElement#value.)
+        // See: <http://www.w3.org/TR/html-polyglot/#newlines-in-textarea-and-pre>
+        // See: <http://www.w3.org/TR/html5/syntax.html#element-restrictions>
+        // See: <http://www.w3.org/TR/html5/syntax.html#newlines>
+        // See: Parsing of "textarea" "listing" and "pre" elements
+        //  from <http://www.w3.org/TR/html5/syntax.html#parsing-main-inbody>
+        out += '\n';
+      }
+
+      out += innerMarkup;
+    } else {
+      children = toArray(props.children);
+    }
+
+    var frame = {
+      domNamespace: getChildNamespace(parentNamespace, element.type),
+      type: tag,
+      children: children,
+      childIndex: 0,
+      context: context,
+      footer: footer
+    };
+
+    {
+      frame.debugElementStack = [];
+    }
+
+    this.stack.push(frame);
+    this.previousWasTextNode = false;
+    return out;
+  };
+
+  return ReactDOMServerRenderer;
+}();
+
+/**
+ * Render a ReactElement to its initial HTML. This should only be used on the
+ * server.
+ * See https://reactjs.org/docs/react-dom-server.html#rendertostring
+ */
+
+function renderToString(element) {
+  var renderer = new ReactDOMServerRenderer(element, false);
+
+  try {
+    var markup = renderer.read(Infinity);
+    return markup;
+  } finally {
+    renderer.destroy();
+  }
+}
+/**
+ * Similar to renderToString, except this doesn't create extra DOM attributes
+ * such as data-react-id that React uses internally.
+ * See https://reactjs.org/docs/react-dom-server.html#rendertostaticmarkup
+ */
+
+function renderToStaticMarkup(element) {
+  var renderer = new ReactDOMServerRenderer(element, true);
+
+  try {
+    var markup = renderer.read(Infinity);
+    return markup;
+  } finally {
+    renderer.destroy();
+  }
+}
+
+function renderToNodeStream() {
+  {
+    {
+      throw Error( "ReactDOMServer.renderToNodeStream(): The streaming API is not available in the browser. Use ReactDOMServer.renderToString() instead." );
+    }
+  }
+}
+
+function renderToStaticNodeStream() {
+  {
+    {
+      throw Error( "ReactDOMServer.renderToStaticNodeStream(): The streaming API is not available in the browser. Use ReactDOMServer.renderToStaticMarkup() instead." );
+    }
+  }
+} // Note: when changing this, also consider https://github.com/facebook/react/issues/11526
+
+
+var ReactDOMServer = {
+  renderToString: renderToString,
+  renderToStaticMarkup: renderToStaticMarkup,
+  renderToNodeStream: renderToNodeStream,
+  renderToStaticNodeStream: renderToStaticNodeStream,
+  version: ReactVersion
+};
+
+// TODO: decide on the top-level export form.
+// This is hacky but makes it work with both Rollup and Jest
+
+
+var server_browser = ReactDOMServer.default || ReactDOMServer;
+
+module.exports = server_browser;
+  })();
+}
+
+
+/***/ }),
+
 /***/ "./node_modules/react-dom/cjs/react-dom.development.js":
 /*!*************************************************************!*\
   !*** ./node_modules/react-dom/cjs/react-dom.development.js ***!
@@ -65970,6 +80768,22 @@ function checkDCE() {
 
 if (false) {} else {
   module.exports = __webpack_require__(/*! ./cjs/react-dom.development.js */ "./node_modules/react-dom/cjs/react-dom.development.js");
+}
+
+
+/***/ }),
+
+/***/ "./node_modules/react-dom/server.browser.js":
+/*!**************************************************!*\
+  !*** ./node_modules/react-dom/server.browser.js ***!
+  \**************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+if (false) {} else {
+  module.exports = __webpack_require__(/*! ./cjs/react-dom-server.browser.development.js */ "./node_modules/react-dom/cjs/react-dom-server.browser.development.js");
 }
 
 

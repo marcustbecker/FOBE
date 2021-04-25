@@ -21,6 +21,14 @@ export default class FoodList extends Component {
         });
     }
 
+    deleteFood(food) {
+        console.log(food.id);
+        axios.delete(`/food/${food.id}`).then((response) => {
+            console.log(response);
+            window.location.reload();
+        });
+    }
+
     render() {
         const foods = this.state.foods;
         console.log(foods);
@@ -31,6 +39,12 @@ export default class FoodList extends Component {
                         <div className="card">
                             <div className="card-header">All foods</div>
                             <div className="card-body">
+                                <Link
+                                    className="btn btn-primary btn-sm mb-3"
+                                    to="/foodAdd"
+                                >
+                                    Create new food
+                                </Link>
                                 <table className="table">
                                     <tbody>
                                         <tr>
@@ -41,11 +55,6 @@ export default class FoodList extends Component {
                                             <th>Delete</th>
                                         </tr>
                                         {Object.keys(foods).map((food, i) => (
-                                            //<Link
-                                            //    className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                                            //    to={`/${foods[food].id}`}
-                                            //   key={foods[food].id}
-                                            //>
                                             <tr key={foods[food].id}>
                                                 <td>{foods[food].foodName}</td>
                                                 <td>
@@ -60,30 +69,26 @@ export default class FoodList extends Component {
                                                 <td>
                                                     <Link
                                                         className="btn btn-primary btn-sm mb-3"
-                                                        to="/foodEdit"
+                                                        to={`/foodEdit/${foods[food].id}`}
                                                     >
                                                         Edit
                                                     </Link>
                                                 </td>
                                                 <td>
-                                                    <Link
+                                                    <button
                                                         className="btn btn-primary btn-sm mb-3"
-                                                        to="/foodDelete"
+                                                        onClick={this.deleteFood.bind(
+                                                            this,
+                                                            foods[food]
+                                                        )}
                                                     >
                                                         Delete
-                                                    </Link>
+                                                    </button>
                                                 </td>
                                             </tr>
-                                            //</Link>
                                         ))}
                                     </tbody>
                                 </table>
-                                <Link
-                                    className="btn btn-primary btn-sm mb-3"
-                                    to="/foodAdd"
-                                >
-                                    Create new food
-                                </Link>
                             </div>
                         </div>
                     </div>
