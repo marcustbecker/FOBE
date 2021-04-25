@@ -48,21 +48,25 @@ export class Register extends React.Component {
             email: this.state.email,
             password: this.state.password,
             password_confirmation: this.state.password_confirmation,
+            isAdmin: 0
         };
         //sets loading true and sends user data to controller
         this.setState({ loading: true });
         axios.post(url, user).then((res) => {
+            console.log(res.data);
+            console.log(res.data.success);
+            console.log(res.data.isAdmin);
             switch (res.data.success) {
                 //if registration is failed then statement sets errors in html
-                case false:
-                    console.log(res);
-                    this.state.errors.setErrors(res);
-                    this.state.errors.setMessage(res);
-                    break;
-                //if registration is success then statement sets token
                 case true:
+                    console.log(res);
                     localStorage.setItem("token", res.data.token);
                     localStorage.setItem("users", res.data.user.isAdmin);
+                    break;
+                //if registration is success then statement sets token
+                case false:
+                    this.state.errors.setErrors(res);
+                    this.state.errors.setMessage(res);
                     break;
             }
             this.setState({ loading: false });

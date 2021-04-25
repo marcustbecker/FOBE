@@ -9736,7 +9736,8 @@ var Register = /*#__PURE__*/function (_React$Component) {
                   username: _this.state.username,
                   email: _this.state.email,
                   password: _this.state.password,
-                  password_confirmation: _this.state.password_confirmation
+                  password_confirmation: _this.state.password_confirmation,
+                  isAdmin: 0
                 }; //sets loading true and sends user data to controller
 
                 _this.setState({
@@ -9744,21 +9745,24 @@ var Register = /*#__PURE__*/function (_React$Component) {
                 });
 
                 axios__WEBPACK_IMPORTED_MODULE_3___default().post(url, user).then(function (res) {
+                  console.log(res.data);
+                  console.log(res.data.success);
+                  console.log(res.data.isAdmin);
+
                   switch (res.data.success) {
                     //if registration is failed then statement sets errors in html
-                    case false:
+                    case true:
                       console.log(res);
+                      localStorage.setItem("token", res.data.token);
+                      localStorage.setItem("users", res.data.user.isAdmin);
+                      break;
+                    //if registration is success then statement sets token
 
+                    case false:
                       _this.state.errors.setErrors(res);
 
                       _this.state.errors.setMessage(res);
 
-                      break;
-                    //if registration is success then statement sets token
-
-                    case true:
-                      localStorage.setItem("token", res.data.token);
-                      localStorage.setItem("users", res.data.user.isAdmin);
                       break;
                   }
 
