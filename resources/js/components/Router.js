@@ -5,7 +5,10 @@ import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
 import { Redirect } from "react-router";
 import SignIn from "./SignIn/SignIn";
 import Register from "./Register/Register";
+import LogOut from "./SignIn/LogOut";
 import NavbarMenu from "./Navbar/NavbarMenu";
+import AdminNavbarMenu from "./Navbar/AdminNavbarMenu";
+import UserNavbarMenu from "./Navbar/UserNavbarManu";
 import Dashboard from "./Dashboard/Dashboard";
 import AdminHome from "./Admin/AdminHome";
 import FoodList from "./Food/FoodList";
@@ -19,9 +22,7 @@ import RestaurantAdd from "./Restaurant/RestaurantAdd";
 import RestaurantEdit from "./Restaurant/RestaurantEdit";
 import ShowFood from "./FoodUser/ShowFood";
 import MapReaderId from "./Map/MapReaderId";
-import LogOut from "./SignIn/LogOut";
-import AdminNavbarMenu from "./Navbar/AdminNavbarMenu";
-import UserNavbarMenu from "./Navbar/UserNavbarManu";
+import MapReader from "./Map/MapReader";
 
 const AdminRoute = ({ component, ...options }) => {
     const isAdmin = localStorage.getItem("users");
@@ -94,7 +95,6 @@ class App extends React.Component {
                         component={RestaurantEdit}
                     />
 
-                    <UserRoute path="/mapView/:id" component={MapReaderId} />
                     <UserRoute path="/mapper" component={MapReader} />
                     <UserRoute path="/mapView/:id" component={MapReaderId} />
 
