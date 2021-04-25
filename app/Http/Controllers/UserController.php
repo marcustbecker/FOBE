@@ -50,10 +50,14 @@ class UserController extends Controller
         if(!is_null($user)) {
             $user->save();
             $token =$user->createToken($user->email.'-'.now());
-            return response()->json(["status" => $this->status_code, "success" => true, "message" => "Registration completed successfully", 'token' =>$token->accessToken, "user" => $user]);
-        }
-
-        else {
+            return response() ->json([
+                "status" => $this->status_code,
+                'token' => $token->accessToken,
+                'user' => $user,
+                'success' => true,
+                "message" => "Registration completed successfully"
+            ]);
+            } else {
             return response()->json(["status" => "failed", "success" => false, "message" => "failed to register"]);
         }
     }

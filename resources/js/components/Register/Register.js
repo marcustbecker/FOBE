@@ -62,7 +62,7 @@ export class Register extends React.Component {
                 //if registration is success then statement sets token
                 case true:
                     localStorage.setItem("token", res.data.token);
-                    localStorage.setItem("user", res.data.user);
+                    localStorage.setItem("users", res.data.user.isAdmin);
                     break;
             }
             this.setState({ loading: false });

@@ -18,65 +18,81 @@ import RestaurantList from "./Restaurant/RestaurantList";
 import RestaurantAdd from "./Restaurant/RestaurantAdd";
 import RestaurantEdit from "./Restaurant/RestaurantEdit";
 import ShowFood from "./FoodUser/ShowFood";
-import MapReader from "./Map/MapReader";
 import MapReaderId from "./Map/MapReaderId";
+import LogOut from "./SignIn/LogOut";
+import AdminNavbarMenu from './Navbar/AdminNavbarMenu';
+import UserNavbarMenu from './Navbar/UserNavbarManu';
 
-function App() {
 
-  const AdminRoute = ({ component, ...options }) => {
+const AdminRoute = ({ component, ...options }) => {
+  const isAdmin = localStorage.getItem("users");
+  console.log()
+  if (isAdmin == 1) {
+    return <Route {...options} component={component} />
+  } else if (isAdmin == 0) {
+    return <Redirect to="/dashboard" />
+  } else if (!isAdmin) {
+    return <Redirect to="/login" />;
+  }
+};
+
+const UserRoute = ({ component, ...options }) => {
+  const loggedIn = localStorage.getItem("token");
+  console.log()
+  if (loggedIn) {
+    return <Route {...options} component={component} />
+  } else {
+    return <Redirect to="/login" />
+  }
+};
+
+class App extends React.Component {
+  render() {
     const isAdmin = localStorage.getItem("users");
-    console.log()
+    let button;
     if (isAdmin == 1) {
-      return <Route {...options} component={component} />
+      button = <AdminNavbarMenu />;
     } else if (isAdmin == 0) {
-      return <Redirect to="/dashboard" />
-    } else if (!isAdmin) {
-      return <Redirect to="/login" />;
-    }
-  };
-
-  const UserRoute = ({ component, ...options }) => {
-    const loggedIn = localStorage.getItem("token");
-    console.log()
-    if (loggedIn) {
-      return <Route {...options} component={component} />
+      button = <UserNavbarMenu />;
     } else {
-      return <Redirect to="/login" />
+      button = <NavbarMenu />;
     }
-  };
 
-  return (
-    //Routing return navbar and switch case component 
-    <Router>
-      <div className="App">
-        <NavbarMenu />
-      </div>
-      <br />
-      <Switch>
-        <Route path="/login" component={SignIn} />
-        <Route path="/register" component={Register} />
+    return (
+      //Routing return navbar and switch case component 
+      <Router>
+        <div className="App">
+          {button}
+        </div>
+        <br />
+        <Switch>
+          <Route path="/login" component={SignIn} />
+          <Route path="/register" component={Register} />
+          <Route path="/logout" component={LogOut} />
 
-        <Route path="/dashboard" component={Dashboard} />
-        <AdminRoute path="/adminHome" component={AdminHome} />
+          <Route path="/dashboard" component={Dashboard} />
+          <AdminRoute path="/adminHome" component={AdminHome} />
 
-        <AdminRoute path="/foodList" component={FoodList} />
-        <AdminRoute path="/foodAdd" component={FoodAdd} />
-        <AdminRoute path="/foodEdit/:id" component={FoodEdit} />
+          <AdminRoute path="/foodList" component={FoodList} />
+          <AdminRoute path="/foodAdd" component={FoodAdd} />
+          <AdminRoute path="/foodEdit/:id" component={FoodEdit} />
 
-        <AdminRoute path="/categoryList" component={CategoryList} />
-        <AdminRoute path="/categoryAdd" component={CategoryAdd} />
-        <AdminRoute path="/categoryEdit/:id" component={CategoryEdit} />
+          <AdminRoute path="/categoryList" component={CategoryList} />
+          <AdminRoute path="/categoryAdd" component={CategoryAdd} />
+          <AdminRoute path="/categoryEdit/:id" component={CategoryEdit} />
 
-        <AdminRoute path="/restaurantList" component={RestaurantList} />
-        <AdminRoute path="/restaurantAdd" component={RestaurantAdd} />
-        <AdminRoute path="/restaurantEdit/:id" component={RestaurantEdit} />
+          <AdminRoute path="/restaurantList" component={RestaurantList} />
+          <AdminRoute path="/restaurantAdd" component={RestaurantAdd} />
+          <AdminRoute path="/restaurantEdit/:id" component={RestaurantEdit} />
 
-        <UserRoute path="/mapView/:id" component={MapReaderId} />
+          <UserRoute path="/mapView/:id" component={MapReaderId} />
 
-        <UserRoute path="/showFood/:id" component={ShowFood} />
-      </Switch>
-    </Router>
-  );
+          <UserRoute path="/showFood/:id" component={ShowFood} />
+
+        </Switch>
+      </Router>
+    );
+  }
 }
 
 export default App;
