@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 import "./../../css/app.css";
 import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
+import { Redirect } from "react-router";
 import SignIn from "./SignIn/SignIn";
 import Register from "./Register/Register";
 import NavbarMenu from "./Navbar/NavbarMenu";
@@ -17,45 +18,91 @@ import RestaurantList from "./Restaurant/RestaurantList";
 import RestaurantAdd from "./Restaurant/RestaurantAdd";
 import RestaurantEdit from "./Restaurant/RestaurantEdit";
 import ShowFood from "./FoodUser/ShowFood";
-import MapReader from "./Map/MapReader";
 import MapReaderId from "./Map/MapReaderId";
+import LogOut from "./SignIn/LogOut";
+import AdminNavbarMenu from "./Navbar/AdminNavbarMenu";
+import UserNavbarMenu from "./Navbar/UserNavbarManu";
 
-function App() {
-    return (
-        //Routing return navbar and switch case component
-        <Router>
-            <div className="App">
-                <NavbarMenu />
-            </div>
-            <br />
-            <Switch>
-                <Route path="/" component={AdminHome} exact />
+const AdminRoute = ({ component, ...options }) => {
+    const isAdmin = localStorage.getItem("users");
+    console.log();
+    if (isAdmin == 1) {
+        return <Route {...options} component={component} />;
+    } else if (isAdmin == 0) {
+        return <Redirect to="/dashboard" />;
+    } else if (!isAdmin) {
+        return <Redirect to="/login" />;
+    }
+};
 
-                <Route path="/login" component={SignIn} />
-                <Route path="/register" component={Register} />
+const UserRoute = ({ component, ...options }) => {
+    const loggedIn = localStorage.getItem("token");
+    console.log();
+    if (loggedIn) {
+        return <Route {...options} component={component} />;
+    } else {
+        return <Redirect to="/login" />;
+    }
+};
 
-                <Route path="/dashboard" component={Dashboard} />
-                <Route path="/adminHome" component={AdminHome} />
+class App extends React.Component {
+    render() {
+        const isAdmin = localStorage.getItem("users");
+        let button;
+        if (isAdmin == 1) {
+            button = <AdminNavbarMenu />;
+        } else if (isAdmin == 0) {
+            button = <UserNavbarMenu />;
+        } else {
+            button = <NavbarMenu />;
+        }
 
-                <Route path="/foodList" component={FoodList} />
-                <Route path="/foodAdd" component={FoodAdd} />
-                <Route path="/foodEdit/:id" component={FoodEdit} />
+        return (
+            //Routing return navbar and switch case component
+            <Router>
+                <div className="App">{button}</div>
+                <br />
+                <Switch>
+                    <Route path="/login" component={SignIn} />
+                    <Route path="/register" component={Register} />
+                    <Route path="/logout" component={LogOut} />
 
-                <Route path="/categoryList" component={CategoryList} />
-                <Route path="/categoryAdd" component={CategoryAdd} />
-                <Route path="/categoryEdit/:id" component={CategoryEdit} />
+                    <Route path="/dashboard" component={Dashboard} />
+                    <AdminRoute path="/adminHome" component={AdminHome} />
 
-                <Route path="/restaurantList" component={RestaurantList} />
-                <Route path="/restaurantAdd" component={RestaurantAdd} />
-                <Route path="/restaurantEdit/:id" component={RestaurantEdit} />
+                    <AdminRoute path="/foodList" component={FoodList} />
+                    <AdminRoute path="/foodAdd" component={FoodAdd} />
+                    <AdminRoute path="/foodEdit/:id" component={FoodEdit} />
 
-                <Route path="/mapper" component={MapReader} />
-                <Route path="/mapView/:id" component={MapReaderId} />
+                    <AdminRoute path="/categoryList" component={CategoryList} />
+                    <AdminRoute path="/categoryAdd" component={CategoryAdd} />
+                    <AdminRoute
+                        path="/categoryEdit/:id"
+                        component={CategoryEdit}
+                    />
 
-                <Route path="/showFood/:id" component={ShowFood} />
-            </Switch>
-        </Router>
-    );
+                    <AdminRoute
+                        path="/restaurantList"
+                        component={RestaurantList}
+                    />
+                    <AdminRoute
+                        path="/restaurantAdd"
+                        component={RestaurantAdd}
+                    />
+                    <AdminRoute
+                        path="/restaurantEdit/:id"
+                        component={RestaurantEdit}
+                    />
+
+                    <UserRoute path="/mapView/:id" component={MapReaderId} />
+                    <UserRoute path="/mapper" component={MapReader} />
+                    <UserRoute path="/mapView/:id" component={MapReaderId} />
+
+                    <UserRoute path="/showFood/:id" component={ShowFood} />
+                </Switch>
+            </Router>
+        );
+    }
 }
 
 export default App;

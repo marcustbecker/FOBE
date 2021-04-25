@@ -44,15 +44,12 @@ export class SignIn extends React.Component {
         //setting state loading true and sending data to controller
         this.setState({ loading: true });
         axios.post(url, data).then((res) => {
-            console.log(res);
 
             switch (res.data.success) {
                 //on success login statement sets token and sends user data
                 case true:
                     localStorage.setItem("token", res.data.token);
-                    localStorage.setItem("users", res.data.user);
-                    console.log(res);
-                    console.log("Congratulation, you are looged in!");
+                    localStorage.setItem("users", res.data.user.isAdmin);
                     break;
                 //on failed login statement outputs validator errors and error message
                 case false:
